@@ -1,0 +1,30 @@
+INFO:  2020-01-18 09:34:03,287 - sparkmonitorkernel - 16371 - MainProcess -         140715259025216 - MainThread
+ Starting Kernel Extension 
+
+INFO:  2020-01-18 09:34:03,287 - sparkmonitorkernel - 16371 - MainProcess -         140715259025216 - MainThread
+ Socket Listening on port 59061 
+
+INFO:  2020-01-18 09:34:03,288 - sparkmonitorkernel - 16371 - MainProcess -         140714255881984 - Thread-4
+ Starting socket thread, going to accept 
+
+INFO:  2020-01-18 09:34:03,289 - sparkmonitorkernel - 16371 - MainProcess -         140715259025216 - MainThread
+ 59061 
+
+INFO:  2020-01-18 09:34:03,289 - sparkmonitorkernel - 16371 - MainProcess -         140715259025216 - MainThread
+ Adding jar from /usr/local/lib/python3.6/dist-packages/sparkmonitor/listener.jar  
+
+INFO:  2020-01-18 09:34:08,295 - sparkmonitorkernel - 16371 - MainProcess -         140714255881984 - Thread-4
+ Client Connected ('127.0.0.1', 59352) 
+
+INFO:  2020-01-18 09:34:08,329 - sparkmonitorkernel - 16371 - MainProcess -         140714255881984 - Thread-4
+ Message Received: 
+{
+  "msgtype" : "sparkExecutorAdded",
+  "executorId" : "driver",
+  "time" : 1579340048162,
+  "host" : "localhost",
+  "numCores" : 12,
+  "totalCores" : 12
+}
+ 
+
