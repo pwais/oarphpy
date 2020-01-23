@@ -97,7 +97,8 @@ def img_to_img_tag(
 def _unpack_pyspark_row(r):
   """Unpack a `pyspark.sql.Row` that contains a single value."""
   return r[0]
-    # NB: pyspark.sql.Row is indexable
+    # NB: 0 as in 0th column; pyspark.sql.Row provides indexing
+    # for syntactic sugar
 
 
 def df_histogram(spark_df, col, num_bins):
@@ -105,13 +106,9 @@ def df_histogram(spark_df, col, num_bins):
   named `col` in spark Dataframe `spark_df`.  Return type is designed
   to match `numpy.histogram()`.
   """
-
   import numpy as np
-
   assert num_bins >= 1
-  
   col_val_rdd = spark_df.select(col).rdd.map(_unpack_pyspark_row)
-  
   buckets, counts = col_val_rdd.histogram(num_bins)
   return np.array(counts), np.array(buckets)
 
@@ -122,7 +119,7 @@ def save_bokeh_fig(fig, dest, title=None):
     title = os.path.split(dest)[-1]
   plotting.output_file(dest, title=title, mode='inline')
   plotting.save(fig)
-  util.log.info("Wrote to %s" % dest)
+  util.log.info("Wrote Bokeh figure to %s" % dest)
 
 
 class HistogramWithExamplesPlotter(object):
@@ -187,10 +184,16 @@ class HistogramWithExamplesPlotter(object):
     
     util.log.info("... display-ifying examples for %s ..." % spv)
     def get_display():
-      # First, we need to re-bucket each row using the buckets collected
-      # via the `df_histogram()` call above.  We'll use a Spark
-      # `when`-`otherwise` function to make this bucket mapping efficient
-      # (i.e. optimized into native code at runtime).
+      # First, Re-bucket each row using what (in SQL) looks like a CASE-WHEN
+      # statement:
+      #     SELECT
+      #     CASE
+      #     WHEN 0 <= val AND val < 10 THEN 0
+      #     WHEN 10 <= val AND val < 20 THEN 10
+      #     ...
+      #     END AS bucket, ...
+      # We use the DataFrame API to construct the query because it's easier.
+      # Spark will compile it to native code on-the-fly.
       from pyspark.sql import functions as F
       col_def = None
       buckets = list(zip(edges[:-1], edges[1:]))

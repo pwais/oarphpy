@@ -19,6 +19,7 @@ import sys
 import pytest
 
 from oarphpy import util
+from oarphpy_test import testutil
 
 try:
   import six
@@ -227,39 +228,6 @@ class TestProxy(unittest.TestCase):
     assert foo.x == 1
     del foo
     global_foo.x == 2
-
-
-def test_thruput_observer():
-  try:
-    import tabulate
-  except Exception as e:
-    pytest.skip("Requires oarphpy[utils] dependencies")
-
-  t1 = util.ThruputObserver()
-  assert str(t1)
-  
-  t2 = util.ThruputObserver()
-  
-  import random
-  import time
-  MAX_WAIT = 0.1
-  for _ in range(10):
-    with t2.observe(n=1, num_bytes=1):
-      time.sleep(random.random() * MAX_WAIT)
-  
-  assert str(t2)
-  
-  u = util.ThruputObserver.union((t1, t2))
-  assert str(u) == str(t2)
-
-  t3 = util.ThruputObserver(name='test_thruput_observer', n_total=10)
-  for _ in range(10):
-    t3.update_tallies(n=1, new_block=True)
-    t3.maybe_log_progress()
-  t3.stop_block()
-  import re
-  assert re.search('N thru.*10', str(t3))
-  assert re.search('N chunks.*10', str(t3))
 
 
 def test_sys_info():

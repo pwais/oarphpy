@@ -8,3 +8,4 @@ eggs
 build
 notebooks/.ipynb_checkpoints
 notebooks/sparkmonitor_kernelextension.log
+oarphpy_test/fixtures/sparkmonitor_kernelextension.log

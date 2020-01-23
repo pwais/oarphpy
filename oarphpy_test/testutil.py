@@ -39,3 +39,17 @@ def get_fixture_path(fixture_name):
               fixture_name)
   assert os.path.exists(path), "Can't find %s" % path
   return path
+
+def importorskip(module, reason=''):
+  """pytest.importorskip() but as a decorator for classes"""
+  
+  def decorator(cls):
+    class Wrapper(object):
+      def __init__(self, *args):
+        self.wrapped = cls(*args)
+      def __getattr__(self, name):
+        import pytest
+        pytest.importorskip(module, reason=reason)
+        return getattr(self.wrapped, name)
+    return Wrapper
+  return decorator

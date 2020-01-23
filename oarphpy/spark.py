@@ -19,8 +19,17 @@ from contextlib import contextmanager
 from oarphpy import util
 
 ################################################################################
-### Try to find Spark / Java, and produce a helpful error message otherwise
-###
+### Import Spark
+### We're going to expose any import and setup errors HERE, at the time of
+### importing `oarphpy.spark`, because:
+###  * `pyspark` requires java even to use as a client for a remote cluster;
+###       if you simply import pyspark but don't have java, your job will
+###       crash with a unhelpful error message.
+###  * importing `pyspark`  module may require first monkeying with
+###      `sys.environ` (e.g. through `findspark`) or else you get a
+###      broken imported pyspark
+### So below we try to find Spark / Java, and produce a helpful error
+### message otherwise
 
 try:
 
@@ -339,41 +348,6 @@ def test_tensorflow(spark):
 def archive_rdd(spark, path):
   fws = util.ArchiveFileFlyweight.fws_from(path)
   return spark.sparkContext.parallelize(fws)
-
-
-# TODO: tests
-# def thruput_accumulator(spark, **thruputKwargs):
-#   from pyspark.accumulators import AccumulatorParam
-#   class ThruputObsAccumulator(AccumulatorParam):
-#     def zero(self, v):
-#       return v or util.ThruputObserver()
-#     def addInPlace(self, value1, value2):
-#       value1 += value2
-#       return value1
-#   return spark.sparkContext.accumulator(
-#               util.ThruputObserver(**thruputKwargs),
-#               ThruputObsAccumulator())
-
-# TODO: tests
-# def save_df_thunks(df_thunks, compute_df_sizes=True, **save_opts):
-#   t = util.ThruputObserver(name='save_df_thunks', n_total=len(df_thunks))
-#   util.log.info("Going to write in %s chunks ..." % len(df_thunks))
-#   while len(df_thunks):
-#     df_thunk = df_thunks.pop(0)
-#     t.start_block()
-#     df = df_thunk()
-#     # df = df.persist()
-#     # print('df size', df.count())
-#     # df.show()
-#     num_bytes = 0
-#     if compute_df_sizes:
-#       df = df.persist()
-#       num_bytes = df.rdd.map(util.get_size_of_deep).sum()
-#     df.write.save(mode='append', **save_opts)
-#     df.unpersist()
-    
-#     t.stop_block(n=1, num_bytes=num_bytes)
-#     t.maybe_log_progress(every_n=1)
 
 
 ################################################################################
@@ -771,7 +745,7 @@ class RowAdapter(object):
     if isinstance(obj, np.ndarray):
       return cls.to_row(Tensor.from_numpy(obj))
     elif isinstance(obj, np.generic):
-      # Those pesky numpy types ...
+      # Those pesky boxed scalars like np.float32
       return obj.item()
     elif hasattr(obj, '__slots__') or hasattr(obj, '__dict__'):
       def is_hidden(fname):
