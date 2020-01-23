@@ -18,11 +18,13 @@ FROM tensorflow/tensorflow:1.15.0-py3-jupyter
 # up properly when deleting things and the cache gets stale.
 ENV PYTHONDONTWRITEBYTECODE 1
 
+
 # FIXME(https://github.com/tensorflow/tensorflow/issues/18480)
 # Tensorflow is broken: it includes enum34 improperly.  This in turn
 # breaks the Python `re` module when Spark tries to use it during pyspark
 # worker start-up.
 RUN pip uninstall -y enum34
+
 
 ### Core
 ### Required for installing and testing things
@@ -35,7 +37,6 @@ RUN \
   python-pip \
   python3-dev \
   wget
-
 
 
 ### Spark (& Hadoop)

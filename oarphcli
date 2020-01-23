@@ -23,13 +23,15 @@ development workflow.
 ## Example
 
 $ oarphpy --shell
-# Drop into a shell, do some work
+# Drop into a dockerized dev environment shell, do some work
 
 $ oarphpy --test-all
-# Run unit tests in all environments
+# Run unit tests in all environments (run this outside of the dockeized shell)
 
 $ oarphpy --build-env --push-as-latest
 # Rebuild dockerized environments and push
+
+To update the oarphpy package version, edit oarphpy/__init__.py
 
 """
 
@@ -46,7 +48,12 @@ console_handler = logging.StreamHandler(sys.stderr)
 console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 log.addHandler(console_handler)
 
+# The repository name, e.g. 'oarphpy' in the image name 'oarphpy/full:latest' 
+# for the public repository. Toggle this param to use a private repository 
+# (e.g. in a private docker registry).
 OP_DOCKER_REPOSITORY = os.environ.get('OP_DOCKER_REPOSITORY', 'oarphpy')
+
+# Name of container for the dockerized dev environment
 OP_CONTAINER_NAME = os.environ.get('OP_CONTAINER_NAME', 'oarphpy')
 
 
@@ -67,7 +74,7 @@ def run_cmd(cmd):
 
 
 class DockerEnv(object):
-  """Handle for a single Dockerized environemt"""
+  """Handle for a single Dockerized environment"""
 
   DOCKERFILE_PATH = None
   IMAGE_NAME = None
@@ -172,12 +179,12 @@ class DockerEnv(object):
 
   @classmethod
   def run_cmd(
-    cls,
-    cmd,
-    container_name=None,
-    force_build=False,
-    mnt_local_root=True,
-    rm=True):
+          cls,
+          cmd,
+          container_name=None,
+          force_build=False,
+          mnt_local_root=True,
+          rm=True):
     """Run `cmd` in a container, and potentially build the needed docker image
     if it doesn't exist."""
     image = cls.full_image_name()
@@ -259,10 +266,11 @@ def create_arg_parser():
   # Configuration
   parser.add_argument(
     '--root', default=os.path.dirname(os.path.abspath(__file__)),
-    help='Use source at this root directory')
+    help='Use source at this root directory [default %(default)s]')
   parser.add_argument(
     '--devenv', default='full',
-    help='Use this environment as the dev environment for --shell')
+    help=('Use this environment as the dev environment for --shell '
+          '[default %(default)s]'))
 
   # Actions
   parser.add_argument(
@@ -290,8 +298,6 @@ def create_arg_parser():
 
   return parser
 
-
-## Routines
 
 def main(args=None):
   if not args:
