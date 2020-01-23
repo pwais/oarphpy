@@ -26,7 +26,8 @@ def hash_to_rbg(x, s=0.8, v=0.8):
   import sys
   import numpy as np
 
-  # NB: ideally we just use __hash__(), but as of Python 3 it's not stable
+  # NB: ideally we just use __hash__(), but as of Python 3 it's not stable,
+  # so we use a trick based upon the Knuth hash
   import hashlib
   h_i = int(hashlib.md5(str(x).encode('utf-8')).hexdigest(), 16)
   h = (h_i % 2654435769) / 2654435769.
@@ -93,7 +94,7 @@ def img_to_img_tag(
   return TEMPLATE.format(src=src, dh=dh, dw=dw)
 
 
-def unpack_pyspark_row(r):
+def _unpack_pyspark_row(r):
   """Unpack a `pyspark.sql.Row` that contains a single value."""
   return r[0]
     # NB: pyspark.sql.Row is indexable
@@ -109,7 +110,7 @@ def df_histogram(spark_df, col, num_bins):
 
   assert num_bins >= 1
   
-  col_val_rdd = spark_df.select(col).rdd.map(unpack_pyspark_row)
+  col_val_rdd = spark_df.select(col).rdd.map(_unpack_pyspark_row)
   
   buckets, counts = col_val_rdd.histogram(num_bins)
   return np.array(counts), np.array(buckets)
@@ -251,7 +252,7 @@ class HistogramWithExamplesPlotter(object):
 
       sub_pivot_values.extend(
         sorted(
-          distinct_rows.rdd.map(unpack_pyspark_row).collect()))
+          distinct_rows.rdd.map(_unpack_pyspark_row).collect()))
     
     ## Compute a data source Pandas Dataframe for every micro-facet
     spv_to_panel_df = dict(
