@@ -1,0 +1,341 @@
+#!/usr/bin/env python
+# vim: tabstop=2 shiftwidth=2 expandtab
+
+# Copyright 2020 Maintainers of OarphPy
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+DESC = """
+devtool - This tool serves to both document and automate the oarphpy
+development workflow.
+
+## Example
+
+$ oarphpy --shell
+# Drop into a dockerized dev environment shell, do some work
+
+$ oarphpy --test-all
+# Run unit tests in all environments (run this outside of the dockeized shell)
+
+$ oarphpy --build-env --push-as-latest
+# Rebuild dockerized environments and push
+
+To update the oarphpy package version, edit oarphpy/__init__.py
+
+"""
+
+import os
+import subprocess
+import sys
+
+## Logging
+import logging
+LOG_FORMAT = "%(asctime)s\t%(name)-4s %(process)d : %(message)s"
+log = logging.getLogger("op")
+log.setLevel(logging.INFO)
+console_handler = logging.StreamHandler(sys.stderr)
+console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+log.addHandler(console_handler)
+
+# The repository name, e.g. 'oarphpy' in the image name 'oarphpy/full:latest' 
+# for the public repository. Toggle this param to use a private repository 
+# (e.g. in a private docker registry).
+OP_DOCKER_REPOSITORY = os.environ.get('OP_DOCKER_REPOSITORY', 'oarphpy')
+
+# Name of container for the dockerized dev environment
+OP_CONTAINER_NAME = os.environ.get('OP_CONTAINER_NAME', 'oarphpy')
+
+
+## Utils 
+
+def get_oarphpy_version(op_root):
+  import imp
+  path = os.path.join(op_root, 'oarphpy/__init__.py')
+  m = imp.load_source('_', path)
+  return m.__version__
+
+
+def run_cmd(cmd):
+  cmd = cmd.replace('\n', '').strip()
+  log.info("Running %s ..." % cmd)
+  subprocess.check_call(cmd, shell=True)
+  log.info("... done with %s " % cmd)
+
+
+class DockerEnv(object):
+  """Handle for a single Dockerized environment"""
+
+  DOCKERFILE_PATH = None
+  IMAGE_NAME = None
+  IMAGE_VERSION = None
+  SRC_ROOT = None
+  DOCKER_REPOSITORY = OP_DOCKER_REPOSITORY
+
+  @staticmethod
+  def get_all_envs(op_root, op_version=None):
+    """Spider the `docker/` directory of oarphpy and return a handle
+    based on each Dockerfile."""
+
+    if not op_version:
+      op_version = get_oarphpy_version(op_root)
+    
+    envs = []
+    dockers_dir = os.path.join(op_root, 'docker')
+    for fname in os.listdir(dockers_dir):
+      if fname.endswith('.Dockerfile'):
+        class Env(DockerEnv):
+          DOCKERFILE_PATH = os.path.join(dockers_dir, fname)
+          IMAGE_NAME = fname.replace('.Dockerfile', '')
+          IMAGE_VERSION = op_version
+          SRC_ROOT = op_root
+        envs.append(Env)
+    return envs
+
+  @classmethod
+  def full_image_name(cls):
+    return "%s/%s:%s" % (
+      cls.DOCKER_REPOSITORY , cls.IMAGE_NAME, cls.IMAGE_VERSION)
+
+  @classmethod
+  def build(cls, and_push=True):
+    image = cls.full_image_name()
+    CMD = """
+      docker build -t {image} -f {dockerfile} {rootdir}
+    """.format(
+      image=image,
+      dockerfile=cls.DOCKERFILE_PATH,
+      rootdir=cls.SRC_ROOT)
+    run_cmd(CMD)
+    if and_push:
+      run_cmd('docker push ' + image)
+
+  @classmethod
+  def push_as_latest(cls):
+    image = cls.full_image_name()
+    latest = image.split(':')[0]
+    run_cmd('docker tag ' + image + ' ' + latest)
+    run_cmd('docker push ' + latest)
+
+  @classmethod
+  def start(cls, container_name=OP_CONTAINER_NAME, mnt_local_root=True):
+    image = cls.full_image_name()
+    have_nvidia_docker = False
+    try:
+      run_cmd('nvidia-docker --help > /dev/null')
+      have_nvidia_docker = True
+    except Exception:
+      log.info("Not using nvidia-docker")
+    
+    # TODO: Features to consider bringing back:
+    # * --env-file for GCS / AWS keys
+    # * IVY2_PERSISTED_DIR for spark packages
+    # * host-persisted temp dir
+    # * '--cap-add=SYS_PTRACE --security-opt seccomp=unconfined'
+    #    for valgrind / gdb
+    # * -v /:/outer_root
+
+    local_mount = ''
+    if mnt_local_root:
+      local_mount = '-v `pwd`:/opt/oarphpy:z'
+
+    docker = 'nvidia-docker' if have_nvidia_docker else 'docker'
+    CMD = """
+      {docker} run
+        --name {container_name}
+        -d -it -P --net=host
+        {local_mount}
+          {docker_image} sleep infinity || docker start {container_name} || true
+    """.format(
+          docker=docker,
+          container_name=container_name,
+          local_mount=local_mount,
+          docker_image=image)
+    run_cmd(CMD)
+
+  @classmethod
+  def shell(cls, container_name=OP_CONTAINER_NAME):
+    cls.start(container_name=container_name)
+    EXEC_CMD = 'docker exec -it %s bash' % container_name
+    os.execvp("docker", EXEC_CMD.split(' '))
+
+  @classmethod
+  def remove(cls, container_name=OP_CONTAINER_NAME):
+    try:
+      run_cmd('docker rm -f %s' % container_name)
+    except Exception:
+      pass
+    log.info("Removed container %s" % container_name)
+
+  @classmethod
+  def run_cmd(
+          cls,
+          cmd,
+          container_name=None,
+          force_build=False,
+          mnt_local_root=True,
+          rm=True):
+    """Run `cmd` in a container, and potentially build the needed docker image
+    if it doesn't exist."""
+    image = cls.full_image_name()
+    
+    have_image = False
+    if not force_build:
+      try:
+        run_cmd('docker image inspect %s > /dev/null' % image)
+        have_image = True
+      except Exception:
+        pass
+
+    if not have_image:
+      log.info("Don't have %s, trying to build ..." % image)
+      cls.build(and_push=False)
+      log.info("... done building.")
+
+    log.info("Using docker image %s" % image)
+
+
+    ### Run `cmd`!
+    if not container_name:
+      container_name = 'oarphpy-temp'
+
+    cls.start(container_name=container_name, mnt_local_root=mnt_local_root)
+    RUN_CMD = 'docker exec -it %s %s' % (container_name, cmd)
+    run_cmd(RUN_CMD)
+
+    if rm:
+      cls.remove(container_name=container_name)
+
+  @classmethod
+  def run_tests(cls):
+    # Always use a clean run
+    cls.remove(container_name='op-test')
+    
+    # Test!
+    if 'py2' in cls.IMAGE_NAME:
+      CMD = 'python setup.py test'
+    else:
+      CMD = 'python3 setup.py test'
+    cls.run_cmd(
+      CMD,
+      container_name='op-test',
+      mnt_local_root=False,
+      force_build=True,
+      rm=True)
+  
+  @classmethod
+  def test_notebooks(cls, op_root):
+    # NB: notebooks are designed to run in the [full] environment
+    notebooks_dir = os.path.join(op_root, 'notebooks')
+    for fname in os.listdir(notebooks_dir):
+      if fname.endswith('.ipynb'):
+        log.info("Testing notebook %s ..." % fname)
+        # For helpful discussion, see http://www.blog.pythonlibrary.org/2018/10/16/testing-jupyter-notebooks/
+        CMD = """
+          jupyter-nbconvert \
+            --ExecutePreprocessor.timeout=3600 \
+              --to notebook --execute --output /tmp/out \
+                %s
+        """ % os.path.join('/opt/oarphpy/notebooks', fname)
+        cls.run_cmd(
+          CMD,
+          container_name='op-notebook-test',
+          mnt_local_root=False,
+          force_build=True,
+          rm=True)
+        log.info("... done testing notebook %s ." % fname)
+
+
+def create_arg_parser():
+  import argparse
+  
+  parser = argparse.ArgumentParser(
+                      description=DESC,
+                      formatter_class=argparse.RawDescriptionHelpFormatter)
+  
+  # Configuration
+  parser.add_argument(
+    '--root', default=os.path.dirname(os.path.abspath(__file__)),
+    help='Use source at this root directory [default %(default)s]')
+  parser.add_argument(
+    '--devenv', default='full',
+    help=('Use this environment as the dev environment for --shell '
+          '[default %(default)s]'))
+
+  # Actions
+  parser.add_argument(
+    '--shell', default=False, action='store_true',
+    help='Drop into a dockerized shell w/ the given `--devenv`')
+  parser.add_argument(
+    '--shell-rm', default=False, action='store_true',
+    help='Remove the oarphpy dev env container')
+  
+  parser.add_argument(
+    '--build-env', default=False, action='store_true',
+    help='Build all oarphpy docker images')
+  parser.add_argument(
+    '--push-as-latest', default=False, action='store_true',
+    help='Tag Docker images at latest and push them')
+  parser.add_argument(
+    '--test', default='',
+    help='Run unit tests in the given oarphpy docker environment')
+  parser.add_argument(
+    '--test-all', default=False, action='store_true',
+    help='Run unit tests in all oparhpy docker environments')
+  parser.add_argument(
+    '--test-notebooks', default=False, action='store_true',
+    help='Smoke-test the Jupyter notebooks in the `full` environment')
+
+  return parser
+
+
+def main(args=None):
+  if not args:
+    parser = create_arg_parser()
+    args = parser.parse_args()
+  
+  if args.build_env or args.push_as_latest or args.test_all or args.test:
+    for env in DockerEnv.get_all_envs(args.root):
+      if args.build_env:
+        env.build()
+      if args.test_all:
+        env.run_tests()
+      elif args.test and env.IMAGE_NAME == args.test:
+        env.run_tests()
+      if args.push_as_latest:
+        env.push_as_latest()
+
+  elif args.shell or args.shell_rm:
+    devenv = None
+    for env in DockerEnv.get_all_envs(args.root):
+      if env.IMAGE_NAME == args.devenv:
+        devenv = env
+    assert devenv, "Could not find env %s" % args.devenv
+
+    if args.shell:
+      devenv.shell()
+    elif args.shell_rm:
+      devenv.remove()
+  
+  elif args.test_notebooks:
+    fullenv = None
+    for env in DockerEnv.get_all_envs(args.root):
+      if 'full' in env.IMAGE_NAME:
+        fullenv = env
+    assert fullenv, "Could not find full env"
+    fullenv.test_notebooks(args.root)
+
+
+if __name__ == '__main__':
+  main()
+
