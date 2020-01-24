@@ -14,20 +14,23 @@
 
 import re
 
+import pytest
+
 from oarphpy import util
 from oarphpy_test import testutil
 
-requires_tabulate = testutil.importorskip(
+
+pytest.importorskip(
   'tabulate',
   reason="Used for ThruputObserver.__str__() to create a table")
 
-@requires_tabulate
-def test_empty(self):
+
+def test_empty():
   t1 = util.ThruputObserver()
   assert str(t1)
-  
-@requires_tabulate
-def test_some_thru(self):
+
+
+def test_some_thru():  
   t2 = util.ThruputObserver()
   
   import random
@@ -41,17 +44,17 @@ def test_some_thru(self):
   assert t2.total_time <= 10. * MAX_WAIT
   assert re.search('N thru.*10', str(t2))
   assert re.search('N chunks.*10', str(t2))
-  
-@requires_tabulate
-def test_union(self):
+
+
+def test_union():
   t1 = util.ThruputObserver()
   t2 = util.ThruputObserver()
   t2.update_tallies(n=10)
   u = util.ThruputObserver.union((t1, t2))
   assert str(u) == str(t2)
 
-@requires_tabulate
-def test_some_blocks_thru(self):
+
+def test_some_blocks_thru():
   t3 = util.ThruputObserver(name='test_thruput_observer', n_total=10)
   for _ in range(10):
     t3.update_tallies(n=1, new_block=True)
@@ -60,8 +63,8 @@ def test_some_blocks_thru(self):
   assert re.search('N thru.*10', str(t3))
   assert re.search('N chunks.*10', str(t3))
 
-@requires_tabulate
-def test_decorated(self):
+
+def test_decorated():
   @util.ThruputObserver.wrap_func
   def monitored_func(x):
     import time

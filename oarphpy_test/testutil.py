@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import pytest
 
 try:
@@ -31,7 +33,6 @@ class LocalSpark(SessionFactory):
 skip_if_no_spark = pytest.mark.skipif(not HAVE_SPARK, reason="Requires Spark")
 
 def get_fixture_path(fixture_name):
-  import os
   import oarphpy_test
   path = os.path.join(
               os.path.dirname(oarphpy_test.__file__),
@@ -40,16 +41,12 @@ def get_fixture_path(fixture_name):
   assert os.path.exists(path), "Can't find %s" % path
   return path
 
-def importorskip(module, reason=''):
-  """pytest.importorskip() but as a decorator for classes"""
+def test_tempdir(name, clean=True):
+  import tempfile
+  path = os.path.join(tempfile.gettempdir(), name)
+
+  if clean:
+    from oarphpy.util import cleandir
+    cleandir(path)
   
-  def decorator(cls):
-    class Wrapper(object):
-      def __init__(self, *args):
-        self.wrapped = cls(*args)
-      def __getattr__(self, name):
-        import pytest
-        pytest.importorskip(module, reason=reason)
-        return getattr(self.wrapped, name)
-    return Wrapper
-  return decorator
+  return path

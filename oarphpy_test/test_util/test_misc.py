@@ -322,7 +322,7 @@ class TestArchiveFileFlyweight(unittest.TestCase):
 def test_all_files_recursive():
   import oarphpy
   paths = util.all_files_recursive(os.path.dirname(oarphpy.__file__))
-  assert any('util.py' in p for p in paths)
+  assert any('misc.py' in p for p in paths)
 
   paths = util.all_files_recursive(
     os.path.join(IMAGENET_SAMPLE_IMGS_DIR, '../../..'))
@@ -356,7 +356,8 @@ def test_gpu_get_infos(monkeypatch):
   # Test parsing a fixture
   def mock_run_cmd(*args, **kwargs):
     return NVIDIA_SMI_MOCK_OUTPUT
-  monkeypatch.setattr(util, 'run_cmd', mock_run_cmd)
+  from oarphpy.util import misc
+  monkeypatch.setattr(misc, 'run_cmd', mock_run_cmd)
   rows = util.GPUInfo.get_infos()
   
   expected = util.GPUInfo()
@@ -367,103 +368,3 @@ def test_gpu_get_infos(monkeypatch):
   expected.mem_used = 276000000
   expected.mem_total = 6072000000
   assert rows == [expected]
-
-# def test_gpu_pool_no_gpus(monkeypatch):
-#   environ = dict(os.environ)
-#   environ['CUDA_VISIBLE_DEVICES'] = ''
-#   monkeypatch.setattr(os, 'environ', environ)
-
-#   pool = util.GPUPool()
-
-#   # We should never get any handles
-#   for _ in range(10):
-#     hs = pool.get_free_gpus()
-#     assert len(hs) == 0
-
-# def test_gpu_pool_one_gpu(monkeypatch):
-#   # Pretend we have one GPU
-#   def mock_run_cmd(*args, **kwargs):
-#     return NVIDIA_SMI_MOCK_OUTPUT
-#   monkeypatch.setattr(util, 'run_cmd', mock_run_cmd)
-
-#   pool = util.GPUPool()
-  
-#   # We can get one GPU
-#   hs = pool.get_free_gpus()
-#   assert len(hs) == 1
-#   assert hs[0].index == 0
-
-#   # Subsequent fetches will fail
-#   for _ in range(10):
-#     h2 = pool.get_free_gpus()
-#     assert len(h2) == 0
-  
-#   # Free the GPU
-#   del hs
-
-#   # Now we can get it again
-#   hs3 = pool.get_free_gpus()
-#   assert len(hs3) == 1
-#   assert hs3[0].index == 0
-
-# def test_gpu_pool_eight_k80s(monkeypatch):
-#   # Pretend we have one GPU
-#   def mock_run_cmd(*args, **kwargs):
-#     return NVIDIA_SMI_MOCK_OUTPUT_8_K80s
-#   monkeypatch.setattr(util, 'run_cmd', mock_run_cmd)
-
-#   pool = util.GPUPool()
-  
-#   # We can get one GPU
-#   hs = pool.get_free_gpus()
-#   assert len(hs) == 1
-#   assert hs[0].index == 0
-
-#   # Subsequent fetches will fail
-#   # for _ in range(10):
-#   #   h2 = pool.get_free_gpus()
-#   #   assert len(h2) == 0
-  
-#   # Free the GPU
-#   del hs
-
-#   # Now we can get it again
-#   hs3 = pool.get_free_gpus()
-#   assert len(hs3) == 1
-#   assert hs3[0].index == 1
-
-
-## Tensorflow Utils
-
-class TestTensorflowUtils(unittest.TestCase):
-
-  def test_tf_data_session(self):
-    tf = pytest.importorskip("tensorflow")
-
-    expected = [[0, 1], [2, 3], [4, 5]]
-    ds = tf.data.Dataset.from_tensor_slices(expected)
-    with util.tf_data_session(ds) as (sess, iter_dataset):
-      actual = list(v.tolist() for v in iter_dataset())
-      assert expected == actual
-
-  def test_tf_records_file_as_list_of_str(self):
-    TEST_TEMPDIR = os.path.join(
-                        TEST_TEMPDIR_ROOT,
-                        'test_tf_records_file_as_list_of_str')
-    util.cleandir(TEST_TEMPDIR)
-    
-    # Create the fixture
-    ss = [b'foo', b'bar', b'bazzzz']
-    fixture_path = os.path.join(TEST_TEMPDIR, 'test.tfrecord')
-
-    tf = pytest.importorskip("tensorflow")
-    with tf.io.TFRecordWriter(fixture_path) as writer:
-      for s in ss:
-        writer.write(s)
-    
-    # Test reading!
-    tf_lst = util.TFRecordsFileAsListOfStrings(open(fixture_path, 'rb'))
-    assert len(tf_lst) == len(ss)
-    assert sorted(tf_lst) == sorted(ss)
-    for i in range(len(ss)):
-      assert tf_lst[i] == ss[i]

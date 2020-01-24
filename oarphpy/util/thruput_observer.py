@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import time
 from contextlib import contextmanager
+
+from oarphpy import util
+
 
 class ThruputObserver(object):
   """A utility for measuring the runtime and throughput of a subroutine.
@@ -59,7 +64,6 @@ class ThruputObserver(object):
     self.stop_block(n=n, num_bytes=num_bytes)
   
   def start_block(self):
-    import time
     self._start = time.time()
   
   def update_tallies(self, n=0, num_bytes=0, new_block=False):
@@ -215,7 +219,7 @@ class ThruputObserver(object):
       def __call__(self, *args, **kwargs):
         self.observer.start_block()
         ret = self.func(*args, **kwargs)
-        self.observer.stop_block(n=1, num_bytes=get_size_of_deep(ret))
+        self.observer.stop_block(n=1, num_bytes=util.get_size_of_deep(ret))
         self.observer.maybe_log_progress()
         return ret
     return MonitoredFunc(func, observer_init_kwargs)

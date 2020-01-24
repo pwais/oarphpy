@@ -14,6 +14,7 @@
 
 from oarphpy.util.misc import *
 from oarphpy.util.thruput_observer import ThruputObserver
+from oarphpy.util.tfutil import *
 
 __all__ = [
   'ThruputObserver',
