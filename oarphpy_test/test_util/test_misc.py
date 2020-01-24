@@ -21,11 +21,6 @@ import pytest
 from oarphpy import util
 from oarphpy_test import testutil
 
-try:
-  import six
-except ImportError:
-  six = None
-
 IMAGENET_SAMPLE_IMGS_DIR = '/opt/oarphpy/oarphpy_test/fixtures/images/imagenet'
 
 TEST_TEMPDIR_ROOT = '/tmp/oarphpy_test'
@@ -41,13 +36,16 @@ def test_np_truthy():
   assert util.np_truthy(1) == True
 
 
-@pytest.mark.skipif(not six, reason="Requires six")
 class TestGetSizeOfDeep(unittest.TestCase):
   def test_basic(self):
+    pytest.importorskip('six', reason='Uses six for compatibility')
+    
     assert util.get_size_of_deep("") == sys.getsizeof("")
     assert util.get_size_of_deep(0) == sys.getsizeof(0)
 
   def test_sequences(self):
+    pytest.importorskip('six', reason='Uses six for compatibility')
+
     assert util.get_size_of_deep([0]) == sys.getsizeof(0)
     assert util.get_size_of_deep([0, 0]) == 2 * sys.getsizeof(0)
     assert util.get_size_of_deep([[0, 0]]) == 2 * sys.getsizeof(0)
@@ -56,6 +54,8 @@ class TestGetSizeOfDeep(unittest.TestCase):
     assert util.get_size_of_deep({0: [0]}) == 2 * sys.getsizeof(0)
 
   def test_obj(self):
+    pytest.importorskip('six', reason='Uses six for compatibility')
+
     class Obj(object):
       # Has a __dict__ attribute
       def __init__(self):
@@ -74,7 +74,10 @@ class TestGetSizeOfDeep(unittest.TestCase):
     assert util.get_size_of_deep([Slotted(), Slotted()]) == 2 * sys.getsizeof(0)
   
   def test_numpy(self):
+    pytest.importorskip('six', reason='Uses six for compatibility')
+    
     np = pytest.importorskip("numpy")
+    
     arr = np.array([0])
     assert util.get_size_of_deep(arr) == arr.nbytes
     assert util.get_size_of_deep([arr]) == arr.nbytes
@@ -115,8 +118,8 @@ def test_ichunked():
   assert list_ichunked('abcde', 4) == [('a', 'b', 'c', 'd'), ('e',)]
 
 
-@pytest.mark.skipif(not six, reason="Requires six")
 def test_roundrobin():
+  pytest.importorskip('six', reason='Uses six.next')
 
   def list_roundrobin(*args):
     return list(util.roundrobin(*args))
@@ -250,73 +253,6 @@ def test_get_jpeg_size():
     imageio = pytest.importorskip("imageio")
     expected_h, expected_w, expected_c = imageio.imread(path).shape
     assert (width, height) == (expected_w, expected_h)
-
-
-class TestArchiveFileFlyweight(unittest.TestCase):
-  def _check_fws(self, fws, expected):
-    # First, check the Flyweights `fws`
-    assert len(fws) == len(expected)
-    datas = [fw.data for fw in fws]
-    assert sorted(datas) == sorted(expected)
-
-    # Now check pickle support
-    import pickle
-    fws_str = pickle.dumps(fws)
-    fws_decoded = pickle.loads(fws_str)
-    assert len(fws_decoded) == len(expected)
-    datas_decoded = [fw.data for fw in fws_decoded]
-    assert sorted(datas_decoded) == sorted(expected)
-
-  def test_archive_flyweight_zip(self):
-    TEST_TEMPDIR = os.path.join(
-                        TEST_TEMPDIR_ROOT,
-                        'test_archive_flyweight_zip')
-    util.cleandir(TEST_TEMPDIR)
-    
-    # Create the fixture
-    ss = [b'foo', b'bar', b'baz']
-    
-    fixture_path = os.path.join(TEST_TEMPDIR, 'test.zip')
-    
-    import zipfile
-    with zipfile.ZipFile(fixture_path, mode='w') as z:
-      for s in ss:
-        z.writestr(s.decode('utf-8'), s)
-    
-    # Test Reading!
-    fws = util.ArchiveFileFlyweight.fws_from(fixture_path)
-    self._check_fws(fws, ss)
-
-  def test_archive_flyweight_tar(self):
-    TEST_TEMPDIR = os.path.join(
-                        TEST_TEMPDIR_ROOT,
-                        'test_archive_flyweight_tar')
-    util.cleandir(TEST_TEMPDIR)
-    
-    # Create the fixture
-    ss = [b'foo', b'bar', b'bazzzz']
-    fixture_path = os.path.join(TEST_TEMPDIR, 'test.tar')
-    
-    import tarfile
-    with tarfile.open(fixture_path, mode='w') as t:
-      for s in ss:
-        from io import BytesIO
-        buf = BytesIO()
-        buf.write(s)
-        buf.seek(0)
-
-        buf.seek(0, os.SEEK_END)
-        buf_len = buf.tell()
-        buf.seek(0)
-        
-        info = tarfile.TarInfo(name=s.decode('utf-8'))
-        info.size = buf_len
-        
-        t.addfile(tarinfo=info, fileobj=buf)
-    
-    # Test reading!
-    fws = util.ArchiveFileFlyweight.fws_from(fixture_path)
-    self._check_fws(fws, ss)
 
 
 def test_all_files_recursive():

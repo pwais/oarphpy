@@ -18,6 +18,7 @@ import sys
 
 import pytest
 
+from oarphpy_test import testutil
 from oarphpy_test.testutil import get_fixture_path
 from oarphpy_test.testutil import LocalSpark
 from oarphpy_test.testutil import skip_if_no_spark
@@ -125,15 +126,16 @@ class TestArchiveRDD(unittest.TestCase):
     assert sorted(values) == sorted(fixture_strs)
 
   def test_archive_rdd_zip(self):
-    from oarphpy import util
-    TEST_TEMPDIR = os.path.join(
-                        TEST_TEMPDIR_ROOT,
-                        'test_archive_rdd_zip')
-    util.cleandir(TEST_TEMPDIR)
-      
-    # Create the fixture
-    ss = [b'foo', b'bar', b'baz']
+    TEST_TEMPDIR = testutil.test_tempdir('test_archive_rdd_zip')
     fixture_path = os.path.join(TEST_TEMPDIR, 'test.zip')
+      
+    # Create the fixture:
+    # test.tar
+    #  |- foo: "foo"
+    #  |- bar: "bar"
+    # ... an archive with a few files, where each file contains just a string
+    #   that matches the name of the file in the archive
+    ss = [b'foo', b'bar', b'baz']
       
     import zipfile
     with zipfile.ZipFile(fixture_path, mode='w') as z:

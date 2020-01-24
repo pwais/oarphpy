@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from oarphpy.util.log import log
+from oarphpy.util.log import create_log
 from oarphpy.util.misc import *
 from oarphpy.util.thruput_observer import ThruputObserver
 from oarphpy.util.tfutil import *
