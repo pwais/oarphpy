@@ -1,0 +1,13 @@
+*.DS_Store
+*/**/.DS_Store
+.git
+*.egg-info
+oarphpy.egg-info
+*.pyc
+*/**/__pycache__
+.eggs
+.pytest_cache
+eggs
+build
+notebooks/.ipynb_checkpoints
+notebooks/sparkmonitor_kernelextension.log
