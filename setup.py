@@ -93,8 +93,8 @@ dist = setup(
   url='https://github.com/pwais/oarphpy',
   license='Apache License 2.0',
   packages=['oarphpy'],
-  long_description=open('README.md').read(),
-  long_description_content_type="text/markdown",
+  long_description="See https://github.com/pwais/oarphpy",
+  long_description_content_type="text/rst",
   classifiers=[
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',

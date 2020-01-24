@@ -20,18 +20,31 @@ DESC = """
 devtool - This tool serves to both document and automate the oarphpy
 development workflow.
 
-## Example
+## Use & Development
 
-$ oarphpy --shell
-# Drop into a dockerized dev environment shell, do some work
+$ ./oarphpy --shell
+Drop into a dockerized dev environment shell, do some work. Local code mounted
+at /opt/oarphpy, and outer filesystem mounted at /outer_root .
 
-$ oarphpy --test-all
-# Run unit tests in all environments (run this outside of the dockeized shell)
 
-$ oarphpy --build-env --push-as-latest
-# Rebuild dockerized environments and push
+## Testing
 
-To update the oarphpy package version, edit oarphpy/__init__.py
+$$ pytest
+$$ python setup.up test
+In the dockerized shell, run unit tests using your local code changes.
+
+$ ./oarphpy --test-all
+Outside the container, run unit tests in all environments.
+
+$ ./oarphpy --build-env --push-as-latest
+Rebuild all dockerized environments
+
+
+## Release Workflow
+
+To update the oarphpy package version, first edit `oarphpy/__init__.py`.
+Push your changes to the master branch, then on master run:
+$ ./oarphpy --release
 
 """
 
@@ -286,6 +299,7 @@ def create_arg_parser():
   parser.add_argument(
     '--push-as-latest', default=False, action='store_true',
     help='Tag Docker images at latest and push them')
+  
   parser.add_argument(
     '--test', default='',
     help='Run unit tests in the given oarphpy docker environment')
@@ -295,6 +309,10 @@ def create_arg_parser():
   parser.add_argument(
     '--test-notebooks', default=False, action='store_true',
     help='Smoke-test the Jupyter notebooks in the `full` environment')
+
+  parser.add_argument(
+    '--release', default=False, action='store_true',
+    help='Run the release workflow')
 
   return parser
 
@@ -334,7 +352,53 @@ def main(args=None):
         fullenv = env
     assert fullenv, "Could not find full env"
     fullenv.test_notebooks(args.root)
+  
+  elif args.release:
+    version = get_oarphpy_version(args.root)
+    fullenv = None
+    py2env = None
+    for env in DockerEnv.get_all_envs(args.root):
+      if 'full' in env.IMAGE_NAME:
+        fullenv = env
+      elif 'py2' in env.IMAGE_NAME:
+        py2env = env
+    assert fullenv, "Could not find full env"
+    assert py2env, "Could not find py2 env"
 
+    def log_msg(msg):
+      for _ in range(3):
+        log.info("=== Release %s: %s ===" % (version, msg))
+    
+    log_msg("Start tests ...")
+    for env in DockerEnv.get_all_envs(args.root):
+      env.run_tests()
+    log_msg("Test success!")
+
+    log_msg("Pushing Docker Environments ...")
+    for env in DockerEnv.get_all_envs(args.root):
+      env.build()
+      env.push_as_latest()
+    log_msg("Push success!")
+
+    log_msg("Generating archive for PyPI ...")
+    py2env.run_cmd("python setup.py sdist bdist_egg bdist_wheel")
+    fullenv.run_cmd("python3 setup.py sdist bdist_egg bdist_wheel")
+    run_cmd("twine check dist/*")
+    log_msg("Generation success!")
+
+    # NB: Careful! PyPI does not allow file name re-use!
+    # https://test.pypi.org/help/#file-name-reuse
+    # Workaround: https://www.python.org/dev/peps/pep-0440/#post-releases
+    log_msg("Sending to TEST PyPI ...")
+    run_cmd("""
+      python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+    """)
+    log_msg("Sent!")
+
+    log_msg("Sending to REAL PyPI ...")
+    run_cmd("twine upload dist/*")
+    log_msg("Sent!")
+    
 
 if __name__ == '__main__':
   main()
