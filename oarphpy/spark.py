@@ -604,7 +604,7 @@ class SessionFactory(object):
     with cls.sess() as spark:
       test_pi(spark)
       test_egg(spark)
-
+    return True
 
 class LocalK8SSpark(SessionFactory):
   """Example of how to subclass the Spark factory above for use with K8S"""

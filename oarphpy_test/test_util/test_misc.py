@@ -21,9 +21,9 @@ import pytest
 from oarphpy import util
 from oarphpy_test import testutil
 
-IMAGENET_SAMPLE_IMGS_DIR = '/opt/oarphpy/oarphpy_test/fixtures/images/imagenet'
 
-TEST_TEMPDIR_ROOT = '/tmp/oarphpy_test'
+def get_imagenet_fixture(fname):
+  return testutil.get_fixture_path(os.path.join('images/imagenet', fname))
 
 
 def test_np_truthy():
@@ -86,7 +86,7 @@ class TestGetSizeOfDeep(unittest.TestCase):
 
 
 def test_stable_hash():
-  # Python serializes objects differently in 2 vs 3
+  # pickle serializes objects differently in 2 vs 3
   if sys.version_info[0] < 3:
     assert util.stable_hash("foo") == 5556954555383891854232548057894286426
     assert util.stable_hash(5) == 241800825220357117529312993105008763563
@@ -246,7 +246,7 @@ def test_ds_store_is_stupid():
 
 def test_get_jpeg_size():
   for fname in ('1292397550_115450d9bc.jpg', '1345687_fde3a33c03.jpg'):
-    path = os.path.join(IMAGENET_SAMPLE_IMGS_DIR, fname)
+    path = get_imagenet_fixture(fname)
     jpeg_bytes = open(path, 'rb').read()
     width, height = util.get_jpeg_size(jpeg_bytes)
 
@@ -260,8 +260,9 @@ def test_all_files_recursive():
   paths = util.all_files_recursive(os.path.dirname(oarphpy.__file__))
   assert any('misc.py' in p for p in paths)
 
+  fixture_path = get_imagenet_fixture('1292397550_115450d9bc.jpg')
   paths = util.all_files_recursive(
-    os.path.join(IMAGENET_SAMPLE_IMGS_DIR, '../../..'))
+    os.path.join(os.path.dirname(fixture_path), '../../..'))
   assert any('1292397550_115450d9bc.jpg' in p for p in paths)
 
 

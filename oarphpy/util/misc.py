@@ -305,6 +305,7 @@ def run_cmd(cmd, collect=False, nolog=False):
   cmd = cmd.replace('\n', '').strip()
   
   if dolog:
+    from oarphpy.util.log import create_log
     log = create_log()
     log.info("Running %s ..." % cmd)
   

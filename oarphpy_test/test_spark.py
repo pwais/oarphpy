@@ -19,18 +19,14 @@ import sys
 import pytest
 
 from oarphpy_test import testutil
-from oarphpy_test.testutil import get_fixture_path
 from oarphpy_test.testutil import LocalSpark
 from oarphpy_test.testutil import skip_if_no_spark
-
-
-TEST_TEMPDIR_ROOT = '/tmp/oarphpy_test_spark'
 
 
 @skip_if_no_spark
 def test_union_dfs():
   from oarphpy import spark as S
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
     from pyspark.sql import Row
     df1 = spark.createDataFrame([Row(a=1, b=2.0)])
     df2 = spark.createDataFrame([Row(a=3, c='foo')])
@@ -51,14 +47,14 @@ def test_union_dfs():
 
 @skip_if_no_spark
 def test_spark_selftest():
-  LocalSpark.selftest()
+  assert testutil.LocalSpark.selftest()
 
 
 @skip_if_no_spark
 def test_spark_with_custom_library():
   # We must run this test in a subprocess in order for it to have an isolated
   # Spark session
-  SCRIPT_PATH = get_fixture_path('test_spark_with_custom_library.py')
+  SCRIPT_PATH = testutil.get_fixture_path('test_spark_with_custom_library.py')
   
   from oarphpy import util
   out = util.run_cmd(sys.executable + ' ' + SCRIPT_PATH, collect=True)
@@ -68,8 +64,11 @@ def test_spark_with_custom_library():
 @skip_if_no_spark
 def test_spark_with_custom_library_in_notebook():
   pytest.importorskip("jupyter")
+
+  import re
+  from oarphpy import util
   
-  NB_PATH = get_fixture_path(
+  NB_PATH = testutil.get_fixture_path(
     'test_spark_ships_custom_library_in_notebook.ipynb')
 
   # We need to fork off nbconvert to run the test
@@ -79,21 +78,20 @@ def test_spark_with_custom_library_in_notebook():
       --to notebook --execute --output /tmp/out \
       {notebook_path}
   """.format(notebook_path=NB_PATH)
-  from oarphpy import util
-  util.run_cmd(TEST_CMD)
-    # Exit code 0 is success
+  out = util.run_cmd(TEST_CMD, collect=True)
+  assert re.search('Writing .* bytes to /tmp/out.ipynb', out.decode())
 
 
 @skip_if_no_spark
 def test_cluster_get_info_smoke():
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
     from oarphpy import spark as S
     S.cluster_get_info(spark)
 
 
 @skip_if_no_spark
 def test_pi():
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
     from oarphpy import spark as S
     S.test_pi(spark)
 
@@ -102,7 +100,7 @@ def test_pi():
 def test_spark_tensorflow():
   from oarphpy import spark as S
   pytest.importorskip("tensorflow")
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
     S.test_tensorflow(spark)
 
 
@@ -110,7 +108,7 @@ def test_spark_tensorflow():
 def test_spark_cpu_count():
   from oarphpy import spark as S
   import multiprocessing
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
     assert multiprocessing.cpu_count() == S.cluster_cpu_count(spark)
 
 
@@ -130,7 +128,7 @@ class TestArchiveRDD(unittest.TestCase):
     fixture_path = os.path.join(TEST_TEMPDIR, 'test.zip')
       
     # Create the fixture:
-    # test.tar
+    # test.zip
     #  |- foo: "foo"
     #  |- bar: "bar"
     # ... an archive with a few files, where each file contains just a string
@@ -143,21 +141,22 @@ class TestArchiveRDD(unittest.TestCase):
         z.writestr(s.decode('utf-8'), s)
       
     # Test Reading!
-    with LocalSpark.sess() as spark:
+    with testutil.LocalSpark.sess() as spark:
       from oarphpy import spark as S
       fw_rdd = S.archive_rdd(spark, fixture_path)
       self._check_rdd(fw_rdd, ss)
 
   def test_archive_rdd_tar(self):
-    from oarphpy import util
-    TEST_TEMPDIR = os.path.join(
-                        TEST_TEMPDIR_ROOT,
-                        'test_archive_rdd_tar')
-    util.cleandir(TEST_TEMPDIR)
-      
-    # Create the fixture
-    ss = [b'foo', b'bar', b'baz']
+    TEST_TEMPDIR = testutil.test_tempdir('test_archive_rdd_tar')
     fixture_path = os.path.join(TEST_TEMPDIR, 'test.tar')
+
+    # Create the fixture:
+    # test.tar
+    #  |- foo: "foo"
+    #  |- bar: "bar"
+    # ... an archive with a few files, where each file contains just a string
+    #   that matches the name of the file in the archive
+    ss = [b'foo', b'bar', b'baz']
 
     import tarfile
     with tarfile.open(fixture_path, mode='w') as t:
@@ -177,7 +176,7 @@ class TestArchiveRDD(unittest.TestCase):
         t.addfile(tarinfo=info, fileobj=buf)
       
     # Test Reading!
-    with LocalSpark.sess() as spark:
+    with testutil.LocalSpark.sess() as spark:
       from oarphpy import spark as S
       fw_rdd = S.archive_rdd(spark, fixture_path)
       self._check_rdd(fw_rdd, ss)
@@ -232,7 +231,7 @@ def test_get_balanced_sample():
     npt.assert_allclose(actual_arr, expected_arr, rtol=0.2)
       # NB: We can only test to about 20% accuracy with this few samples
 
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
     df = spark.createDataFrame(rows)
 
     check_sample_in_expectation(
@@ -253,7 +252,7 @@ def test_spark_df_to_tf_dataset():
   pytest.importorskip("tensorflow")
 
   from oarphpy.spark import spark_df_to_tf_dataset
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
 
     import numpy as np
     import tensorflow as tf
@@ -308,8 +307,8 @@ def test_spark_df_to_tf_dataset():
 ################################################################################
 ### Test Row Adapter
 
-## NB: these classes must be declared package-level for cloudpickle / spark
-## to discover them properly
+## NB: these classes must be declared package-level (rather than test-scoped)
+## for cloudpickle / spark to discover them properly
 
 class Slotted(object):
   __slots__ = ('foo', 'bar', '_not_hidden')
@@ -342,8 +341,7 @@ def _check_serialization(spark, rows, testname, schema=None):
   from oarphpy import util
   from oarphpy.spark import RowAdapter 
 
-  TEST_TEMPDIR = os.path.join(TEST_TEMPDIR_ROOT, 'spark_row_adapter_test')
-  util.cleandir(TEST_TEMPDIR)
+  TEST_TEMPDIR = testutil.test_tempdir('spark_row_adapter_test')
 
   adapted_rows = [RowAdapter.to_row(r) for r in rows]
   if schema:
@@ -414,11 +412,10 @@ def test_row_adapter():
     ),
   ]
 
-  with LocalSpark.sess() as spark:
+  with testutil.LocalSpark.sess() as spark:
 
     ## Test basic round-trip serialization and adaptation
     _check_serialization(spark, rows, 'basic')
-
 
     ## Test Schema Deduction
     mostly_empty = Row(

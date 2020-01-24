@@ -125,8 +125,14 @@ def save_bokeh_fig(fig, dest, title=None):
 class HistogramWithExamplesPlotter(object):
   """Create and return a Bokeh plot depicting a histogram of a single column in
   a Spark DataFrame.  Clicking on a bar in the histogram will interactively
-  show examples from that bucket.  Optionally facet the histogram using a
-  second column (e.g. a category column).
+  show examples from that bucket.
+  
+  SUB_PIVOT_COL - Optionally choose an additional dimension of the data and
+  include histograms of the data pivoted by that dimension. For example, if we
+  are histogramming the "height" dimension over a population, and we set 
+  SUB_PIVOT_COL to the "gender" column, then we'll get a histogram of height
+  over ALL genders as well as height histograms for each distinct value in the
+  "gender" column.
   
   The user can override how examples are displayed; subclasses can override
   `HistogramWithExamplesPlotter::display_bucket()`
@@ -150,7 +156,7 @@ class HistogramWithExamplesPlotter(object):
     import itertools
     rows_str = "<br />".join(str(r) for r in itertools.islice(irows, 5))
     TEMPLATE = """
-      <b>Facet: {spv} Bucket: {bucket_id} </b> <br/>
+      <b>Pivot: {spv} Bucket: {bucket_id} </b> <br/>
       {rows}
       <br/> <br/>
     """
@@ -257,7 +263,7 @@ class HistogramWithExamplesPlotter(object):
         sorted(
           distinct_rows.rdd.map(_unpack_pyspark_row).collect()))
     
-    ## Compute a data source Pandas Dataframe for every micro-facet
+    ## Compute a data source Pandas Dataframe for every sub-pivot
     spv_to_panel_df = dict(
       (spv, self._build_data_source_for_sub_pivot(spv, df, col))
       for spv in sub_pivot_values)
