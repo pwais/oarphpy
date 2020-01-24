@@ -210,14 +210,19 @@ def test_get_balanced_sample():
   def check_sample_in_expectation(df, n_per_category, expected):
     import numpy as np
     import pandas as pd
-    N_SEEDS = 10
+    
+    # NB: even with a fixed seed below, this test's behavior is dependent
+    # on the number of system CPUs since Spark draws random numbers
+    # concurrently.  To simulate a low-cpu system, use a Spark master local[1].
+    # We do more trials to accomodate low-cpu systems (e.g. CircleCI).
+    N_TRIALS = 30
     rows = [
       _get_category_to_count(
         S.get_balanced_sample(
           df, 'val',
           n_per_category=n_per_category,
           seed=100*s))
-      for s in range(N_SEEDS)
+      for s in range(N_TRIALS)
     ]
     pdf = pd.DataFrame(rows)
     pdf = pdf.fillna(0)
