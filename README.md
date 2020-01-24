@@ -35,8 +35,8 @@ Use the dockerized environment hosted on [DockerHub](https://hub.docker.com/u/oa
 ## Dockerized Development Environments
 
 OarphPy is built and tested in a variety of environments to ensure the library
-works with and without [optional dependencies](setup.py).  These environments
-are shared on [DockerHub](https://hub.docker.com/u/oarphpy):
+works with and without [optional dependencies](setup.py#L18).  These
+environments are shared on [DockerHub](https://hub.docker.com/u/oarphpy):
  
  * [`oarphpy/full`](docker/full.Dockerfile) -- Includes Tensorflow, Jupyter,
   a binary install of [Spark](https://spark.apache.org/), and other tools like
