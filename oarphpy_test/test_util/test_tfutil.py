@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import os
 
 import pytest
 
@@ -29,12 +29,13 @@ def test_tf_data_session():
     actual = list(v.tolist() for v in iter_dataset())
     assert expected == actual
 
-def test_tf_records_file_as_list_of_str(self):
-  TEST_TEMPDIR = testutil.tempdir(
+def test_tf_records_file_as_list_of_str():
+  TEST_TEMPDIR = testutil.test_tempdir(
                       'test_tf_records_file_as_list_of_str')
   util.cleandir(TEST_TEMPDIR)
   
-  # Create the fixture
+  # Create the fixture: simply three strings in the file.  A TFRecords file
+  # is just a size-delimited concatenation of string records.
   ss = [b'foo', b'bar', b'bazzzz']
   fixture_path = os.path.join(TEST_TEMPDIR, 'test.tfrecord')
 

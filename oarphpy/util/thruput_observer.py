@@ -16,8 +16,6 @@ import os
 import time
 from contextlib import contextmanager
 
-from oarphpy import util
-
 
 class ThruputObserver(object):
   """A utility for measuring the runtime and throughput of a subroutine.
@@ -85,6 +83,7 @@ class ThruputObserver(object):
     if every_n >= 0:
       self.__log_freq = every_n
     if self.n >= self.__last_log + self.__log_freq:
+      from oarphpy.util import log
       log.info("Progress for \n" + str(self))
       self.__last_log = self.n
         # Track last log because `n` may increase inconsistently
@@ -174,9 +173,10 @@ class ThruputObserver(object):
   
   def __del__(self):
     if self.log_on_del:
-      from oarphpy import util
       self.stop_block()
-      log = util.create_log()
+
+      from oarphpy.util import create_log
+      log = create_log()
       log.info('\n' + str(self) + '\n')
   
   @staticmethod
@@ -217,9 +217,10 @@ class ThruputObserver(object):
         self.func = func
         self.observer = ThruputObserver(**observer_init_kwargs)
       def __call__(self, *args, **kwargs):
+        from oarphpy.util.misc import get_size_of_deep
         self.observer.start_block()
         ret = self.func(*args, **kwargs)
-        self.observer.stop_block(n=1, num_bytes=util.get_size_of_deep(ret))
+        self.observer.stop_block(n=1, num_bytes=get_size_of_deep(ret))
         self.observer.maybe_log_progress()
         return ret
     return MonitoredFunc(func, observer_init_kwargs)

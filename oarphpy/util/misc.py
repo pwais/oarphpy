@@ -341,6 +341,7 @@ def get_non_loopback_iface():
 _SYS_INFO_LOCK = threading.Lock()
 def get_sys_info():
   global _SYS_INFO_LOCK
+  from oarphpy.util.log import create_log
   log = create_log()
 
   log.info("Listing system info ...")
@@ -447,6 +448,7 @@ def download(uri, dest, try_expand=True):
   is either a destination file path or destination directory."""
   
   import math
+  from oarphpy.util import log
   from oarphpy.util.thruput_observer import ThruputObserver
 
   # Import urllib
@@ -550,6 +552,8 @@ class GPUInfo(object):
 
   @staticmethod
   def get_infos(only_visible=True):
+    from oarphpy.util import log
+
     # Much safer than pycuda and Tensorflow, which can both segfault if the
     # nvidia driver is absent :P
     try:

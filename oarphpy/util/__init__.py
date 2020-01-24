@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from oarphpy.util.archive_flyweight import *
 from oarphpy.util.log import log
 from oarphpy.util.log import create_log
 from oarphpy.util.misc import *
