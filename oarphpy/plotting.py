@@ -127,10 +127,10 @@ class HistogramWithExamplesPlotter(object):
   a Spark DataFrame.  Clicking on a bar in the histogram will interactively
   show examples from that bucket.
   
-  SUB_PIVOT_COL - Optionally choose an additional dimension of the data and
+  `SUB_PIVOT_COL` - Optionally choose an additional dimension of the data and
   include histograms of the data pivoted by that dimension. For example, if we
   are histogramming the "height" dimension over a population, and we set 
-  SUB_PIVOT_COL to the "gender" column, then we'll get a histogram of height
+  `SUB_PIVOT_COL` to the "gender" column, then we'll get a histogram of height
   over ALL genders as well as height histograms for each distinct value in the
   "gender" column.
   

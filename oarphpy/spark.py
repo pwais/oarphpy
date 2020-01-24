@@ -369,12 +369,14 @@ class SessionFactory(object):
   for the `spark-submit` shell script.
 
   To create and use a session:
+
   >>> from oarphpy import spark as S
   >>> spark = S.SessionFactory.getOrCreate()
   >>> S.num_executors(spark)
   1
 
   Or using as a context manager:
+
   >>> with S.SessionFactory.sess() as spark:
   ...     print(S.num_executors(spark))
   1
@@ -637,6 +639,10 @@ except Exception:
   SPARKMONITOR_JAR_PATH = ''
 
 class NBSpark(SessionFactory):
+  """NBSpark is a session builder for local Jupyter notebooks.  Also includes
+  support for the `sparkmonitor` jupyter package, see 
+  https://krishnan-r.github.io/sparkmonitor/
+  """
   CONF_KV = ({
     'spark.extraListeners': 'sparkmonitor.listener.JupyterSparkMonitorListener',
     'spark.driver.extraClassPath': SPARKMONITOR_JAR_PATH,
