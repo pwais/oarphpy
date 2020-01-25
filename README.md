@@ -19,13 +19,18 @@
 [![License](http://img.shields.io/:license-apache-orange.svg)](http://www.apache.org/licenses/LICENSE-2.0) 
 [![Build Status](https://circleci.com/gh/pwais/oarphpy.png?style=shield)](https://circleci.com/gh/pwais/oarphpy/tree/master)
 
-`OarphPy` is a collection of Python utilities for Data Science with
+OarphPy is a collection of Python utilities for Data Science with
 [PySpark](https://spark.apache.org/docs/latest/api/python/) and Tensorflow. 
 Related (but orthogonal) to [OarphKit](https://github.com/pwais/oarphkit).
 
 ## Quickstart
 
-Use the dockerized environment hosted on [DockerHub](https://hub.docker.com/u/oarphpy):
+Install from PyPI: `pip install oarphpy`.  We test OarphPy in a variet of 
+environments (see below), so it should play well with your Jupyter/Colab
+notebook or project environment.  To include all extras, use
+`pip install oarphpy[all]`.
+
+Or use the dockerized environment hosted on [DockerHub](https://hub.docker.com/u/oarphpy):
 ```
   $ ./oarphcli --shell
   -- or --
