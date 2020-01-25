@@ -104,7 +104,7 @@ RUN \
     wget \
         && \
   pip3 install --upgrade setuptools wheel && \
-  pip3 install ipdb pytest && \
+  pip3 install ipdb pytest sphinx && \
   curl -LO https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep_0.10.0_amd64.deb && \
   dpkg -i ripgrep_0.10.0_amd64.deb
 RUN \
