@@ -63,3 +63,8 @@ defined in the [docker](docker) subdirectory of this repo:
 
  * `oarphpy/tensorflow` -- Tests `oarphpy` with Tensorflow 1.x to ensure basic
   compatibility (e.g. of `oarphpy.util.tfutil`).
+
+
+## Development
+
+See `./oarphcli --help` for the development and release workflow.
