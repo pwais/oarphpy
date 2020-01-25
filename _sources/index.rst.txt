@@ -41,11 +41,7 @@ toc
 .. toctree::
    :maxdepth: 2
 
-   oarphpy
-   oarphpy.spark
-   oarphpy.plotting
-   oarphpy.util
-
+   includereadme
 
 Indices and tables
 ==================
