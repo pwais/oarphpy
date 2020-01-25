@@ -1,0 +1,1137 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>oarphpy.spark &mdash; oarphpy 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> oarphpy
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">oarphpy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>oarphpy.spark</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for oarphpy.spark</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2020 Maintainers of OarphPy</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#   http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+
+<span class="kn">from</span> <span class="nn">oarphpy</span> <span class="k">import</span> <span class="n">util</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1">### Import Spark</span>
+<span class="c1">### We&#39;re going to expose any import and setup errors HERE, at the time of</span>
+<span class="c1">### importing `oarphpy.spark`, because:</span>
+<span class="c1">###  * `pyspark` requires java even to use as a client for a remote cluster;</span>
+<span class="c1">###       if you simply import pyspark but don&#39;t have java, your job will</span>
+<span class="c1">###       crash with a unhelpful error message.</span>
+<span class="c1">###  * importing `pyspark`  module may require first monkeying with</span>
+<span class="c1">###      `sys.environ` (e.g. through `findspark`) or else you get a</span>
+<span class="c1">###      broken imported pyspark</span>
+<span class="c1">### So below we try to find Spark / Java, and produce a helpful error</span>
+<span class="c1">### message otherwise</span>
+
+<span class="k">try</span><span class="p">:</span>
+
+  <span class="c1"># In python3, we filter:</span>
+  <span class="c1">#  &quot;py4j-0.10.7-src.zip/py4j/java_gateway.py:2020: </span>
+  <span class="c1">#      DeprecationWarning: invalid escape sequence \*&quot;</span>
+  <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">warnings</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+      <span class="n">action</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span>
+      <span class="n">message</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;invalid escape sequence&#39;</span><span class="p">)</span>
+
+  <span class="c1"># Is pyspark on the PYTHONPATH?</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">pyspark</span>
+  <span class="k">except</span> <span class="n">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    
+    <span class="c1"># OK, can findspark find a local install of Spark / Hadoop, e.g.</span>
+    <span class="c1"># at $SPARK_HOME or /opt/spark ?</span>
+
+    <span class="k">try</span><span class="p">:</span>
+      <span class="kn">import</span> <span class="nn">findspark</span>
+      <span class="n">findspark</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+      <span class="c1"># Don&#39;t make findspark a hard requirement</span>
+      <span class="k">pass</span>
+
+    <span class="kn">import</span> <span class="nn">pyspark</span>
+
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+  <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">      This portion of OarphPy requires Spark, which in turn requires</span>
+<span class="s2">      Java 8 or higher.  Mebbe try installing using:</span>
+<span class="s2">        $ pip install pyspark</span>
+<span class="s2">      That will fix import errors.  To get Java, try:</span>
+<span class="s2">        $ apt-get install -y openjdk-8-jdk &amp;&amp; echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 &gt;&gt; /etc/environment</span>
+<span class="s2">      If you have spark installed locally (e.g. from source), set $SPARK_HOME</span>
+<span class="s2">      Original error: </span><span class="si">%s</span><span class="s2"></span>
+<span class="s2">  &quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,)</span>
+  <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+
+<span class="c1">################################################################################</span>
+<span class="c1">### General Spark Utils</span>
+<span class="c1">### </span>
+
+
+<span class="k">def</span> <span class="nf">num_executors</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
+  <span class="c1"># NB: Not a public API! But likely stable.</span>
+  <span class="c1"># https://stackoverflow.com/a/42064557</span>
+  <span class="k">return</span> <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">_jsc</span><span class="o">.</span><span class="n">sc</span><span class="p">()</span><span class="o">.</span><span class="n">getExecutorMemoryStatus</span><span class="p">()</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="for_each_executor"><a class="viewcode-back" href="../../index.html#oarphpy.spark.for_each_executor">[docs]</a><span class="k">def</span> <span class="nf">for_each_executor</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">thunk</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;While Spark does not officially provide an API since the number</span>
+<span class="sd">  of executors can change through the course of a job, this approach</span>
+<span class="sd">  leverages the best practices to evaluate `thunk` at most once per</span>
+<span class="sd">  executor.&quot;&quot;&quot;</span>
+  <span class="k">class</span> <span class="nc">LazyFunc</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">th</span><span class="p">):</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">_thunk</span> <span class="o">=</span> <span class="n">th</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+      <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_result&#39;</span><span class="p">):</span>
+        <span class="c1"># call body will be executed at most once per executor python process</span>
+        <span class="kn">import</span> <span class="nn">uuid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thunk</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+      <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span><span class="p">)</span>
+      
+  <span class="n">sc</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span>
+  <span class="n">N</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_executors</span><span class="p">(</span><span class="n">spark</span><span class="p">))</span>
+  <span class="n">rdd</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">)),</span> <span class="n">numSlices</span><span class="o">=</span><span class="n">N</span><span class="p">)</span>
+  
+  <span class="n">id_to_res</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rdd</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">LazyFunc</span><span class="p">(</span><span class="n">thunk</span><span class="p">))</span><span class="o">.</span><span class="n">collect</span><span class="p">())</span>
+  <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">id_to_res</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+    <span class="c1"># Return results from only distinct executors</span>
+  
+  <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="n">N</span>
+  <span class="k">return</span> <span class="n">results</span></div>
+
+
+<div class="viewcode-block" id="cluster_cpu_count"><a class="viewcode-back" href="../../index.html#oarphpy.spark.cluster_cpu_count">[docs]</a><span class="k">def</span> <span class="nf">cluster_cpu_count</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Like `os.cpu_count()` but for an entire Spark cluster.  Useful for</span>
+<span class="sd">  scalling memory-intensive jobs that use the RDD api.&quot;&quot;&quot;</span>
+  <span class="k">def</span> <span class="nf">get_cpu_count</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">multiprocessing</span>
+    <span class="k">return</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()</span>
+  <span class="n">res</span> <span class="o">=</span> <span class="n">for_each_executor</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">get_cpu_count</span><span class="p">)</span>
+  <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">run_callables</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">callables</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+  <span class="kn">import</span> <span class="nn">cloudpickle</span>
+    <span class="c1"># Spark uses regular pickle for RDD data; here we need cloudpickle in</span>
+    <span class="c1"># order to serialize and run code.</span>
+  <span class="n">callable_bytess</span> <span class="o">=</span> <span class="p">[</span><span class="n">cloudpickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">callables</span><span class="p">]</span>
+  <span class="k">if</span> <span class="n">parallel</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">parallel</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">callable_bytess</span><span class="p">)</span>
+
+  <span class="n">rdd</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="n">callable_bytess</span><span class="p">,</span> <span class="n">numSlices</span><span class="o">=</span><span class="n">parallel</span><span class="p">)</span>
+  <span class="k">def</span> <span class="nf">invoke</span><span class="p">(</span><span class="n">callable_bytes</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">cloudpickle</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">cloudpickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">callable_bytes</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">c</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">callable_bytes</span><span class="p">,</span> <span class="n">cloudpickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+  <span class="n">rdd</span> <span class="o">=</span> <span class="n">rdd</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">invoke</span><span class="p">)</span>
+  <span class="n">all_results</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="n">cloudpickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">callable_bytes</span><span class="p">),</span> <span class="n">cloudpickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">res</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">callable_bytes</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">rdd</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+  <span class="p">]</span>
+  <span class="k">return</span> <span class="n">all_results</span>
+
+
+<div class="viewcode-block" id="union_dfs"><a class="viewcode-back" href="../../index.html#oarphpy.spark.union_dfs">[docs]</a><span class="k">def</span> <span class="nf">union_dfs</span><span class="p">(</span><span class="o">*</span><span class="n">dfs</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Return the union of a sequence DataFrames and attempt to merge</span>
+<span class="sd">  the schemas of each (i.e. union of all columns).</span>
+<span class="sd">  Based upon https://stackoverflow.com/a/40404249</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">dfs</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">dfs</span>
+  
+  <span class="n">df</span> <span class="o">=</span> <span class="n">dfs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="k">for</span> <span class="n">df_other</span> <span class="ow">in</span> <span class="n">dfs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+    <span class="n">left_types</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">dataType</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">schema</span><span class="p">}</span>
+    <span class="n">right_types</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">f</span><span class="o">.</span><span class="n">dataType</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">df_other</span><span class="o">.</span><span class="n">schema</span><span class="p">}</span>
+    <span class="n">left_fields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+      <span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">dataType</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">nullable</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
+    <span class="n">right_fields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+      <span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">dataType</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">nullable</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">df_other</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">pyspark.sql.functions</span> <span class="k">import</span> <span class="n">lit</span>
+
+    <span class="c1"># First go over `df`-unique fields</span>
+    <span class="k">for</span> <span class="n">l_name</span><span class="p">,</span> <span class="n">l_type</span><span class="p">,</span> <span class="n">l_nullable</span> <span class="ow">in</span> <span class="n">left_fields</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">right_fields</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">l_name</span> <span class="ow">in</span> <span class="n">right_types</span><span class="p">:</span>
+        <span class="n">r_type</span> <span class="o">=</span> <span class="n">right_types</span><span class="p">[</span><span class="n">l_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">l_type</span> <span class="o">!=</span> <span class="n">r_type</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">&quot;Union failed. Type conflict on field </span><span class="si">%s</span><span class="s2">. left type </span><span class="si">%s</span><span class="s2">, right type </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">l_name</span><span class="p">,</span> <span class="n">l_type</span><span class="p">,</span> <span class="n">r_type</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">&quot;Union failed. Nullability conflict on field </span><span class="si">%s</span><span class="s2">. left nullable </span><span class="si">%s</span><span class="s2">, right nullable </span><span class="si">%s</span><span class="s2">&quot;</span>  <span class="o">%</span> <span class="p">(</span><span class="n">l_name</span><span class="p">,</span> <span class="n">l_nullable</span><span class="p">,</span> <span class="ow">not</span><span class="p">(</span><span class="n">l_nullable</span><span class="p">)))</span>
+      <span class="n">df_other</span> <span class="o">=</span> <span class="n">df_other</span><span class="o">.</span><span class="n">withColumn</span><span class="p">(</span><span class="n">l_name</span><span class="p">,</span> <span class="n">lit</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">l_type</span><span class="p">))</span>
+
+    <span class="c1"># Now go over `df_other`-unique fields</span>
+    <span class="k">for</span> <span class="n">r_name</span><span class="p">,</span> <span class="n">r_type</span><span class="p">,</span> <span class="n">r_nullable</span> <span class="ow">in</span> <span class="n">right_fields</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">left_fields</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">r_name</span> <span class="ow">in</span> <span class="n">left_types</span><span class="p">:</span>
+        <span class="n">l_type</span> <span class="o">=</span> <span class="n">right_types</span><span class="p">[</span><span class="n">r_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">r_type</span> <span class="o">!=</span> <span class="n">l_type</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">&quot;Union failed. Type conflict on field </span><span class="si">%s</span><span class="s2">. right type </span><span class="si">%s</span><span class="s2">, left type </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">r_name</span><span class="p">,</span> <span class="n">r_type</span><span class="p">,</span> <span class="n">l_type</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">&quot;Union failed. Nullability conflict on field </span><span class="si">%s</span><span class="s2">. right nullable </span><span class="si">%s</span><span class="s2">, left nullable </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">r_name</span><span class="p">,</span> <span class="n">r_nullable</span><span class="p">,</span> <span class="ow">not</span><span class="p">(</span><span class="n">r_nullable</span><span class="p">)))</span>
+      <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">withColumn</span><span class="p">(</span><span class="n">r_name</span><span class="p">,</span> <span class="n">lit</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">r_type</span><span class="p">))</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">unionByName</span><span class="p">(</span><span class="n">df_other</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="get_balanced_sample"><a class="viewcode-back" href="../../index.html#oarphpy.spark.get_balanced_sample">[docs]</a><span class="k">def</span> <span class="nf">get_balanced_sample</span><span class="p">(</span><span class="n">spark_df</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">n_per_category</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1337</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Given a column `col` in `spark_df`, return a *balanced* sample</span>
+<span class="sd">  (countering class imbalances in `spark_df[col]`).  Optionally limit the</span>
+<span class="sd">  sample to having up to `n_per_category` examples for every distinct</span>
+<span class="sd">  categorical value of `spark_df[col]`.&quot;&quot;&quot;</span>
+  <span class="kn">from</span> <span class="nn">pyspark.sql</span> <span class="k">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">F</span>
+  <span class="n">category_to_count_df</span> <span class="o">=</span> <span class="n">spark_df</span><span class="o">.</span><span class="n">groupBy</span><span class="p">(</span><span class="n">col</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">))</span>
+  <span class="n">category_to_count</span> <span class="o">=</span> <span class="n">category_to_count_df</span><span class="o">.</span><span class="n">rdd</span><span class="o">.</span><span class="n">collectAsMap</span><span class="p">()</span>
+  <span class="k">assert</span> <span class="n">category_to_count</span>
+
+  <span class="c1"># We will only sample as many as the rarest category</span>
+  <span class="n">numerator</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">category_to_count</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+  <span class="k">if</span> <span class="n">n_per_category</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">numerator</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">numerator</span><span class="p">,</span> <span class="n">n_per_category</span><span class="p">)</span>
+  <span class="n">fractions</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="p">(</span><span class="n">category</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">numerator</span><span class="p">)</span> <span class="o">/</span> <span class="n">count</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">category_to_count</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+  <span class="p">)</span>
+  <span class="k">return</span> <span class="n">spark_df</span><span class="o">.</span><span class="n">sampleBy</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">fractions</span><span class="o">=</span><span class="n">fractions</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span></div>
+
+
+<span class="c1">### Test Utilities (for unit tests and other debugging)</span>
+
+<div class="viewcode-block" id="cluster_get_info"><a class="viewcode-back" href="../../index.html#oarphpy.spark.cluster_get_info">[docs]</a><span class="k">def</span> <span class="nf">cluster_get_info</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Return a text report showing various details about each worker in the</span>
+<span class="sd">  cluster.&quot;&quot;&quot;</span>
+
+  <span class="n">infos</span> <span class="o">=</span> <span class="n">for_each_executor</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">util</span><span class="o">.</span><span class="n">get_sys_info</span><span class="p">())</span>
+  <span class="k">def</span> <span class="nf">format_info</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">      Host: </span><span class="si">{hostname}</span><span class="s2"> </span><span class="si">{host}</span><span class="s2"></span>
+<span class="s2">      Egg: </span><span class="si">{filepath}</span><span class="s2"></span>
+<span class="s2">      Internet connectivity: </span><span class="si">{have_internet}</span><span class="s2"></span>
+<span class="s2">      Num CPUs: </span><span class="si">{n_cpus}</span><span class="s2"></span>
+<span class="s2">      Memory:</span>
+<span class="s2">      </span><span class="si">{memory}</span><span class="s2"></span>
+
+<span class="s2">      PYTHONPATH:</span>
+<span class="s2">      </span><span class="si">{PYTHONPATH}</span><span class="s2"></span>
+
+<span class="s2">      nvidia-smi:</span>
+<span class="s2">      </span><span class="si">{nvidia_smi}</span><span class="s2"></span>
+
+<span class="s2">      Disk:</span>
+<span class="s2">      </span><span class="si">{disk_free}</span><span class="s2"></span>
+<span class="s2">      &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">info</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span>
+  <span class="n">info_str</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">format_info</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">info_str</span></div>
+
+
+<div class="viewcode-block" id="test_pi"><a class="viewcode-back" href="../../index.html#oarphpy.spark.test_pi">[docs]</a><span class="k">def</span> <span class="nf">test_pi</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Run the &quot;textbook&quot; Monte Carlo Pi Sampling demo and assert correctness.</span>
+<span class="sd">  When run on a cluster, this test can help suss out networking issues</span>
+<span class="sd">  between the master and worker machines.&quot;&quot;&quot;</span>
+  <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running PI ...&quot;</span><span class="p">)</span>
+  <span class="n">sc</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span>
+  <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">1000000</span>
+  <span class="k">def</span> <span class="nf">inside</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">random</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(),</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">1</span>
+  <span class="n">count</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)))</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">inside</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+  <span class="n">pi</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">count</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_samples</span>
+  <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pi estimate: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">pi</span><span class="p">)</span>
+  <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">pi</span> <span class="o">-</span> <span class="mf">3.14</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;Spark program had an error?&quot;</span></div>
+
+
+<span class="k">def</span> <span class="nf">_op_test</span><span class="p">():</span>
+  <span class="kn">from</span> <span class="nn">oarphpy</span> <span class="k">import</span> <span class="n">util</span>
+  <span class="n">res</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">util</span><span class="o">.</span><span class="n">ichunked</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span>
+  <span class="k">assert</span> <span class="n">res</span> <span class="o">==</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,)],</span> <span class="n">res</span>
+
+
+<div class="viewcode-block" id="test_egg"><a class="viewcode-back" href="../../index.html#oarphpy.spark.test_egg">[docs]</a><span class="k">def</span> <span class="nf">test_egg</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">modname</span><span class="o">=</span><span class="s1">&#39;oarphpy&#39;</span><span class="p">,</span> <span class="n">test_egg_contents</span><span class="o">=</span><span class="n">_op_test</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Test the egg that `SessFactory` (below) dynamically builds and includes</span>
+<span class="sd">  in spark jobs.  We&#39;ll run the function `test_egg_contents` on each worker</span>
+<span class="sd">  to actually execute code included in the egg.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="c1"># SessFactory below always creates eggs with this name</span>
+  <span class="n">EXPECTED_EGG_NAME</span> <span class="o">=</span> <span class="n">modname</span> <span class="o">+</span> <span class="s1">&#39;-0.0.0&#39;</span> <span class="o">+</span> <span class="n">_egg_py_suffix</span><span class="p">()</span>
+
+  <span class="k">def</span> <span class="nf">run_test_on_worker</span><span class="p">():</span>
+    <span class="c1"># Normally, pytest puts the local source tree on the PYTHONPATH.  That</span>
+    <span class="c1"># setting gets inherited when Spark forks a python subprocess to run</span>
+    <span class="c1"># this function.  Remove the source tree from the PYTHONPATH here</span>
+    <span class="c1"># in order to force pyspark to read from the egg file / SparkFiles.</span>
+    <span class="c1"># We may safely edit the PYTHONPATH here because this code is run in a</span>
+    <span class="c1"># child python process that will soon exit.</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="k">if</span> <span class="s1">&#39;/opt/oparhpy&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+      <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;/opt/oparhpy&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;&#39;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+      <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+    <span class="c1">## Check for the egg, which Spark puts on the PYTHONPATH</span>
+    <span class="n">egg_path</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
+      <span class="k">if</span> <span class="n">EXPECTED_EGG_NAME</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
+        <span class="n">egg_path</span> <span class="o">=</span> <span class="n">p</span>
+    <span class="k">assert</span> <span class="n">egg_path</span><span class="p">,</span> <span class="s2">&quot;Egg not found in </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="c1">## Is the egg any good?</span>
+    <span class="kn">import</span> <span class="nn">zipfile</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">egg_path</span><span class="p">)</span>
+    <span class="n">egg_contents</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="nb">any</span><span class="p">(</span><span class="n">modname</span> <span class="ow">in</span> <span class="n">fname</span> <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">egg_contents</span><span class="p">),</span> <span class="n">egg_contents</span>
+
+    <span class="c1">## Use the egg!</span>
+    <span class="n">test_egg_contents</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">get_sys_info</span><span class="p">()</span>
+
+  <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Testing egg ...&quot;</span><span class="p">)</span>
+  <span class="n">infos</span> <span class="o">=</span> <span class="n">for_each_executor</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">run_test_on_worker</span><span class="p">)</span>
+  <span class="n">host_to_syspath</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">],</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;PYTHONPATH&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">)</span>
+  <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">EXPECTED_EGG_NAME</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">host_to_syspath</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> \
+    <span class="s2">&quot;One or more workers missing egg </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+      <span class="n">EXPECTED_EGG_NAME</span><span class="p">,</span> <span class="n">host_to_syspath</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_tensorflow"><a class="viewcode-back" href="../../index.html#oarphpy.spark.test_tensorflow">[docs]</a><span class="k">def</span> <span class="nf">test_tensorflow</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Remotely test Tensorflow support in the given `spark` cluster&quot;&quot;&quot;</span>
+
+  <span class="k">def</span> <span class="nf">test_and_get_info</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">random</span>
+    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+    
+    <span class="n">x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">())</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">oarphpy</span> <span class="k">import</span> <span class="n">util</span>
+    <span class="n">sess</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">tf_create_session</span><span class="p">()</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">b</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">res</span> <span class="o">==</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">x</span>
+    
+    <span class="kn">import</span> <span class="nn">socket</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s1">&#39;hostname&#39;</span><span class="p">:</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">(),</span>
+      <span class="s1">&#39;gpu&#39;</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">gpu_device_name</span><span class="p">(),</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">info</span><span class="p">]</span>
+
+  <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Testing Tensorflow ...&quot;</span><span class="p">)</span>
+  <span class="n">res</span> <span class="o">=</span> <span class="n">for_each_executor</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">test_and_get_info</span><span class="p">)</span>
+  <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;... Tensorflow success!  Info:&quot;</span><span class="p">)</span>
+  <span class="kn">import</span> <span class="nn">pprint</span>
+  <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">pprint</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<span class="c1">### OarphPy-specific Extras</span>
+
+<span class="k">def</span> <span class="nf">archive_rdd</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+  <span class="n">fws</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">ArchiveFileFlyweight</span><span class="o">.</span><span class="n">fws_from</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">parallelize</span><span class="p">(</span><span class="n">fws</span><span class="p">)</span>
+
+
+<span class="c1">################################################################################</span>
+<span class="c1">### Spark Session Factories</span>
+<span class="c1">### </span>
+
+<span class="k">def</span> <span class="nf">_egg_py_suffix</span><span class="p">():</span>
+  <span class="n">py_vers</span> <span class="o">=</span> <span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">minor</span><span class="p">)</span>
+  <span class="n">py_suffix</span> <span class="o">=</span> <span class="s1">&#39;-py</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">.egg&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">py_vers</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">py_suffix</span>
+
+
+<div class="viewcode-block" id="SessionFactory"><a class="viewcode-back" href="../../index.html#oarphpy.spark.SessionFactory">[docs]</a><span class="k">class</span> <span class="nc">SessionFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;This class is a factory for pre-configured `SparkSession` instances.  A</span>
+<span class="sd">  primary feaure of this factory is that it automagically includes the caller&#39;s</span>
+<span class="sd">  python module as a Spark PyFile, thus effectively shipping the user&#39;s python</span>
+<span class="sd">  project with the Spark job.  This class also helps centralize project-wide</span>
+<span class="sd">  Spark configuration.  This class is designed as programmatic replacement</span>
+<span class="sd">  for the `spark-submit` shell script.</span>
+
+<span class="sd">  To create and use a session:</span>
+
+<span class="sd">  &gt;&gt;&gt; from oarphpy import spark as S</span>
+<span class="sd">  &gt;&gt;&gt; spark = S.SessionFactory.getOrCreate()</span>
+<span class="sd">  &gt;&gt;&gt; S.num_executors(spark)</span>
+<span class="sd">  1</span>
+
+<span class="sd">  Or using as a context manager:</span>
+
+<span class="sd">  &gt;&gt;&gt; with S.SessionFactory.sess() as spark:</span>
+<span class="sd">  ...     print(S.num_executors(spark))</span>
+<span class="sd">  1</span>
+
+<span class="sd">  See `LocalK8SSpark` below for an example of how to subclass this factory for</span>
+<span class="sd">  your own project.  See also `NBSpark` below for an example subclass</span>
+<span class="sd">  that enables interop with the `sparkmonitor` package for jupyter.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="c1"># Default to local Spark master</span>
+  <span class="n">MASTER</span> <span class="o">=</span> <span class="kc">None</span>
+  
+  <span class="c1"># Default `SparkConf` instance to use for any new session</span>
+  <span class="n">CONF</span> <span class="o">=</span> <span class="kc">None</span>
+  
+  <span class="c1"># Default set of `SparkConf` key-value settings to use for any new sesion,</span>
+  <span class="c1"># e.g. {</span>
+  <span class="c1">#   &#39;spark.port.maxRetries&#39;, &#39;96&#39;</span>
+  <span class="c1">#       # For local instances with many CPUs, let Spark use tons of ports</span>
+  <span class="c1">#</span>
+  <span class="c1">#   &#39;spark.driver.memory&#39;: &#39;8g&#39;,</span>
+  <span class="c1">#   &#39;spark.sql.files.maxPartitionBytes&#39;: int(8 * 1e6),</span>
+  <span class="c1">#       # Helps aid in reading larger Parqet datasets</span>
+  <span class="c1">#</span>
+  <span class="c1">#   &#39;spark.jars.packages&#39;: &#39;io.delta:delta-core_2.11:0.4.0&#39;,</span>
+  <span class="c1">#       # To enable Delta</span>
+  <span class="c1">#</span>
+  <span class="c1">#   &#39;spark.pyspark.python&#39;: &#39;python3&#39;,</span>
+  <span class="c1">#       # To force python3</span>
+  <span class="c1">#</span>
+  <span class="c1">#   &#39;spark.python.worker.reuse&#39;: False,</span>
+  <span class="c1">#       # Useful when using Tensorflow on Spark, because TF leaks :P</span>
+  <span class="c1"># }</span>
+  <span class="n">CONF_KV</span> <span class="o">=</span> <span class="p">{}</span>
+
+  <span class="c1"># Force all sessions to package and use code in this source root directory</span>
+  <span class="c1"># (NO trailing slash!)</span>
+  <span class="n">SRC_ROOT</span> <span class="o">=</span> <span class="kc">None</span>
+  
+
+  <span class="c1">### Core Features</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">_create_egg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">src_root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tmp_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Build a Python Egg from the current project and return a path</span>
+<span class="sd">    to the artifact.  </span>
+
+<span class="sd">    Why an Egg?  `pyspark` supports zipfiles and egg files as Python artifacts.</span>
+<span class="sd">    One might wish to use a wheel instead of an egg.  See this excellent</span>
+<span class="sd">    article and repo:</span>
+<span class="sd">     * https://bytes.grubhub.com/managing-dependencies-and-artifacts-in-pyspark-7641aa89ddb7</span>
+<span class="sd">     * https://github.com/alekseyig/spark-submit-deps</span>
+<span class="sd">    </span>
+<span class="sd">    The drawbacks to using a wheel include:</span>
+<span class="sd">     * wheels often require native libraries to be installed (e.g. via</span>
+<span class="sd">        `apt-get`), and those deps are typically best baked into the Spark</span>
+<span class="sd">        Worker environment (versus installed every job run).</span>
+<span class="sd">     * The `BdistSpark` example above is actually rather slow, especially</span>
+<span class="sd">        when Tensorflow is a dependency, and `BdistSpark` must run before</span>
+<span class="sd">        every job is submitted.</span>
+<span class="sd">     * Spark treats wheels as zip files and unzips them on every run; this</span>
+<span class="sd">        unzip operation can be very expensive if the zipfile contains large</span>
+<span class="sd">        binaries (e.g. tensorflow)</span>
+<span class="sd">    </span>
+<span class="sd">    In comparison, an Egg provides the main benefits we want (to ship project</span>
+<span class="sd">    code, often pre-committed code, to workers).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">log</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">create_log</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">tmp_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="kn">import</span> <span class="nn">tempfile</span>
+      <span class="kn">import</span> <span class="nn">uuid</span>
+      <span class="n">tempdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">()</span>
+
+      <span class="n">SUBDIR_NAME</span> <span class="o">=</span> <span class="s1">&#39;op_spark_eggs_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+      <span class="n">tmp_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempdir</span><span class="p">,</span> <span class="n">SUBDIR_NAME</span><span class="p">)</span>
+      <span class="n">util</span><span class="o">.</span><span class="n">cleandir</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="n">src_root</span> <span class="o">=</span> <span class="n">src_root</span> <span class="ow">or</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span>
+    <span class="k">if</span> <span class="n">src_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Trying to auto-resolve path to src root ...&quot;</span><span class="p">)</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">inspect</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">currentframe</span><span class="p">())</span>
+        <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="n">i_am_in_a_module</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
+          <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">src_root</span><span class="p">),</span> <span class="s1">&#39;__init__.py&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">i_am_in_a_module</span><span class="p">:</span>
+          <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src_root</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">pardir</span><span class="p">))</span>
+      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+          <span class="s2">&quot;Failed to auto-resolve src root, &quot;</span>
+          <span class="s2">&quot;falling back to </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span><span class="p">)</span>
+        <span class="n">src_root</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span>
+    
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+      <span class="c1"># For whatever reason,</span>
+      <span class="c1"># In py 2.7.x, setuptools wants the path of the python module</span>
+      <span class="c1"># In py 3.x, setuptools wants the directory containing the python module</span>
+      <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">src_root</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using source root </span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">src_root</span><span class="p">)</span>
+
+    <span class="c1"># Below is a programmatic way to run something like:</span>
+    <span class="c1"># $ cd /opt/au &amp;&amp; python setup.py clean bdist_egg</span>
+    <span class="c1"># Based upon https://github.com/pypa/setuptools/blob/a94ccbf404a79d56f9b171024dee361de9a948da/setuptools/tests/test_bdist_egg.py#L30</span>
+    <span class="c1"># See also: </span>
+    <span class="c1"># * https://github.com/pypa/setuptools/blob/f52b3b1c976e54df7a70db42bf59ca283412b461/setuptools/dist.py</span>
+    <span class="c1"># * https://github.com/pypa/setuptools/blob/46af765c49f548523b8212f6e08e1edb12f22ab6/setuptools/tests/test_sdist.py#L123</span>
+    <span class="c1"># * https://github.com/pypa/setuptools/blob/566f3aadfa112b8d6b9a1ecf5178552f6e0f8c6c/setuptools/__init__.py#L51</span>
+    <span class="kn">from</span> <span class="nn">setuptools.dist</span> <span class="k">import</span> <span class="n">Distribution</span>
+    <span class="kn">from</span> <span class="nn">setuptools</span> <span class="k">import</span> <span class="n">PackageFinder</span>
+    <span class="n">MODNAME</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">src_root</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">MODNAME</span> <span class="o">=</span> <span class="n">MODNAME</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="c1"># setuptools will do it anyways</span>
+    
+    <span class="c1"># We want to confine setuptools to a clean directory because it&#39;ll create</span>
+    <span class="c1"># stateful files and directories like `build/`</span>
+    <span class="n">setuptools_workdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="s1">&#39;workdir&#39;</span><span class="p">)</span>
+    <span class="n">util</span><span class="o">.</span><span class="n">cleandir</span><span class="p">(</span><span class="n">setuptools_workdir</span><span class="p">)</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">Distribution</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+        <span class="n">script_name</span><span class="o">=</span><span class="s1">&#39;setup.py&#39;</span><span class="p">,</span>
+        <span class="n">script_args</span><span class="o">=</span><span class="p">[</span>
+          <span class="s1">&#39;clean&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;bdist_egg&#39;</span><span class="p">,</span> 
+            <span class="s1">&#39;--dist-dir&#39;</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">,</span>
+            <span class="s1">&#39;--bdist-dir&#39;</span><span class="p">,</span> <span class="n">setuptools_workdir</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">MODNAME</span><span class="p">,</span>
+        <span class="n">src_root</span><span class="o">=</span><span class="n">src_root</span><span class="p">,</span>
+        <span class="n">packages</span><span class="o">=</span><span class="n">PackageFinder</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="n">src_root</span><span class="p">),</span>
+    <span class="p">))</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating egg to </span><span class="si">%s</span><span class="s2"> ...&quot;</span> <span class="o">%</span> <span class="n">tmp_path</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">util</span><span class="o">.</span><span class="n">with_cwd</span><span class="p">(</span><span class="n">setuptools_workdir</span><span class="p">):</span>
+      <span class="k">with</span> <span class="n">util</span><span class="o">.</span><span class="n">quiet</span><span class="p">():</span>
+        <span class="n">dist</span><span class="o">.</span><span class="n">parse_command_line</span><span class="p">()</span>
+        <span class="n">dist</span><span class="o">.</span><span class="n">run_commands</span><span class="p">()</span>
+
+    <span class="n">egg_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">MODNAME</span> <span class="o">+</span> <span class="s1">&#39;-0.0.0&#39;</span> <span class="o">+</span> <span class="n">_egg_py_suffix</span><span class="p">())</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">egg_path</span><span class="p">),</span> <span class="s2">&quot;Can&#39;t find </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">egg_path</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;... done.  Egg at </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">egg_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">egg_path</span>
+
+    <span class="c1"># NB: This approach didn&#39;t work so well:</span>
+    <span class="c1"># Typically we want to give spark the egg from:</span>
+    <span class="c1">#  $ python setup.py bdist_egg</span>
+    <span class="c1"># from setuptools.command import bdist_egg</span>
+    <span class="c1"># cmd = bdist_egg.bdist_egg(</span>
+    <span class="c1">#                 bdist_dir=os.path.dirname(setup_py_path), editable=True)</span>
+    <span class="c1"># cmd.run()</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">egg_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_cached_egg_path&#39;</span><span class="p">):</span>
+      <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_egg</span><span class="p">()</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span>
+
+<div class="viewcode-block" id="SessionFactory.getOrCreate"><a class="viewcode-back" href="../../index.html#oarphpy.spark.SessionFactory.getOrCreate">[docs]</a>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">getOrCreate</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Spark sessions are typically instantiated using the</span>
+<span class="sd">    `Builder.getOrCreate()` or `SparkSession.getOrCreate()` methods.  This</span>
+<span class="sd">    method is a drop-in replacement that uses class-specified defaults,</span>
+<span class="sd">    includes the local python module as a PyFile, etc.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">      A `pyspark.sql.session.SparkSession` instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Warm the cache; surface build errors before trying to start spark.</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">egg_path</span><span class="p">()</span>
+
+    <span class="kn">from</span> <span class="nn">pyspark</span> <span class="k">import</span> <span class="n">sql</span>
+    <span class="n">builder</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span>
+    <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">MASTER</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">master</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">MASTER</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s1">&#39;SPARK_MASTER&#39;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+      <span class="c1"># spark-submit honors this env var</span>
+      <span class="n">builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">master</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;SPARK_MASTER&#39;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CONF</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">conf</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">CONF</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CONF_KV</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CONF_KV</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">builder</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+    <span class="c1"># if cls.HIVE:</span>
+    <span class="c1">#   # FIXME see mebbe https://creativedata.atlassian.net/wiki/spaces/SAP/pages/82255289/Pyspark+-+Read+Write+files+from+Hive</span>
+    <span class="c1">#   # builder = builder.config(&quot;hive.metastore.warehouse.dir&quot;, &#39;/tmp&#39;) </span>
+    <span class="c1">#   # builder = builder.config(&quot;spark.sql.warehouse.dir&quot;, &#39;/tmp&#39;)</span>
+    <span class="c1">#   builder = builder.enableHiveSupport()</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+
+      <span class="n">spark</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+      <span class="c1"># If the user just did `pip install pyspark`, then they might not</span>
+      <span class="c1"># have java. Try to provide a helpful error message.</span>
+
+      <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="s1">&#39;args&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;Java gateway process exited&#39;</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+          <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            This portion of OarphPy requires Spark, which in turn requires</span>
+<span class="s2">            Java 8 or higher. Looks like you might be missing Java. To get it,</span>
+<span class="s2">            try:</span>
+<span class="s2">              $ apt-get update &amp;&amp; apt-get install -y openjdk-8-jdk &amp;&amp; echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 &gt;&gt; /etc/environment</span>
+<span class="s2">            Original error: </span><span class="si">%s</span><span class="s2"></span>
+<span class="s2">          &quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,)</span>
+          <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+      <span class="k">raise</span>
+
+    <span class="c1"># spark.sparkContext.setLogLevel(&#39;INFO&#39;)</span>
+
+    <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">addPyFile</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">egg_path</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">spark</span></div>
+  
+  <span class="nd">@classmethod</span>
+  <span class="nd">@contextmanager</span>
+  <span class="k">def</span> <span class="nf">sess</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">args</span> <span class="ow">and</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+      <span class="n">spark</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+      <span class="k">yield</span> <span class="n">spark</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">spark</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
+      <span class="k">yield</span> <span class="n">spark</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">selftest</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="k">with</span> <span class="bp">cls</span><span class="o">.</span><span class="n">sess</span><span class="p">()</span> <span class="k">as</span> <span class="n">spark</span><span class="p">:</span>
+      <span class="n">test_pi</span><span class="p">(</span><span class="n">spark</span><span class="p">)</span>
+      <span class="n">test_egg</span><span class="p">(</span><span class="n">spark</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="LocalK8SSpark"><a class="viewcode-back" href="../../index.html#oarphpy.spark.LocalK8SSpark">[docs]</a><span class="k">class</span> <span class="nc">LocalK8SSpark</span><span class="p">(</span><span class="n">SessionFactory</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Example of how to subclass the Spark factory above for use with K8S&quot;&quot;&quot;</span>
+  <span class="n">MASTER</span> <span class="o">=</span> <span class="s1">&#39;k8s://http://127.0.0.1:8001&#39;</span>
+  <span class="n">CONF_KV</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;spark.kubernetes.container.image&#39;</span><span class="p">:</span> <span class="s1">&#39;my-docker-image&#39;</span><span class="p">,</span>
+
+    <span class="c1"># In practice, we need to set `host` explicitly in order to get the</span>
+    <span class="c1"># proper driver IP address to the workers.  This choice may break</span>
+    <span class="c1"># cluster mode where the driver process will run in the cluster</span>
+    <span class="c1"># instead of locally.  This choice may also break in certain networking</span>
+    <span class="c1"># setups.  Spark networking is a pain :(</span>
+    <span class="s1">&#39;spark.driver.host&#39;</span><span class="p">:</span>
+      <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SPARK_LOCAL_IP&#39;</span><span class="p">,</span> <span class="n">util</span><span class="o">.</span><span class="n">get_non_loopback_iface</span><span class="p">()),</span>
+  <span class="p">}</span></div>
+
+
+<span class="c1"># NBSpark is a session builder for local Jupyter notebooks.  NBSpark also serves</span>
+<span class="c1"># as an example of how to subclass the Spark factory above for use with the</span>
+<span class="c1"># `sparkmonitor` jupyter package</span>
+<span class="c1"># (FMI see demo https://krishnan-r.github.io/sparkmonitor/)</span>
+
+<span class="c1"># Try to find sparkmonitor&#39;s Spark interop jar</span>
+<span class="k">try</span><span class="p">:</span>
+  <span class="kn">import</span> <span class="nn">sparkmonitor</span>
+  <span class="n">SPARKMONITOR_HOME</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">sparkmonitor</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span>
+  <span class="n">SPARKMONITOR_JAR_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">SPARKMONITOR_HOME</span><span class="p">,</span> <span class="s1">&#39;listener.jar&#39;</span><span class="p">)</span>
+    <span class="c1"># E.g. /usr/local/lib/python3.6/dist-packages/sparkmonitor/listener.jar</span>
+<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+  <span class="n">SPARKMONITOR_JAR_PATH</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+
+<div class="viewcode-block" id="NBSpark"><a class="viewcode-back" href="../../index.html#oarphpy.spark.NBSpark">[docs]</a><span class="k">class</span> <span class="nc">NBSpark</span><span class="p">(</span><span class="n">SessionFactory</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;NBSpark is a session builder for local Jupyter notebooks.  Also includes</span>
+<span class="sd">  support for the `sparkmonitor` jupyter package, see </span>
+<span class="sd">  https://krishnan-r.github.io/sparkmonitor/</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="n">CONF_KV</span> <span class="o">=</span> <span class="p">({</span>
+    <span class="s1">&#39;spark.extraListeners&#39;</span><span class="p">:</span> <span class="s1">&#39;sparkmonitor.listener.JupyterSparkMonitorListener&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;spark.driver.extraClassPath&#39;</span><span class="p">:</span> <span class="n">SPARKMONITOR_JAR_PATH</span><span class="p">,</span>
+  <span class="p">}</span> <span class="k">if</span> <span class="n">SPARKMONITOR_JAR_PATH</span> <span class="k">else</span> <span class="p">{})</span></div>
+
+
+<span class="c1">################################################################################</span>
+<span class="c1">### Spark SQL Type Adaption Utils</span>
+<span class="c1">###</span>
+
+<div class="viewcode-block" id="Tensor"><a class="viewcode-back" href="../../index.html#oarphpy.spark.Tensor">[docs]</a><span class="k">class</span> <span class="nc">Tensor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;An ndarray-like object designed to store numpy arrays in Parquet / </span>
+<span class="sd">  Spark SQL format.  Spark&#39;s DenseVector and Matrix unfortunately don&#39;t </span>
+<span class="sd">  support arbitrary tensor shape.  Furthermore, `Tensor` stores data in</span>
+<span class="sd">  an explicit order accessible to external readers such as Eigen in C++</span>
+<span class="sd">  or nd4j / BLAS wrappers in Java.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;shape&#39;</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">,</span> <span class="s1">&#39;order&#39;</span><span class="p">,</span> <span class="s1">&#39;values&#39;</span><span class="p">)</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">from_numpy</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">Tensor</span><span class="p">()</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="s1">&#39;C&#39;</span> <span class="c1"># C-style row-major</span>
+    <span class="n">t</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">t</span>
+  
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">to_numpy</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+              <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">order</span><span class="p">),</span>
+              <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="RowAdapter"><a class="viewcode-back" href="../../index.html#oarphpy.spark.RowAdapter">[docs]</a><span class="k">class</span> <span class="nc">RowAdapter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;Transforms between custom objects and `pyspark.sql.Row`s used in Spark SQL</span>
+<span class="sd">  or Parquet files. Use to encode numpy arrays and standard Python objects</span>
+<span class="sd">  with a transparent Parquet schema that is accessible to other readers.</span>
+
+<span class="sd">  Usage:</span>
+<span class="sd">   * Use `RowAdapter.to_row()` in place of the `pyspark.sql.Row` constructor.</span>
+<span class="sd">   * Call `RowAdapter.from_row()` on any `pyspark.sql.Row` instance, e.g.</span>
+<span class="sd">       within an `RDD.map()` call or after a `DataFrame.collect()` call.</span>
+<span class="sd">   * Decoding requires Python objects to have an available zero-arg __init__()</span>
+<span class="sd">  </span>
+<span class="sd">  Unfortunately, we can&#39;t use Spark&#39;s UDT API to embed this adapter (and </span>
+<span class="sd">  obviate user calls) because UDTs require schema definitions.  Furthermore,</span>
+<span class="sd">  Spark unfortunately can&#39;t handle UDTs nested in maps or lists; i.e.</span>
+<span class="sd">  [UDT()] (i.e. a list of UDTs) and {&#39;foo&#39;: UDT()} (i.e. a map with UDT values)</span>
+<span class="sd">  will cause Spark to crash.</span>
+
+<span class="sd">  Benefits of RowAdapter:</span>
+<span class="sd">    * Transparently handles numpy arrays and numpy scalar types</span>
+<span class="sd">        (e.g. np.float32).</span>
+<span class="sd">    * Deep type adaptation; supports nested types.</span>
+<span class="sd">    * At the decode stage, supports evolution of object types independent of</span>
+<span class="sd">        the schema of data at rest:</span>
+<span class="sd">          - Added object fields don&#39;t get set unless there&#39;s a recorded value</span>
+<span class="sd">          - Removed object fields will get ignored</span>
+<span class="sd">          - NB: Fields that change type will get set with the data at rest;</span>
+<span class="sd">              if you need to change type, consider adding a new field.</span>
+<span class="sd">    * Handles slotted Python objects (which Spark currently does not support),</span>
+<span class="sd">        as well as un-slotted objects (where Spark supports automatic encoding</span>
+<span class="sd">        but not decoding).</span>
+<span class="sd">    * Enables saving objects and numpy arrays to Parquet in a format accessible</span>
+<span class="sd">        to external systems (no additional SERDES library required)</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+
+  <span class="n">IGNORE_PROTECTED</span> <span class="o">=</span> <span class="kc">False</span>
+  <span class="n">IGNORE_PRIVATE</span> <span class="o">=</span> <span class="kc">True</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_get_classname_from_obj</span><span class="p">(</span><span class="n">o</span><span class="p">):</span>
+    <span class="c1"># Based upon https://stackoverflow.com/a/2020083</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span>
+    <span class="c1"># NB: __module__ might be null</span>
+    <span class="k">if</span> <span class="n">module</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">module</span> <span class="o">==</span> <span class="nb">str</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__module__</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">o</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>  <span class="c1"># skip &quot;__builtin__&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">module</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">o</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">_get_class_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="c1"># Pydoc is a bit safer and more robust than anything we can write</span>
+    <span class="kn">import</span> <span class="nn">pydoc</span>
+    <span class="n">obj_cls</span><span class="p">,</span> <span class="n">obj_name</span> <span class="o">=</span> <span class="n">pydoc</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">obj_cls</span>
+    <span class="k">return</span> <span class="n">obj_cls</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">to_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">to_row</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="kn">import</span> <span class="nn">pyspark.sql.types</span> <span class="k">as</span> <span class="nn">pst</span>
+    <span class="k">return</span> <span class="n">pst</span><span class="o">.</span><span class="n">_infer_schema</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">to_row</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">pyspark.sql</span> <span class="k">import</span> <span class="n">Row</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Row</span><span class="p">):</span>
+      <span class="c1"># Row is immutable, so we have to recreate</span>
+      <span class="n">row_dict</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">asDict</span><span class="p">()</span>
+      <span class="k">return</span> <span class="n">Row</span><span class="p">(</span><span class="o">**</span><span class="bp">cls</span><span class="o">.</span><span class="n">to_row</span><span class="p">(</span><span class="n">row_dict</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+      <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">to_row</span><span class="p">(</span><span class="n">Tensor</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">generic</span><span class="p">):</span>
+      <span class="c1"># Those pesky boxed scalars like np.float32</span>
+      <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__slots__&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">):</span>
+      <span class="k">def</span> <span class="nf">is_hidden</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+        <span class="c1"># Check private first to disambiguate `_` vs `__` prefixes</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">IGNORE_PRIVATE</span> <span class="ow">and</span> <span class="n">fname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">):</span>
+          <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">IGNORE_PROTECTED</span> <span class="ow">and</span> <span class="n">fname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">):</span>
+          <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+      <span class="n">tag</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;__pyclass__&#39;</span><span class="p">,</span> <span class="n">RowAdapter</span><span class="o">.</span><span class="n">_get_classname_from_obj</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+      <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__slots__&#39;</span><span class="p">):</span>
+        <span class="n">obj_attrs</span> <span class="o">=</span> <span class="p">[</span>
+          <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">to_row</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">k</span><span class="p">)))</span>
+          <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__slots__</span>
+          <span class="k">if</span> <span class="ow">not</span> <span class="n">is_hidden</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="p">]</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="n">obj_attrs</span> <span class="o">=</span> <span class="p">[</span>
+          <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">to_row</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+          <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+          <span class="k">if</span> <span class="ow">not</span> <span class="n">is_hidden</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="p">]</span>
+      <span class="k">return</span> <span class="n">Row</span><span class="p">(</span><span class="o">**</span><span class="nb">dict</span><span class="p">([</span><span class="n">tag</span><span class="p">]</span> <span class="o">+</span> <span class="n">obj_attrs</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+      <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">to_row</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+      <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">to_row</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">obj</span>
+  
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">from_row</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="s1">&#39;__fields__&#39;</span><span class="p">):</span>
+      <span class="k">if</span> <span class="s1">&#39;__pyclass__&#39;</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">__fields__</span><span class="p">:</span>
+        <span class="n">obj_cls_name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;__pyclass__&#39;</span><span class="p">]</span>
+        <span class="n">obj_cls</span> <span class="o">=</span> <span class="n">RowAdapter</span><span class="o">.</span><span class="n">_get_class_from_path</span><span class="p">(</span><span class="n">obj_cls_name</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">obj_cls</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__slots__&#39;</span><span class="p">):</span>
+          <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+              <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_row</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">):</span>
+          <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">asDict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;__pyclass__&#39;</span><span class="p">:</span>
+              <span class="k">continue</span>
+            <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_row</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+              <span class="s2">&quot;Object </span><span class="si">%s</span><span class="s2"> no longer has __slots__ nor __dict__&quot;</span> <span class="o">%</span> <span class="n">obj_cls_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">):</span>
+          <span class="n">obj</span> <span class="o">=</span> <span class="n">Tensor</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">obj</span>
+      
+      <span class="k">else</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">pyspark.sql</span> <span class="k">import</span> <span class="n">Row</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_row</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">asDict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">Row</span><span class="p">(</span><span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+      <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">from_row</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">row</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+      <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_row</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">row</span></div>
+
+  
+<span class="c1">################################################################################</span>
+<span class="c1">### Spark-Tensorflow Utils</span>
+<span class="c1">###</span>
+
+<div class="viewcode-block" id="spark_df_to_tf_dataset"><a class="viewcode-back" href="../../index.html#oarphpy.spark.spark_df_to_tf_dataset">[docs]</a><span class="k">def</span> <span class="nf">spark_df_to_tf_dataset</span><span class="p">(</span>
+      <span class="n">spark_df</span><span class="p">,</span>
+      <span class="n">shard_col</span><span class="p">,</span>
+      <span class="n">spark_row_to_tf_element</span><span class="p">,</span> <span class="c1"># E.g. lambda r: (np.array[0],),</span>
+      <span class="n">tf_element_types</span><span class="p">,</span> <span class="c1"># E.g. [tf.int64]</span>
+      <span class="n">tf_output_shapes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+      <span class="n">non_deterministic_element_order</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+      <span class="n">num_reader_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+      <span class="n">logging_name</span><span class="o">=</span><span class="s1">&#39;spark_tf_dataset&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a tf.data.Dataset that reads from the Spark Dataframe</span>
+<span class="sd">    `spark_df`.  Executes parallel reads using the Tensorflow&#39;s internal</span>
+<span class="sd">    (native code) threadpool.  Each thread reads a single Spark partition</span>
+<span class="sd">    at a time.</span>
+
+<span class="sd">    This utility is similar to Petastorm&#39;s `make_reader()` but is far simpler</span>
+<span class="sd">    and leverages Tensorflow&#39;s build-in threadpool (so we let Tensorflow</span>
+<span class="sd">    do the read scheduling).  Status: alpha-quality; some perf quirks.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      spark_df (pyspark.sql.DataFrame): Read from this Dataframe.</span>
+<span class="sd">      shard_col (str): Implicly shard the dataset using this column; read</span>
+<span class="sd">        one shard per reader thread at a time to conserve memory.</span>
+<span class="sd">      spark_row_to_tf_element (func): </span>
+<span class="sd">        Use this function to map each pyspark.sql.Row in `spark_df`</span>
+<span class="sd">        to a tuple that represents a single element of the</span>
+<span class="sd">        induced TF Dataset.</span>
+<span class="sd">      tf_element_types (tuple):</span>
+<span class="sd">        The types of the elements that `spark_row_to_tf_element` returns;</span>
+<span class="sd">        e.g. (tf.float32, tf.string).</span>
+<span class="sd">      tf_output_shapes (tuple):</span>
+<span class="sd">        Optionally specify the shape of the output of `spark_row_to_tf_element`;</span>
+<span class="sd">        e.g. (tf.TensorShape([]), tf.TensorShape([None])) (where the former</span>
+<span class="sd">        return element is a single scalar and the latter is a list)</span>
+<span class="sd">      non_deterministic_element_order (bool):</span>
+<span class="sd">        Allow the resulting tf.data.Dataset to have elements in</span>
+<span class="sd">        non-deterministic order for speed gains.</span>
+<span class="sd">      num_reader_threads (int):</span>
+<span class="sd">        Tell Tensorflow to use this many reader threads, or use -1</span>
+<span class="sd">        to provision one reader thread per CPU core.</span>
+<span class="sd">      logging_name (str):</span>
+<span class="sd">        Log progress under this name.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">      tf.data.Dataset: The induced TF Datset with one element per</span>
+<span class="sd">        row in `spark_df`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">num_reader_threads</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+      <span class="kn">import</span> <span class="nn">multiprocessing</span>
+      <span class="n">num_reader_threads</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">()))</span>
+        <span class="c1"># NB: Tensorflow prefetch appears to launch twice as many threads</span>
+        <span class="c1"># as you ask for :P</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">spark_df</span>
+
+    <span class="c1"># Each Tensorflow reader thread will read a single Spark partition</span>
+    <span class="c1"># Breadcrumbs: We tried using the built-in spark partition id, but</span>
+    <span class="c1"># Spark appears to want to re-compute this for every partition read,</span>
+    <span class="c1"># leading to an O(n^2) overhead cost (for `n` partitions).</span>
+    <span class="c1"># df = spark_df.withColumn(&#39;shard_col&#39;, spark_partition_id())</span>
+    
+    <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Getting shards ...&quot;</span><span class="p">)</span>
+    <span class="n">pids</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">shard_col</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()</span><span class="o">.</span><span class="n">rdd</span><span class="o">.</span><span class="n">flatMap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+    <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;... found </span><span class="si">%s</span><span class="s2"> shards.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pids</span><span class="p">),))</span>
+
+
+    <span class="kn">import</span> <span class="nn">threading</span>
+    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+    <span class="n">pid_ds</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(</span><span class="n">pids</span><span class="p">)</span>
+    
+    <span class="k">class</span> <span class="nc">PartitionToRows</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+      <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overall_thruput</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">ThruputObserver</span><span class="p">(</span>
+                                    <span class="n">name</span><span class="o">=</span><span class="n">logging_name</span><span class="p">,</span>
+                                    <span class="n">log_on_del</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                    <span class="n">n_total</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+                                       <span class="c1"># TODO: count() can be slow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overall_thruput</span><span class="o">.</span><span class="n">start_block</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+      
+      <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="c1"># Convert pesky numpy boxed numeric types if needed</span>
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">generic</span><span class="p">):</span>
+          <span class="n">pid</span> <span class="o">=</span> <span class="n">pid</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+        <span class="n">part_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">shard_col</span><span class="p">]</span> <span class="o">==</span> <span class="n">pid</span><span class="p">)</span>
+        <span class="n">part_rdd</span> <span class="o">=</span> <span class="n">part_df</span><span class="o">.</span><span class="n">rdd</span><span class="o">.</span><span class="n">repartition</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">part_rdd</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">spark_row_to_tf_element</span><span class="p">)</span><span class="o">.</span><span class="n">toLocalIterator</span><span class="p">()</span>
+        <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reading partition </span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">pid</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">ThruputObserver</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Partition </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">pid</span><span class="p">,</span> <span class="n">log_on_del</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">start_block</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+          <span class="k">yield</span> <span class="n">row</span>
+          <span class="n">t</span><span class="o">.</span><span class="n">update_tallies</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">get_size_of_deep</span><span class="p">(</span><span class="n">row</span><span class="p">))</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">stop_block</span><span class="p">()</span>
+        <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Done reading partition </span><span class="si">%s</span><span class="s2">, stats:</span><span class="se">\n</span><span class="s2"> </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+          <span class="c1"># Since partitions are read in parallel, we need to maintain</span>
+          <span class="c1"># independent timing stats for the main thread</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">overall_thruput</span><span class="o">.</span><span class="n">stop_block</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">num_bytes</span><span class="p">)</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">overall_thruput</span><span class="o">.</span><span class="n">maybe_log_progress</span><span class="p">(</span><span class="n">every_n</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">overall_thruput</span><span class="o">.</span><span class="n">start_block</span><span class="p">()</span>
+
+    <span class="n">ds</span> <span class="o">=</span> <span class="n">pid_ds</span><span class="o">.</span><span class="n">interleave</span><span class="p">(</span>
+       <span class="k">lambda</span> <span class="n">pid_t</span><span class="p">:</span> \
+         <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_generator</span><span class="p">(</span>
+           <span class="n">PartitionToRows</span><span class="p">(),</span> 
+           <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">pid_t</span><span class="p">,),</span>
+           <span class="n">output_types</span><span class="o">=</span><span class="n">tf_element_types</span><span class="p">,</span>
+           <span class="n">output_shapes</span><span class="o">=</span><span class="n">tf_output_shapes</span><span class="p">),</span>
+       <span class="n">cycle_length</span><span class="o">=</span><span class="n">num_reader_threads</span><span class="p">,</span>
+       <span class="n">num_parallel_calls</span><span class="o">=</span><span class="n">num_reader_threads</span><span class="p">)</span>
+    
+    <span class="c1"># Breadcrumbs: alternative TF API</span>
+    <span class="c1"># ds = pid_ds.apply(</span>
+    <span class="c1">#  tf.compat.v2.data.experimental.parallel_interleave(</span>
+    <span class="c1">#    lambda pid_t: </span>
+    <span class="c1">#      tf.data.Dataset.from_generator(</span>
+    <span class="c1">#        get_rows, </span>
+    <span class="c1">#        args=(pid_t,),</span>
+    <span class="c1">#        output_types=tf_element_types),</span>
+    <span class="c1">#  cycle_length=num_reader_threads,</span>
+    <span class="c1">#  sloppy=non_deterministic_element_order))</span>
+    
+    <span class="k">return</span> <span class="n">ds</span></div>
+
+
+
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Maintainers of OarphPy
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
