@@ -3,13 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to oarphpy's documentation!
-===================================
+View OarphPy `on Github <https://github.com/pwais/oarphpy>`_
 
-Modules
--------
+.. mdinclude:: ../../README.md
 
 
+OarphPy API Documentation
+=========================
 
 `oarphpy.spark`
 ---------------
@@ -36,12 +36,9 @@ Modules
 .. automodule:: oarphpy.util.misc
     :members:
 
-toc
--------
+
 .. toctree::
    :maxdepth: 2
-
-   includereadme
 
 Indices and tables
 ==================

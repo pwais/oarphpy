@@ -1,51 +1,225 @@
 
+
 <!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Quickstart &mdash; oarphpy 0.0.1 documentation</title>
+  
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta charset="utf-8" />
-    <title>Welcome to oarphpy’s documentation! &#8212; oarphpy 0.0.1 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
     
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
     
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="includereadme.html" /> 
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="includereadme.html" title="&lt;no title&gt;"
-             accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">oarphpy 0.0.1 documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> oarphpy
+          
+
+          
+          </a>
+
+          
             
-  <div class="section" id="welcome-to-oarphpy-s-documentation">
-<h1>Welcome to oarphpy’s documentation!<a class="headerlink" href="#welcome-to-oarphpy-s-documentation" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="modules">
-<h2>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h2>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Quickstart</a></li>
+<li><a class="reference internal" href="#dockerized-development-environments">Dockerized Development Environments</a><ul>
+<li><a class="reference internal" href="#oarphpy-api-documentation">OarphPy API Documentation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-oarphpy.spark"><cite>oarphpy.spark</cite></a></li>
+<li><a class="reference internal" href="#module-oarphpy.plotting"><cite>oarphpy.plotting</cite></a></li>
+<li><a class="reference internal" href="#module-oarphpy.util.thruput_observer"><cite>oarphpy.util.thruput_observer</cite></a></li>
+<li><a class="reference internal" href="#module-oarphpy.util.tfutil"><cite>oarphpy.util.tfutil</cite></a></li>
+<li><a class="reference internal" href="#module-oarphpy.util.misc"><cite>oarphpy.util.misc</cite></a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">oarphpy</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>Quickstart</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <p>View OarphPy <a class="reference external" href="https://github.com/pwais/oarphpy">on Github</a></p>
+<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span>                   _________________________
+                  &lt; OarphPy!! Oarph! Oarph! &gt;
+                  &lt;   OarphKit for Python!! &gt;
+                   -------------------------
+                                 \
+                                  \
+  ____                __   ___       -~~~~-
+ / __ \___ ________  / /  / _ \__ __|O __ O|
+/ /_/ / _ `/ __/ _ \/ _ \/ ___/ // /|_\__/_|__-
+\____/\_,_/_/ / .__/_//_/_/   \_,---(__/\__)---
+          .--/_/             /___/ /  ~--~
+     ,__;`  o __`&#39;.          _,..-/  | \/ |
+     &#39;  `&#39;---&#39;  `&#39;.&#39;.      .&#39;.&#39;` |   | /\ |   |
+                   .&#39;-...-`.&#39;  _/ /\__    __/\ \_
+                     -...-`  ~~~~~    ~~~~    ~~~~~
+</pre></div>
+</div>
+<a class="reference external image-reference" href="http://www.apache.org/licenses/LICENSE-2.0"><img alt="License" src="http://img.shields.io/:license-apache-orange.svg" /></a>
+<a class="reference external image-reference" href="https://circleci.com/gh/pwais/oarphpy/tree/master"><img alt="Build Status" src="https://circleci.com/gh/pwais/oarphpy.png?style=shield" /></a>
+<a class="reference external image-reference" href="https://badge.fury.io/py/oarphpy"><img alt="PyPI version" src="https://badge.fury.io/py/oarphpy.svg" /></a>
+<p>OarphPy is a collection of Python utilities for Data Science with
+<a class="reference external" href="https://spark.apache.org/docs/latest/api/python/">PySpark</a> and Tensorflow.
+Related (but orthogonal) to <a class="reference external" href="https://github.com/pwais/oarphkit">OarphKit</a>.</p>
+<div class="section" id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
+<p>Install from PyPI: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">oarphpy</span></code>.  We test OarphPy in a variet of
+environments (see below), so it should play well with your Jupyter/Colab
+notebook or project environment.  To include all extras, use
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">oarphpy[all]</span></code>.</p>
+<p>Or use the dockerized environment hosted on <a class="reference external" href="https://hub.docker.com/u/oarphpy">DockerHub</a>:</p>
+<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span>$ ./oarphcli --shell
+-- or --
+$ docker run -it --net=host oarphpy/full bash
+</pre></div>
+</div>
+</div>
+<div class="section" id="dockerized-development-environments">
+<h1>Dockerized Development Environments<a class="headerlink" href="#dockerized-development-environments" title="Permalink to this headline">¶</a></h1>
+<p>OarphPy is built and tested in a variety of environments to ensure the
+library works with and without <a class="reference external" href="setup.py#L18">optional dependencies</a>.  These
+environments are shared on <a class="reference external" href="https://hub.docker.com/u/oarphpy">DockerHub</a> and
+defined in the <a class="reference external" href="docker">docker</a> subdirectory of this repo:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">oarphpy/full</span></code> – Includes Tensorflow, Jupyter, a binary install of
+<a class="reference external" href="https://spark.apache.org/">Spark</a>, and other tools like
+<a class="reference external" href="https://bokeh.org/">Bokeh</a>. Use this environment for adhoc data science or
+as a starter for other projects.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">oarphpy/base-py2</span></code> – Tests <code class="docutils literal notranslate"><span class="pre">oarphpy</span></code> in a vanilla Python 2.7 environment
+to ensure clean interop with other projects.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">oarphpy/base-py3</span></code> – Tests <code class="docutils literal notranslate"><span class="pre">oarphpy</span></code> in a vanilla Python 3 environment
+to ensure clean interop with other projects.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">oarphpy/spark</span></code> – Tests <code class="docutils literal notranslate"><span class="pre">oarphpy</span></code> with a vanilla install of
+<a class="reference external" href="https://spark.apache.org/">PySpark</a> to ensure basic compatibility.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">oarphpy/tensorflow</span></code> – Tests <code class="docutils literal notranslate"><span class="pre">oarphpy</span></code> with Tensorflow 1.x to ensure basic
+compatibility (e.g. of <code class="docutils literal notranslate"><span class="pre">oarphpy.util.tfutil</span></code>).</p></li>
+</ul>
+<div class="section" id="oarphpy-api-documentation">
+<h2>OarphPy API Documentation<a class="headerlink" href="#oarphpy-api-documentation" title="Permalink to this headline">¶</a></h2>
+</div>
 </div>
 <div class="section" id="module-oarphpy.spark">
-<span id="oarphpy-spark"></span><h2><cite>oarphpy.spark</cite><a class="headerlink" href="#module-oarphpy.spark" title="Permalink to this headline">¶</a></h2>
+<span id="oarphpy-spark"></span><h1><cite>oarphpy.spark</cite><a class="headerlink" href="#module-oarphpy.spark" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="oarphpy.spark.LocalK8SSpark">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">LocalK8SSpark</code><a class="reference internal" href="_modules/oarphpy/spark.html#LocalK8SSpark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.LocalK8SSpark" title="Permalink to this definition">¶</a></dt>
@@ -63,7 +237,7 @@ support for the <cite>sparkmonitor</cite> jupyter package, see
 <dl class="class">
 <dt id="oarphpy.spark.RowAdapter">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">RowAdapter</code><a class="reference internal" href="_modules/oarphpy/spark.html#RowAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.RowAdapter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transforms between custom objects and <a href="#id1"><span class="problematic" id="id2">`</span></a>pyspark.sql.Row`s used in Spark SQL
+<dd><p>Transforms between custom objects and <a href="#id3"><span class="problematic" id="id4">`</span></a>pyspark.sql.Row`s used in Spark SQL
 or Parquet files. Use to encode numpy arrays and standard Python objects
 with a transparent Parquet schema that is accessible to other readers.</p>
 <dl class="simple">
@@ -282,7 +456,7 @@ Based upon <a class="reference external" href="https://stackoverflow.com/a/40404
 
 </div>
 <div class="section" id="module-oarphpy.plotting">
-<span id="oarphpy-plotting"></span><h2><cite>oarphpy.plotting</cite><a class="headerlink" href="#module-oarphpy.plotting" title="Permalink to this headline">¶</a></h2>
+<span id="oarphpy-plotting"></span><h1><cite>oarphpy.plotting</cite><a class="headerlink" href="#module-oarphpy.plotting" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="oarphpy.plotting.HistogramWithExamplesPlotter">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.plotting.</code><code class="sig-name descname">HistogramWithExamplesPlotter</code><a class="reference internal" href="_modules/oarphpy/plotting.html#HistogramWithExamplesPlotter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.plotting.HistogramWithExamplesPlotter" title="Permalink to this definition">¶</a></dt>
@@ -346,7 +520,7 @@ an HTML image tag.</p>
 
 </div>
 <div class="section" id="module-oarphpy.util.thruput_observer">
-<span id="oarphpy-util-thruput-observer"></span><h2><cite>oarphpy.util.thruput_observer</cite><a class="headerlink" href="#module-oarphpy.util.thruput_observer" title="Permalink to this headline">¶</a></h2>
+<span id="oarphpy-util-thruput-observer"></span><h1><cite>oarphpy.util.thruput_observer</cite><a class="headerlink" href="#module-oarphpy.util.thruput_observer" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="oarphpy.util.thruput_observer.ThruputObserver">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.util.thruput_observer.</code><code class="sig-name descname">ThruputObserver</code><span class="sig-paren">(</span><em class="sig-param">name=''</em>, <em class="sig-param">log_on_del=False</em>, <em class="sig-param">only_stats=None</em>, <em class="sig-param">log_freq=100</em>, <em class="sig-param">n_total=None</em>, <em class="sig-param">n_total_chunks=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver" title="Permalink to this definition">¶</a></dt>
@@ -386,7 +560,7 @@ FMI <a class="reference external" href="https://stackoverflow.com/questions/3487
 
 </div>
 <div class="section" id="module-oarphpy.util.tfutil">
-<span id="oarphpy-util-tfutil"></span><h2><cite>oarphpy.util.tfutil</cite><a class="headerlink" href="#module-oarphpy.util.tfutil" title="Permalink to this headline">¶</a></h2>
+<span id="oarphpy-util-tfutil"></span><h1><cite>oarphpy.util.tfutil</cite><a class="headerlink" href="#module-oarphpy.util.tfutil" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="oarphpy.util.tfutil.TFRecordsFileAsListOfStrings">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.util.tfutil.</code><code class="sig-name descname">TFRecordsFileAsListOfStrings</code><span class="sig-paren">(</span><em class="sig-param">fileobj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/tfutil.html#TFRecordsFileAsListOfStrings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.tfutil.TFRecordsFileAsListOfStrings" title="Permalink to this definition">¶</a></dt>
@@ -431,7 +605,7 @@ variable <cite>var</cite>.</p>
 
 </div>
 <div class="section" id="module-oarphpy.util.misc">
-<span id="oarphpy-util-misc"></span><h2><cite>oarphpy.util.misc</cite><a class="headerlink" href="#module-oarphpy.util.misc" title="Permalink to this headline">¶</a></h2>
+<span id="oarphpy-util-misc"></span><h1><cite>oarphpy.util.misc</cite><a class="headerlink" href="#module-oarphpy.util.misc" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="oarphpy.util.misc.Proxy">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">Proxy</code><span class="sig-paren">(</span><em class="sig-param">instance</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#Proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.Proxy" title="Permalink to this definition">¶</a></dt>
@@ -502,7 +676,7 @@ and less junk than itertools recipes version using izip_longest…</p>
 <cite>itertools.roundrobin()</cite> recipe but</p>
 <blockquote>
 <div><ol class="arabic simple">
-<li><p>won’t hide nested <a href="#id3"><span class="problematic" id="id4">`</span></a>StopIteration`s</p></li>
+<li><p>won’t hide nested <a href="#id5"><span class="problematic" id="id6">`</span></a>StopIteration`s</p></li>
 <li><p>uses a queue to reduce dynamic allocations</p></li>
 </ol>
 </div></blockquote>
@@ -555,85 +729,56 @@ PNGs.</p>
 <dd><p>Use a current working directory of <cite>path</cite> for this context</p>
 </dd></dl>
 
-</div>
-<div class="section" id="toc">
-<h2>toc<a class="headerlink" href="#toc" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 </div>
-</div>
-</div>
 <div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
 </div>
-
-
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Welcome to oarphpy’s documentation!</a><ul>
-<li><a class="reference internal" href="#modules">Modules</a></li>
-<li><a class="reference internal" href="#module-oarphpy.spark"><cite>oarphpy.spark</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.plotting"><cite>oarphpy.plotting</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.util.thruput_observer"><cite>oarphpy.util.thruput_observer</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.util.tfutil"><cite>oarphpy.util.tfutil</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.util.misc"><cite>oarphpy.util.misc</cite></a></li>
-<li><a class="reference internal" href="#toc">toc</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
-</ul>
-
-  <h4>Next topic</h4>
-  <p class="topless"><a href="includereadme.html"
-                        title="next chapter">&lt;no title&gt;</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/index.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
-      <input type="submit" value="Go" />
-    </form>
-    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Maintainers of OarphPy
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="includereadme.html" title="&lt;no title&gt;"
-             >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">oarphpy 0.0.1 documentation</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2020, Maintainers of OarphPy.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
 </html>
