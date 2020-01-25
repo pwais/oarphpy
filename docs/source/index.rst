@@ -36,7 +36,8 @@ OarphPy API Documentation
 .. automodule:: oarphpy.util.misc
     :members:
 
-
+Extra
+-----
 .. toctree::
    :maxdepth: 2
 
