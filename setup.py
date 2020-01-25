@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+## NB See notes on `extras_require` and `Optional Dependencies` below.
+
 import os
 import sys
 import re
@@ -43,6 +45,11 @@ if sys.version_info[0] < 3:
   setup_requires = ['pytest-runner<5']
   tests_require = ['pytest<5']
 
+## Optional Dependencies
+# OarphPy works in standard python 2 and 3 environments, but we provide extras
+# if you have tensorflow, spark, or for the full-race oarphpy/full environment.
+# For mor info, see "Dockerized Development Environments" in the root project
+# README.md.
 
 SPARK_DEPS = [
   'findspark==1.3.0',
@@ -93,8 +100,8 @@ dist = setup(
   url='https://github.com/pwais/oarphpy',
   license='Apache License 2.0',
   packages=['oarphpy'],
-  long_description=open('README.md').read(),
-  long_description_content_type="text/markdown",
+  long_description="See https://github.com/pwais/oarphpy",
+  long_description_content_type="text/rst",
   classifiers=[
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
@@ -111,9 +118,12 @@ dist = setup(
   tests_require=tests_require,
   
   extras_require={
-    'all': ALL_DEPS,
-    'utils': UTILS,
-    'spark': SPARK_DEPS,
-    'tensorflow': TF_DEPS,
+    'all': ALL_DEPS,        # for oarphpy/full environment
+    'utils': UTILS,         # for oarphpy/full environment
+    'spark': SPARK_DEPS,    # for oarphpy/spark environment
+    'tensorflow': TF_DEPS,  # for oarphpy/tensorflow environment
+                            # NB: for vanilla oarphpy/base-py2 and
+                            #   oarphpy/base-py3 environments, we simply
+                            #   include none of these extras.
   },
 )

@@ -9,5 +9,6 @@ oarphpy.egg-info
 .pytest_cache
 eggs
 build
+dist
 notebooks/.ipynb_checkpoints
 notebooks/sparkmonitor_kernelextension.log
