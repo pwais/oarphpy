@@ -1,0 +1,305 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>oarphpy.util.thruput_observer &#8212; oarphpy 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">oarphpy 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for oarphpy.util.thruput_observer</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2020 Maintainers of OarphPy</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#   http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="k">import</span> <span class="n">contextmanager</span>
+
+
+<div class="viewcode-block" id="ThruputObserver"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver">[docs]</a><span class="k">class</span> <span class="nc">ThruputObserver</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+  <span class="sd">&quot;&quot;&quot;A utility for measuring the runtime and throughput of a subroutine.</span>
+<span class="sd">  Similar in spirit to `tqdm`, except `ThruputObserver`:</span>
+<span class="sd">   * Tracks not just time but a size metric (e.g. memory) in bytes</span>
+<span class="sd">   * Reports percentiles</span>
+<span class="sd">   * Simply logs strings and is not terminal-interactive</span>
+<span class="sd">  </span>
+<span class="sd">  While `tqdm` is useful for notebooks, `ThruputObserver` seeks to be more</span>
+<span class="sd">  useful for longer-running batch jobs.</span>
+<span class="sd">  &quot;&quot;&quot;</span>
+  
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+      <span class="bp">self</span><span class="p">,</span>
+      <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+      <span class="n">log_on_del</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+      <span class="n">only_stats</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+      <span class="n">log_freq</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+      <span class="n">n_total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+      <span class="n">n_total_chunks</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_bytes</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">log_on_del</span> <span class="o">=</span> <span class="n">log_on_del</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">only_stats</span> <span class="o">=</span> <span class="n">only_stats</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n_total</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">n_total</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_total</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n_total_chunks</span> <span class="o">=</span> <span class="p">(</span>
+      <span class="nb">max</span><span class="p">(</span><span class="n">n_total_chunks</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_total_chunks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_start</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">__log_freq</span> <span class="o">=</span> <span class="n">log_freq</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">__last_log</span> <span class="o">=</span> <span class="mi">0</span>
+  
+<div class="viewcode-block" id="ThruputObserver.observe"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver.observe">[docs]</a>  <span class="nd">@contextmanager</span>
+  <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    NB: contextmanagers appear to be expensive due to object creation.</span>
+<span class="sd">    Use ThurputObserver#{start,stop}_block() for &lt;10ms ops. </span>
+<span class="sd">    FMI https://stackoverflow.com/questions/34872535/why-contextmanager-is-slow</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="bp">self</span><span class="o">.</span><span class="n">start_block</span><span class="p">()</span>
+    <span class="k">yield</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">stop_block</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="n">num_bytes</span><span class="p">)</span></div>
+  
+  <span class="k">def</span> <span class="nf">start_block</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+  
+  <span class="k">def</span> <span class="nf">update_tallies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">new_block</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="n">n</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_bytes</span> <span class="o">+=</span> <span class="n">num_bytes</span>
+    <span class="k">if</span> <span class="n">new_block</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">stop_block</span><span class="p">()</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">start_block</span><span class="p">()</span>
+  
+  <span class="k">def</span> <span class="nf">stop_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="n">n</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_bytes</span> <span class="o">+=</span> <span class="n">num_bytes</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">_start</span> <span class="o">=</span> <span class="kc">None</span>
+  
+  <span class="k">def</span> <span class="nf">maybe_log_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">every_n</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">every_n</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">__log_freq</span> <span class="o">=</span> <span class="n">every_n</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__last_log</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">__log_freq</span><span class="p">:</span>
+      <span class="kn">from</span> <span class="nn">oarphpy.util</span> <span class="k">import</span> <span class="n">log</span>
+      <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Progress for </span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">__last_log</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span>
+        <span class="c1"># Track last log because `n` may increase inconsistently</span>
+      <span class="k">if</span> <span class="n">every_n</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mf">1.7</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">__log_freq</span><span class="p">)):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__log_freq</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1.7</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">__log_freq</span><span class="p">)</span>
+          <span class="c1"># Exponentially decay logging frequency. Don&#39;t decay quite as</span>
+          <span class="c1"># fast as Vowpal Wabbit did, though.</span>
+
+  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">union</span><span class="p">(</span><span class="n">thruputs</span><span class="p">):</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">ThruputObserver</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">thruputs</span><span class="p">:</span>
+      <span class="n">u</span> <span class="o">+=</span> <span class="n">t</span>
+    <span class="k">return</span> <span class="n">u</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">total_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+    <span class="kn">from</span> <span class="nn">humanfriendly</span> <span class="k">import</span> <span class="n">format_size</span>
+    <span class="kn">from</span> <span class="nn">humanfriendly</span> <span class="k">import</span> <span class="n">format_timespan</span>
+
+    <span class="n">total_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_time</span>
+
+    <span class="n">stats</span> <span class="o">=</span> <span class="p">[</span>
+      <span class="p">(</span><span class="s1">&#39;Thruput&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+      <span class="p">(</span><span class="s1">&#39;N thru&#39;</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> (of </span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total</span><span class="p">))),</span>
+      <span class="p">(</span><span class="s1">&#39;N chunks&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total_chunks</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> (of </span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total_chunks</span><span class="p">))),</span>
+      <span class="p">(</span><span class="s1">&#39;Total time&#39;</span><span class="p">,</span> <span class="n">format_timespan</span><span class="p">(</span><span class="n">total_time</span><span class="p">)</span> <span class="k">if</span> <span class="n">total_time</span> <span class="k">else</span> <span class="s1">&#39;-&#39;</span><span class="p">),</span>
+      <span class="p">(</span><span class="s1">&#39;Total thru&#39;</span><span class="p">,</span> <span class="n">format_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_bytes</span><span class="p">)),</span>
+      <span class="p">(</span><span class="s1">&#39;Rate&#39;</span><span class="p">,</span> 
+        <span class="n">format_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_bytes</span> <span class="o">/</span> <span class="n">total_time</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; / sec&#39;</span>
+        <span class="k">if</span> <span class="n">total_time</span> <span class="k">else</span> <span class="s1">&#39;-&#39;</span><span class="p">),</span>
+      <span class="p">(</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">total_time</span> <span class="k">if</span> <span class="n">total_time</span> <span class="k">else</span> <span class="s1">&#39;-&#39;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">percent_complete</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">percent_complete</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total</span>
+    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total_chunks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">percent_complete</span> <span class="o">=</span> <span class="mf">100.</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_total_chunks</span>
+    <span class="k">if</span> <span class="n">percent_complete</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">eta_sec</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="mf">100.</span> <span class="o">-</span> <span class="n">percent_complete</span><span class="p">)</span> <span class="o">*</span> 
+        <span class="p">(</span><span class="n">total_time</span> <span class="o">/</span> <span class="p">(</span><span class="n">percent_complete</span> <span class="o">+</span> <span class="mf">1e-10</span><span class="p">)))</span>
+      <span class="n">stats</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+        <span class="p">(</span><span class="s1">&#39;Progress&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Percent Complete&#39;</span><span class="p">,</span> <span class="n">percent_complete</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Est. Time To Completion&#39;</span><span class="p">,</span> <span class="n">format_timespan</span><span class="p">(</span><span class="n">eta_sec</span><span class="p">)),</span>
+      <span class="p">])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+      <span class="n">format_t</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">format_timespan</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">detailed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+      <span class="n">stats</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+        <span class="p">(</span><span class="s1">&#39;Latency (per chunk)&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Avg&#39;</span><span class="p">,</span> <span class="n">format_t</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">))),</span>
+        <span class="p">(</span><span class="s1">&#39;p50&#39;</span><span class="p">,</span> <span class="n">format_t</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">,</span> <span class="mi">50</span><span class="p">))),</span>
+        <span class="p">(</span><span class="s1">&#39;p95&#39;</span><span class="p">,</span> <span class="n">format_t</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">,</span> <span class="mi">95</span><span class="p">))),</span>
+        <span class="p">(</span><span class="s1">&#39;p99&#39;</span><span class="p">,</span> <span class="n">format_t</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">,</span> <span class="mi">99</span><span class="p">))),</span>
+      <span class="p">])</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">only_stats</span><span class="p">:</span>
+      <span class="n">stats</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">stats</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">only_stats</span>
+      <span class="p">)</span>
+    <span class="k">return</span> <span class="n">stats</span>
+
+  <span class="k">def</span> <span class="nf">__iadd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">n</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">num_bytes</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">num_bytes</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span>
+
+  <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">tabulate</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="n">tabulate</span><span class="o">.</span><span class="n">tabulate</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+      <span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> [Pid:</span><span class="si">%s</span><span class="s1"> Id:</span><span class="si">%s</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+      <span class="n">summary</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">summary</span>
+    <span class="k">return</span> <span class="n">summary</span>
+  
+  <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_on_del</span><span class="p">:</span>
+      <span class="bp">self</span><span class="o">.</span><span class="n">stop_block</span><span class="p">()</span>
+
+      <span class="kn">from</span> <span class="nn">oarphpy.util</span> <span class="k">import</span> <span class="n">create_log</span>
+      <span class="n">log</span> <span class="o">=</span> <span class="n">create_log</span><span class="p">()</span>
+      <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+  
+<div class="viewcode-block" id="ThruputObserver.monitoring_tensor"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor">[docs]</a>  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">monitoring_tensor</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">tensor</span><span class="p">,</span> <span class="o">**</span><span class="n">observer_init_kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Monitor the size of the given tensorflow `Tensor` and record a</span>
+<span class="sd">    text TF Summary with the contents of this ThruputObserver.&quot;&quot;&quot;</span>
+
+    <span class="k">class</span> <span class="nc">Observer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+      <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype_size_bytes</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span> <span class="o">=</span> <span class="n">ThruputObserver</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">observer_init_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype_size_bytes</span> <span class="o">=</span> <span class="n">dtype_size_bytes</span>
+      <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_shape</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">t_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">num_bytes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">t_shape</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype_size_bytes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span><span class="o">.</span><span class="n">stop_block</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="n">num_bytes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span><span class="o">.</span><span class="n">maybe_log_progress</span><span class="p">()</span>
+        
+        <span class="c1"># Tensorboard is very picky about wanting Markdown :P</span>
+        <span class="kn">import</span> <span class="nn">tabulatehelper</span> <span class="k">as</span> <span class="nn">th</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observer</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">th</span><span class="o">.</span><span class="n">md_table</span><span class="p">(</span><span class="n">stats</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span><span class="o">.</span><span class="n">start_block</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">out</span>
+    
+    <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+    <span class="n">obs_str_tensor</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">compat</span><span class="o">.</span><span class="n">v1</span><span class="o">.</span><span class="n">py_func</span><span class="p">(</span>
+              <span class="n">Observer</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="p">[</span><span class="n">tf</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">tensor</span><span class="p">)],</span> <span class="n">tf</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+    <span class="n">tf</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;/ThruputObserver&#39;</span><span class="p">,</span> <span class="n">obs_str_tensor</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">obs_str_tensor</span></div>
+  
+<div class="viewcode-block" id="ThruputObserver.wrap_func"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver.wrap_func">[docs]</a>  <span class="nd">@staticmethod</span>
+  <span class="k">def</span> <span class="nf">wrap_func</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">**</span><span class="n">observer_init_kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Decorate `func` and observe a block on each call&quot;&quot;&quot;</span>
+    <span class="k">class</span> <span class="nc">MonitoredFunc</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+      <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">observer_init_kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span> <span class="o">=</span> <span class="n">ThruputObserver</span><span class="p">(</span><span class="o">**</span><span class="n">observer_init_kwargs</span><span class="p">)</span>
+      <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">oarphpy.util.misc</span> <span class="k">import</span> <span class="n">get_size_of_deep</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span><span class="o">.</span><span class="n">start_block</span><span class="p">()</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span><span class="o">.</span><span class="n">stop_block</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="n">get_size_of_deep</span><span class="p">(</span><span class="n">ret</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observer</span><span class="o">.</span><span class="n">maybe_log_progress</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ret</span>
+    <span class="k">return</span> <span class="n">MonitoredFunc</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">observer_init_kwargs</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">oarphpy 0.0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Paul Wais.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
+    </div>
+  </body>
+</html>

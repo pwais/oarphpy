@@ -1,0 +1,12 @@
+pyspark.sql module
+==================
+
+Module Context
+--------------
+
+.. automodule:: oarphpy.spark
+    :members:
+    :undoc-members:
+    :inherited-members:
+
+
