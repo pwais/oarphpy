@@ -325,7 +325,7 @@ def main(args=None):
   if args.build_env or args.push_as_latest or args.test_all or args.test:
     for env in DockerEnv.get_all_envs(args.root):
       if args.build_env:
-        env.build()
+        env.build(and_push=False)
       if args.test_all:
         env.run_tests()
       elif args.test and env.IMAGE_NAME == args.test:
@@ -369,35 +369,48 @@ def main(args=None):
       for _ in range(3):
         log.info("=== Release %s: %s ===" % (version, msg))
     
-    log_msg("Start tests ...")
-    for env in DockerEnv.get_all_envs(args.root):
-      env.run_tests()
-    log_msg("Test success!")
+    # log_msg("Start tests ...")
+    # for env in DockerEnv.get_all_envs(args.root):
+    #   env.run_tests()
+    # log_msg("Test success!")
 
-    log_msg("Pushing Docker Environments ...")
-    for env in DockerEnv.get_all_envs(args.root):
-      env.build()
-      env.push_as_latest()
-    log_msg("Push success!")
+    # log_msg("Pushing Docker Environments ...")
+    # for env in DockerEnv.get_all_envs(args.root):
+    #   env.build()
+    #   env.push_as_latest()
+    # log_msg("Push success!")
 
-    log_msg("Generating archive for PyPI ...")
-    py2env.run_cmd("python setup.py sdist bdist_egg bdist_wheel")
-    fullenv.run_cmd("python3 setup.py sdist bdist_egg bdist_wheel")
-    run_cmd("twine check dist/*")
-    log_msg("Generation success!")
+    # log_msg("Generating archive for PyPI ...")
+    # py2env.run_cmd("python setup.py sdist bdist_egg bdist_wheel")
+    # fullenv.run_cmd("python3 setup.py sdist bdist_egg bdist_wheel")
+    # run_cmd("twine check dist/*")
+    # log_msg("Generation success!")
 
-    # NB: Careful! PyPI does not allow file name re-use!
-    # https://test.pypi.org/help/#file-name-reuse
-    # Workaround: https://www.python.org/dev/peps/pep-0440/#post-releases
-    log_msg("Sending to TEST PyPI ...")
-    run_cmd("""
-      python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-    """)
-    log_msg("Sent!")
+    # # NB: Careful! PyPI does not allow file name re-use!
+    # # https://test.pypi.org/help/#file-name-reuse
+    # # Workaround: https://www.python.org/dev/peps/pep-0440/#post-releases
+    # log_msg("Sending to TEST PyPI ...")
+    # run_cmd("""
+    #   python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+    # """)
+    # log_msg("Sent!")
 
-    log_msg("Sending to REAL PyPI ...")
-    run_cmd("twine upload dist/*")
-    log_msg("Sent!")
+    # log_msg("Sending to REAL PyPI ...")
+    # run_cmd("twine upload dist/*")
+    # log_msg("Sent!")
+
+    log_msg("Rebuilding master docs via sphinx ...")
+    # run_cmd("git checkout master")
+    fullenv.run_cmd("bash -c 'cd docs && make html'")
+    CMD = """
+      git checkout gh-pages &&
+      cp -v -r docs/build/html/* ./ &&
+      git commit -am 'Docs update from oarphcli --release' &&
+      git push origin gh-pages
+    """
+    run_cmd(CMD)
+    log_msg("Built and pushed!")
+
     
 
 if __name__ == '__main__':
