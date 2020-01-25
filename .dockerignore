@@ -7,8 +7,19 @@ oarphpy.egg-info
 */**/__pycache__
 .eggs
 .pytest_cache
+.circleci
 eggs
 build
 dist
 notebooks/.ipynb_checkpoints
 notebooks/sparkmonitor_kernelextension.log
+
+# gh-pages stuff
+docs/build
+_static
+_sources
+_modules
+*.html
+*.js
+objects.inv
+.nojekyll
