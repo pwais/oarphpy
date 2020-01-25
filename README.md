@@ -38,7 +38,7 @@ Or use the dockerized environment hosted on [DockerHub](https://hub.docker.com/u
   $ docker run -it --net=host oarphpy/full bash
 ```
 
-See also [https://pwais.github.io/oarphpy/](API documentation).
+See also [API documentation](https://pwais.github.io/oarphpy/).
 
 ## Dockerized Development Environments
 
