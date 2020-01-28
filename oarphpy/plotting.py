@@ -216,11 +216,11 @@ class HistogramWithExamplesPlotter(object):
         else:
           col_def = col_def.when(*args)
       col_def = col_def.otherwise(-1)
-      df_bucketed = sp_src_df.withColumn('au_plot_bucket', col_def)
+      df_bucketed = sp_src_df.withColumn('op_plot_bucket', col_def)
       
       # Second, we collect chunks of rows partitioned by bucket ID so that we
       # can run our display function in parallel over buckets.
-      bucketed_chunks = df_bucketed.rdd.groupBy(lambda r: r.au_plot_bucket)
+      bucketed_chunks = df_bucketed.rdd.groupBy(lambda r: r.op_plot_bucket)
       bucket_disp = bucketed_chunks.map(
                       lambda b_irows: 
                         self.display_bucket(spv, b_irows[0], b_irows[1]))
