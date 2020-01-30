@@ -22,9 +22,9 @@ import sys
 import re
 
 try:
-  from setuptools import setup
+  from setuptools import setup, find_packages
 except ImportError:
-  from distutils.core import setup
+  from distutils.core import setup, find_packages
 
 # Function to parse __version__ in `oarphpy/__init__.py`
 def find_version():
@@ -54,7 +54,7 @@ if sys.version_info[0] < 3:
 SPARK_DEPS = [
   'findspark==1.3.0',
   'numpy',
-  'pandas>=0.19.2'
+  'pandas>=0.19.2',
 ]
 HAVE_SYSTEM_SPARK = (
   os.environ.get('SPARK_HOME') or
@@ -99,7 +99,7 @@ dist = setup(
   author_email='py@oarph.me',
   url='https://github.com/pwais/oarphpy',
   license='Apache License 2.0',
-  packages=['oarphpy'],
+  packages=find_packages(exclude=['oarphpy_test*']),
   long_description="See https://github.com/pwais/oarphpy",
   long_description_content_type="text/x-rst",
   classifiers=[
