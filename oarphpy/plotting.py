@@ -138,6 +138,17 @@ class HistogramWithExamplesPlotter(object):
   `HistogramWithExamplesPlotter::display_bucket()`
 
   See `HistogramWithExamplesPlotter::run()`.
+
+  To plot inline in a Jupyter notebook, use Bokeh's show() helper:
+
+  >>> from bokeh.io import output_notebook, show
+  >>> output_notebook()
+  >>> class Plotter(HistogramWithExamplesPlotter):
+  ...     pass
+  >>> pl = Plotter()
+  >>> fig = pl.run(spark_dataframe, 'my_column_name')
+  >>> show(fig)
+
   """
 
   ## Core Params
@@ -145,9 +156,10 @@ class HistogramWithExamplesPlotter(object):
 
   SUB_PIVOT_COL = None
 
-  WIDTH = 1000
+  WIDTH = 980
     # Bokeh's plots (especially in single-column two-row layout we use) work
-    # best with a fixed width
+    # best with a fixed width.  980px fills the width of a standard Jupyter
+    # notebook.
 
   ## Plotting params
   TITLE = None  # By default use DataFrame Column name
