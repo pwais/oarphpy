@@ -419,10 +419,107 @@ class SessionFactory(object):
 
   ### Core Features
 
+
+  #### create_egg() and Support
+
   @classmethod
-  def _create_egg(cls, src_root=None, tmp_path=None):
+  def _resolve_src_root(cls):
+    src_root = cls.SRC_ROOT
+    if src_root is None:
+      util.log.info("Trying to auto-resolve path to src root ...")
+      try:
+        import inspect
+        yay = inspect.stack()[2][0]
+        import pdb; pdb.set_trace()
+        path = inspect.getfile(inspect.currentframe())
+        src_root = os.path.dirname(os.path.abspath(path))
+        i_am_in_a_module = os.path.exists(
+          os.path.join(os.path.dirname(src_root), '__init__.py'))
+        if i_am_in_a_module:
+          src_root = os.path.abspath(os.path.join(src_root, os.pardir))
+      except Exception as e:
+        util.log.info(
+          "Failed to auto-resolve src root, "
+          "falling back to %s" % cls.SRC_ROOT)
+        src_root = cls.SRC_ROOT
+    
+    if sys.version_info.major >= 3:
+      # For whatever reason,
+      # In py 2.7.x, setuptools wants the path of the python module
+      # In py 3.x, setuptools wants the directory containing the python module
+      src_root = os.path.dirname(src_root)
+    return src_root
+
+  @classmethod
+  def _create_tmp_workdir(cls):
+    # Create a working directory for the build and the egg. The spark context
+    # dies upon process exit, so we'll keep the temp directory in scope for
+    # the same duration.
+    import tempfile
+    if not hasattr(cls, '_create_egg_tempdirs'):
+      cls._create_egg_tempdirs = []
+    fd = tempfile.TemporaryDirectory(suffix='_oarphpy_eggbuild')
+    cls._create_egg_tempdirs.append(fd)
+    return fd.name
+
+  @classmethod
+  def _create_new_egg(cls, src_root, out_dir):
+    assert os.path.exists(src_root)
+    assert os.path.exists(out_dir)
+
+    # Below is a programmatic way to run something like:
+    # $ cd /opt/au && python setup.py clean bdist_egg
+    # Based upon https://github.com/pypa/setuptools/blob/a94ccbf404a79d56f9b171024dee361de9a948da/setuptools/tests/test_bdist_egg.py#L30
+    # See also: 
+    # * https://github.com/pypa/setuptools/blob/f52b3b1c976e54df7a70db42bf59ca283412b461/setuptools/dist.py
+    # * https://github.com/pypa/setuptools/blob/46af765c49f548523b8212f6e08e1edb12f22ab6/setuptools/tests/test_sdist.py#L123
+    # * https://github.com/pypa/setuptools/blob/566f3aadfa112b8d6b9a1ecf5178552f6e0f8c6c/setuptools/__init__.py#L51
+    from setuptools.dist import Distribution
+    from setuptools import PackageFinder
+    MODNAME = os.path.split(src_root)[-1]
+    MODNAME = MODNAME.replace('-', '_') # setuptools will do it anyways
+    
+    # We want to confine setuptools to a clean directory because it'll create
+    # stateful files and directories like `build/`
+    setuptools_workdir = os.path.join(out_dir, 'workdir')
+    util.cleandir(setuptools_workdir)
+    dist = Distribution(attrs=dict(
+        script_name='setup.py',
+        script_args=[
+          'clean',
+          'bdist_egg', 
+            '--dist-dir', out_dir,
+            '--bdist-dir', setuptools_workdir,
+        ],
+        name=MODNAME,
+        src_root=src_root,
+        packages=PackageFinder.find(where=src_root),
+    ))
+    util.log.info("Generating egg to %s ..." % out_dir)
+    with util.with_cwd(setuptools_workdir):
+      with util.quiet():
+        dist.parse_command_line()
+        dist.run_commands()
+
+    # NB: This approach didn't work so well:
+    # Typically we want to give spark the egg from:
+    #  $ python setup.py bdist_egg
+    # from setuptools.command import bdist_egg
+    # cmd = bdist_egg.bdist_egg(
+    #                 bdist_dir=os.path.dirname(setup_py_path), editable=True)
+    # cmd.run()
+
+    egg_path = os.path.join(out_dir, MODNAME + '-0.0.0' + _egg_py_suffix())
+    assert os.path.exists(egg_path), "Can't find {}".format(egg_path)
+    util.log.info("... done.  Egg at %s" % egg_path)
+    return egg_path
+
+  @classmethod
+  def create_egg(cls, force_new=False):
     """Build a Python Egg from the current project and return a path
-    to the artifact.  
+    to the artifact.  The path may be to a cached, pre-computed egg only
+    if not `force_new`.  The 'current project' is either class-defaulted or
+    auto-deduced.
 
     Why an Egg?  `pyspark` supports zipfiles and egg files as Python artifacts.
     One might wish to use a wheel instead of an egg.  See this excellent
@@ -440,98 +537,31 @@ class SessionFactory(object):
      * Spark treats wheels as zip files and unzips them on every run; this
         unzip operation can be very expensive if the zipfile contains large
         binaries (e.g. tensorflow)
+     * Wheels are not yet officially supported:
+        https://issues.apache.org/jira/browse/SPARK-6764
     
     In comparison, an Egg provides the main benefits we want (to ship project
     code, often pre-committed code, to workers).
     """
 
-    log = util.create_log()
-
-    if tmp_path is None:
-      import tempfile
-      import uuid
-      tempdir = tempfile.gettempdir()
-
-      SUBDIR_NAME = 'op_spark_eggs_%s' % uuid.uuid4()
-      tmp_path = os.path.join(tempdir, SUBDIR_NAME)
-      util.cleandir(tmp_path)
-
-    src_root = src_root or cls.SRC_ROOT
-    if src_root is None:
-      log.info("Trying to auto-resolve path to src root ...")
-      try:
-        import inspect
-        path = inspect.getfile(inspect.currentframe())
-        src_root = os.path.dirname(os.path.abspath(path))
-        i_am_in_a_module = os.path.exists(
-          os.path.join(os.path.dirname(src_root), '__init__.py'))
-        if i_am_in_a_module:
-          src_root = os.path.abspath(os.path.join(src_root, os.pardir))
-      except Exception as e:
-        log.info(
-          "Failed to auto-resolve src root, "
-          "falling back to %s" % cls.SRC_ROOT)
-        src_root = cls.SRC_ROOT
+    if force_new or not hasattr(cls, '_cached_egg_path'):
+      cls._cached_egg_path = ''
     
-    if sys.version_info.major >= 3:
-      # For whatever reason,
-      # In py 2.7.x, setuptools wants the path of the python module
-      # In py 3.x, setuptools wants the directory containing the python module
-      src_root = os.path.dirname(src_root)
-    log.info("Using source root %s " % src_root)
-
-    # Below is a programmatic way to run something like:
-    # $ cd /opt/au && python setup.py clean bdist_egg
-    # Based upon https://github.com/pypa/setuptools/blob/a94ccbf404a79d56f9b171024dee361de9a948da/setuptools/tests/test_bdist_egg.py#L30
-    # See also: 
-    # * https://github.com/pypa/setuptools/blob/f52b3b1c976e54df7a70db42bf59ca283412b461/setuptools/dist.py
-    # * https://github.com/pypa/setuptools/blob/46af765c49f548523b8212f6e08e1edb12f22ab6/setuptools/tests/test_sdist.py#L123
-    # * https://github.com/pypa/setuptools/blob/566f3aadfa112b8d6b9a1ecf5178552f6e0f8c6c/setuptools/__init__.py#L51
-    from setuptools.dist import Distribution
-    from setuptools import PackageFinder
-    MODNAME = os.path.split(src_root)[-1]
-    MODNAME = MODNAME.replace('-', '_') # setuptools will do it anyways
+    if not cls._cached_egg_path:
+      # Lazyily egg-ify `src_root`. NB: We don't delete any previous eggs
+      # if `force_new` because some Spark session might still try to read
+      # the old file.
+      out_dir = cls._create_tmp_workdir()
     
-    # We want to confine setuptools to a clean directory because it'll create
-    # stateful files and directories like `build/`
-    setuptools_workdir = os.path.join(tmp_path, 'workdir')
-    util.cleandir(setuptools_workdir)
-    dist = Distribution(attrs=dict(
-        script_name='setup.py',
-        script_args=[
-          'clean',
-          'bdist_egg', 
-            '--dist-dir', tmp_path,
-            '--bdist-dir', setuptools_workdir,
-        ],
-        name=MODNAME,
-        src_root=src_root,
-        packages=PackageFinder.find(where=src_root),
-    ))
-    log.info("Generating egg to %s ..." % tmp_path)
-    with util.with_cwd(setuptools_workdir):
-      with util.quiet():
-        dist.parse_command_line()
-        dist.run_commands()
+      # Now decide the source root that we'll egg-ify.
+      src_root = cls._resolve_src_root()
+      util.log.info("Using source root %s " % src_root)
 
-    egg_path = os.path.join(tmp_path, MODNAME + '-0.0.0' + _egg_py_suffix())
-    assert os.path.exists(egg_path), "Can't find {}".format(egg_path)
-    log.info("... done.  Egg at %s" % egg_path)
-    return egg_path
-
-    # NB: This approach didn't work so well:
-    # Typically we want to give spark the egg from:
-    #  $ python setup.py bdist_egg
-    # from setuptools.command import bdist_egg
-    # cmd = bdist_egg.bdist_egg(
-    #                 bdist_dir=os.path.dirname(setup_py_path), editable=True)
-    # cmd.run()
-
-  @classmethod
-  def egg_path(cls):
-    if not hasattr(cls, '_cached_egg_path'):
-      cls._cached_egg_path = cls._create_egg()
+      cls._cached_egg_path = cls._create_new_egg(src_root, out_dir)
     return cls._cached_egg_path
+
+
+  ## Primary Public Interface    
 
   @classmethod
   def getOrCreate(cls):
@@ -544,8 +574,11 @@ class SessionFactory(object):
       A `pyspark.sql.session.SparkSession` instance.
     """
 
-    # Warm the cache; surface build errors before trying to start spark.
-    _ = cls.egg_path()
+    # TODO: take a SparkConf like SparkSession does.
+
+    # Warm the cache; this call surfaces build errors *before* trying
+    # to start spark.
+    _ = cls.create_egg()
 
     from pyspark import sql
     builder = sql.SparkSession.builder
@@ -588,7 +621,7 @@ class SessionFactory(object):
 
     # spark.sparkContext.setLogLevel('INFO')
 
-    spark.sparkContext.addPyFile(cls.egg_path())
+    spark.sparkContext.addPyFile(cls.create_egg())
     return spark
   
   @classmethod
@@ -624,9 +657,9 @@ class LocalK8SSpark(SessionFactory):
   }
 
 
-# NBSpark is a session builder for local Jupyter notebooks.  NBSpark also serves
+# NBSpark is a session builder for local Jupyter notebooks. NBSpark also serves
 # as an example of how to subclass the Spark factory above for use with the
-# `sparkmonitor` jupyter package
+# `sparkmonitor` jupyter package.
 # (FMI see demo https://krishnan-r.github.io/sparkmonitor/)
 
 # Try to find sparkmonitor's Spark interop jar
@@ -644,9 +677,47 @@ class NBSpark(SessionFactory):
   https://krishnan-r.github.io/sparkmonitor/
   """
   CONF_KV = ({
+    'spark.python.worker.reuse': 'false',
+    'spark.files.overwrite':   'true',
     'spark.extraListeners': 'sparkmonitor.listener.JupyterSparkMonitorListener',
     'spark.driver.extraClassPath': SPARKMONITOR_JAR_PATH,
   } if SPARKMONITOR_JAR_PATH else {})
+
+
+  MAYBE_REBUILD_EGG_EVERY_CELL_RUN = True
+
+  @classmethod
+  def getOrCreate(cls):
+    spark = super(NBSpark, cls).getOrCreate()
+    
+    if cls.MAYBE_REBUILD_EGG_EVERY_CELL_RUN:
+      def maybe_rebuild_egg(*args):
+        egg_path = cls.create_egg()
+        egg_time = os.path.getmtime(egg_path)
+
+        src_root = cls._resolve_src_root()
+        latest_src_time = os.path.getmtime(src_root)
+        for path in util.all_files_recursive(src_root):
+          latest_src_time = max(latest_src_time, os.path.getmtime(path))
+
+        if latest_src_time > egg_time:
+          util.log.info("Source has changed! Rebuilding Egg ...")
+          egg_path = cls.create_egg(force_new=True)
+          spark.sparkContext.addPyFile(cls._get_egg_path())
+
+      # Patch into IPython / Jupyter / Google Colab to maybe rebuild the egg
+      # every cell run.  NB:
+      # * `get_ipython()` is a global provided in any IPython-esque session
+      # * Using pre_run_code_hook triggers a UserWarning / deprecation warning,
+      #     but the suggested events don't exist ...
+      # import warnings
+      # warnings.filterwarnings(
+      #   action='ignore',
+      #   message=r'Hook pre_run_code_hook is deprecated')
+      get_ipython().set_hook('pre_execute', maybe_rebuild_egg)
+
+    return spark
+
 
 
 ################################################################################
