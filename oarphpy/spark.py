@@ -412,9 +412,15 @@ class SessionFactory(object):
   # }
   CONF_KV = {}
 
-  # Force all sessions to package and use code in this source root directory
-  # (NO trailing slash!)
+  # Force all sessions to package and use code in this source root directory.
+  # Specify a path to the library dir, i.e. the given path should be a 
+  # directory containing an __init__.py file.
   SRC_ROOT = None
+
+  # If you have more than one python module in `SRC_ROOT`, provide a list
+  # of their names, or the list ['*'] to match all eligible modules (i.e.
+  # every subdirectory with an __init__.py).
+  SRC_ROOT_MODULES = []
   
 
   ### Core Features
@@ -429,43 +435,61 @@ class SessionFactory(object):
       util.log.info("Trying to auto-resolve path to src root ...")
       try:
         import inspect
-        yay = inspect.stack()[2][0]
-        import pdb; pdb.set_trace()
-        path = inspect.getfile(inspect.currentframe())
-        src_root = os.path.dirname(os.path.abspath(path))
-        i_am_in_a_module = os.path.exists(
-          os.path.join(os.path.dirname(src_root), '__init__.py'))
-        if i_am_in_a_module:
-          src_root = os.path.abspath(os.path.join(src_root, os.pardir))
+        frames = inspect.stack()#[2][0]
+        for frame in frames:
+          # Ignore frames associated with this class
+          if ('oarphpy/spark.py' in frame.filename and 
+                hasattr(cls, frame.function)):
+            continue
+          
+          # Ignore user using ::sess() context manager
+          if ('contextlib.py' in frame.filename and 
+                frame.function == '__enter__'):
+            continue
+          
+          # Ok we might have found the calling user program!
+          candidate = os.path.abspath(frame.filename)
+          i_am_in_a_module = os.path.exists(
+            os.path.join(os.path.dirname(candidate), '__init__.py'))
+          if i_am_in_a_module:
+            src_root = os.path.abspath(os.path.join(candidate, os.pardir))
+            break
+        if not src_root:
+          raise ValueError("Ran out of candidate stack frames")
       except Exception as e:
+        assert False, e
         util.log.info(
-          "Failed to auto-resolve src root, "
-          "falling back to %s" % cls.SRC_ROOT)
+          "Failed to auto-resolve src root (error: %s) "
+          "falling back to %s" % (e, cls.SRC_ROOT))
         src_root = cls.SRC_ROOT
     
-    if sys.version_info.major >= 3:
-      # For whatever reason,
-      # In py 2.7.x, setuptools wants the path of the python module
-      # In py 3.x, setuptools wants the directory containing the python module
-      src_root = os.path.dirname(src_root)
+    if src_root and src_root.endswith(os.sep):
+      src_root = src_root[:-1]
     return src_root
 
   @classmethod
   def _create_tmp_workdir(cls):
     # Create a working directory for the build and the egg. The spark context
-    # dies upon process exit, so we'll keep the temp directory in scope for
+    # dies upon process exit, so we'll keep the temp directory alive for
     # the same duration.
+    import atexit
+    import shutil
     import tempfile
-    if not hasattr(cls, '_create_egg_tempdirs'):
-      cls._create_egg_tempdirs = []
-    fd = tempfile.TemporaryDirectory(suffix='_oarphpy_eggbuild')
-    cls._create_egg_tempdirs.append(fd)
-    return fd.name
+    path = tempfile.mkdtemp(suffix='_oarphpy_eggbuild')
+    # atexit.register(lambda: shutil.rmtree(path))
+    return path
 
   @classmethod
   def _create_new_egg(cls, src_root, out_dir):
     assert os.path.exists(src_root)
     assert os.path.exists(out_dir)
+
+    MODNAME = os.path.basename(src_root)
+    if sys.version_info.major >= 3:
+      # For whatever reason,
+      # In py 2.7.x, setuptools wants the path of the python module
+      # In py 3.x, setuptools wants the directory containing the python module
+      src_root = os.path.dirname(src_root)
 
     # Below is a programmatic way to run something like:
     # $ cd /opt/au && python setup.py clean bdist_egg
@@ -476,9 +500,16 @@ class SessionFactory(object):
     # * https://github.com/pypa/setuptools/blob/566f3aadfa112b8d6b9a1ecf5178552f6e0f8c6c/setuptools/__init__.py#L51
     from setuptools.dist import Distribution
     from setuptools import PackageFinder
-    MODNAME = os.path.split(src_root)[-1]
     MODNAME = MODNAME.replace('-', '_') # setuptools will do it anyways
     
+    # By default we only want MODNAME in the egg, but we'll support
+    # multiple modules (e.g. both oarphpy and oaprhpy_test).
+    include = [MODNAME + '*']
+    if cls.SRC_ROOT_MODULES == ['*']:
+      include = cls.SRC_ROOT_MODULES
+    elif cls.SRC_ROOT_MODULES:
+      include = [m + '*' for m in cls.SRC_ROOT_MODULES]
+
     # We want to confine setuptools to a clean directory because it'll create
     # stateful files and directories like `build/`
     setuptools_workdir = os.path.join(out_dir, 'workdir')
@@ -493,7 +524,7 @@ class SessionFactory(object):
         ],
         name=MODNAME,
         src_root=src_root,
-        packages=PackageFinder.find(where=src_root),
+        packages=PackageFinder.find(where=src_root, include=include),
     ))
     util.log.info("Generating egg to %s ..." % out_dir)
     with util.with_cwd(setuptools_workdir):
@@ -635,10 +666,11 @@ class SessionFactory(object):
       yield spark
 
   @classmethod
-  def selftest(cls):
+  def selftest(cls, modname=None):
     with cls.sess() as spark:
       test_pi(spark)
-      test_egg(spark)
+      if modname:
+        test_egg(spark, modname=modname)
     return True
 
 class LocalK8SSpark(SessionFactory):
