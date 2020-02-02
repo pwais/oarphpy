@@ -476,7 +476,7 @@ class SessionFactory(object):
     import shutil
     import tempfile
     path = tempfile.mkdtemp(suffix='_oarphpy_eggbuild')
-    # atexit.register(lambda: shutil.rmtree(path))
+    atexit.register(lambda: shutil.rmtree(path))
     return path
 
   @classmethod
@@ -703,20 +703,61 @@ try:
 except Exception:
   SPARKMONITOR_JAR_PATH = ''
 
+def _dict_concat(*dicts):
+  out = {}
+  for d in dicts:
+    out.update(**d)
+  return out
+
+
 class NBSpark(SessionFactory):
   """NBSpark is a session builder for local Jupyter notebooks.  Also includes
   support for the `sparkmonitor` jupyter package, see 
   https://krishnan-r.github.io/sparkmonitor/
   """
-  CONF_KV = ({
+  
+  # Enable support for shipping local modifications to library code without
+  # needing to restart the notebook kernel.  This feature will attempt to
+  # re-build the user code Egg if there are new local changes and update the
+  # Egg in the current Spark session.  Enabling this feature leads to small
+  # potential performance degredation; see below.  
+  # NB: If you have an RDD or DataFrame that uses Egg data structures or code,
+  # you'll need to re-compute that RDD or DataFrame for updated code to take
+  # effect; updating the egg does not invalidate any `cache()ed` or
+  # `persist()ed` Spark data.
+  MAYBE_REBUILD_EGG_EVERY_CELL_RUN = True
+  
+  # Options to support dynamic Egg updating.  Firstly, `spark.files.overwrite`
+  # is needed to accomodate updates to SparkFiles at all; `pyspark` will error
+  # on update otherwise.  Secondly, while updating SparkFiles works as
+  # expected, updating *Python* modules can lead to 'zipimport malformed zip
+  # header' crashes because:
+  #  * zipimport caches loaded modules: 
+  #      https://github.com/python/cpython/blob/83d3202b92fb4c2fc6df5b035d57f3a1cf715f20/Lib/zipimport.py#L37
+  #        Clearing this private global can fix the error, but it must be
+  #        cleared immediately before import, which is an undesirable
+  #        constraint to impress upon the user.
+  #  * pyspark clears importlib caches, but only in the driver:
+  #      https://spark.apache.org/docs/2.4.4/api/python/_modules/pyspark/context.html#SparkContext.addPyFile
+  # A fix we've found reliable is to disable Python process re-use via
+  # `spark.python.worker.reuse` so that the Spark Python worker always has
+  # an empty zipimport cache prior to execution.
+  REBUILD_EGG_OPTS = {
+    'spark.files.overwrite': 'true',
     'spark.python.worker.reuse': 'false',
-    'spark.files.overwrite':   'true',
+  }
+
+  # These settings are required as part of standard `sparkmonitor` setup
+  # https://github.com/krishnan-r/sparkmonitor/blob/b023845a245010fb7dd9c4be73747f0e5a8c93bd/extension/sparkmonitor/kernelextension.py#L203
+  SPARKMONITOR_OPTS = {
     'spark.extraListeners': 'sparkmonitor.listener.JupyterSparkMonitorListener',
     'spark.driver.extraClassPath': SPARKMONITOR_JAR_PATH,
-  } if SPARKMONITOR_JAR_PATH else {})
+  }
 
-
-  MAYBE_REBUILD_EGG_EVERY_CELL_RUN = True
+  CONF_KV = _dict_concat(
+              REBUILD_EGG_OPTS if MAYBE_REBUILD_EGG_EVERY_CELL_RUN else {},
+              SPARKMONITOR_OPTS if SPARKMONITOR_JAR_PATH else {}
+  )
 
   @classmethod
   def getOrCreate(cls):
@@ -735,18 +776,18 @@ class NBSpark(SessionFactory):
         if latest_src_time > egg_time:
           util.log.info("Source has changed! Rebuilding Egg ...")
           egg_path = cls.create_egg(force_new=True)
-          spark.sparkContext.addPyFile(cls._get_egg_path())
+          spark.sparkContext.addPyFile(egg_path) # Updated!
 
       # Patch into IPython / Jupyter / Google Colab to maybe rebuild the egg
       # every cell run.  NB:
       # * `get_ipython()` is a global provided in any IPython-esque session
-      # * Using pre_run_code_hook triggers a UserWarning / deprecation warning,
-      #     but the suggested events don't exist ...
-      # import warnings
-      # warnings.filterwarnings(
-      #   action='ignore',
-      #   message=r'Hook pre_run_code_hook is deprecated')
-      get_ipython().set_hook('pre_execute', maybe_rebuild_egg)
+      # * Using pre_run_code_hook triggers a UserWarning / deprecation
+      #     warning, but the suggested events don't exist ...
+      import warnings
+      warnings.filterwarnings(
+        action='ignore',
+        message=r'Hook pre_run_code_hook is deprecated')
+      get_ipython().set_hook('pre_run_code_hook', maybe_rebuild_egg)
 
     return spark
 
