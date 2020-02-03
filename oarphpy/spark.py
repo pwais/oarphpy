@@ -414,7 +414,8 @@ class SessionFactory(object):
 
   # Force all sessions to package and use code in this source root directory.
   # Specify a path to the library dir, i.e. the given path should be a 
-  # directory containing an __init__.py file.
+  # directory containing an __init__.py file (but a setup.py is not needed).
+  # If False-y, we'll try to auto-deduce this path from the calling code.
   SRC_ROOT = None
 
   # If you have more than one python module in `SRC_ROOT`, provide a list
@@ -490,9 +491,12 @@ class SessionFactory(object):
       # In py 2.7.x, setuptools wants the path of the python module
       # In py 3.x, setuptools wants the directory containing the python module
       src_root = os.path.dirname(src_root)
+    
+    log.info("Using source root %s " % src_root)
 
     # Below is a programmatic way to run something like:
     # $ cd /opt/au && python setup.py clean bdist_egg
+    # But we don't actually need a setup.py (!)
     # Based upon https://github.com/pypa/setuptools/blob/a94ccbf404a79d56f9b171024dee361de9a948da/setuptools/tests/test_bdist_egg.py#L30
     # See also: 
     # * https://github.com/pypa/setuptools/blob/f52b3b1c976e54df7a70db42bf59ca283412b461/setuptools/dist.py
