@@ -492,7 +492,7 @@ class SessionFactory(object):
       # In py 3.x, setuptools wants the directory containing the python module
       src_root = os.path.dirname(src_root)
     
-    log.info("Using source root %s " % src_root)
+    util.log.info("Using source root %s " % src_root)
 
     # Below is a programmatic way to run something like:
     # $ cd /opt/au && python setup.py clean bdist_egg
