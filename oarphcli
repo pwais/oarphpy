@@ -369,38 +369,38 @@ def main(args=None):
       for _ in range(3):
         log.info("=== Release %s: %s ===" % (version, msg))
     
-    log_msg("Starting tests ...")
-    for env in DockerEnv.get_all_envs(args.root):
-      env.run_tests()
-    log_msg("Test success!")
+    # log_msg("Starting tests ...")
+    # for env in DockerEnv.get_all_envs(args.root):
+    #   env.run_tests()
+    # log_msg("Test success!")
 
-    log_msg("Pushing Docker Environments ...")
-    for env in DockerEnv.get_all_envs(args.root):
-      env.build()
-      env.push_as_latest()
-    log_msg("Push success!")
+    # log_msg("Pushing Docker Environments ...")
+    # for env in DockerEnv.get_all_envs(args.root):
+    #   env.build()
+    #   env.push_as_latest()
+    # log_msg("Push success!")
 
-    log_msg("Generating archive for PyPI ...")
-    py2env.run_cmd("python setup.py sdist bdist_egg bdist_wheel")
-    fullenv.run_cmd("python3 setup.py sdist bdist_egg bdist_wheel")
-    run_cmd("twine check dist/*")
-    log_msg("Generation success!")
+    # log_msg("Generating archive for PyPI ...")
+    # py2env.run_cmd("python setup.py sdist bdist_egg bdist_wheel")
+    # fullenv.run_cmd("python3 setup.py sdist bdist_egg bdist_wheel")
+    # run_cmd("twine check dist/*")
+    # log_msg("Generation success!")
 
-    # NB: Careful! PyPI does not allow file name re-use!
-    # https://test.pypi.org/help/#file-name-reuse
-    # Workaround: https://www.python.org/dev/peps/pep-0440/#post-releases
-    log_msg("Sending to TEST PyPI ...")
-    run_cmd("""
-      python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-    """)
-    log_msg("Sent!")
+    # # NB: Careful! PyPI does not allow file name re-use!
+    # # https://test.pypi.org/help/#file-name-reuse
+    # # Workaround: https://www.python.org/dev/peps/pep-0440/#post-releases
+    # log_msg("Sending to TEST PyPI ...")
+    # run_cmd("""
+    #   python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+    # """)
+    # log_msg("Sent!")
 
-    log_msg("Sending to REAL PyPI ...")
-    run_cmd("twine upload dist/*")
-    log_msg("Sent!")
+    # log_msg("Sending to REAL PyPI ...")
+    # run_cmd("twine upload dist/*")
+    # log_msg("Sent!")
 
     log_msg("Rebuilding master docs via sphinx ...")
-    run_cmd("git checkout master")
+    # run_cmd("git checkout master")
     fullenv.run_cmd("bash -c 'cd docs && make html'")
     CMD = """
       git checkout gh-pages &&
