@@ -369,7 +369,7 @@ def main(args=None):
       for _ in range(3):
         log.info("=== Release %s: %s ===" % (version, msg))
     
-    log_msg("Starting tests ...")
+    log_msg("Start tests ...")
     for env in DockerEnv.get_all_envs(args.root):
       env.run_tests()
     log_msg("Test success!")
@@ -409,7 +409,7 @@ def main(args=None):
       git push origin gh-pages
     """
     run_cmd(CMD)
-    log_msg("Docs built and pushed!")    
+    log_msg("Docs built and pushed!")
 
 if __name__ == '__main__':
   main()

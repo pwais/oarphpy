@@ -47,11 +47,11 @@ def test_union_dfs():
 
 @skip_if_no_spark
 def test_spark_selftest():
-  assert testutil.LocalSpark.selftest()
+  assert testutil.LocalSpark.selftest(modname='oarphpy_test')
 
 
 @skip_if_no_spark
-def test_spark_with_custom_library():
+def test_spark_with_custom_library_script():
   # We must run this test in a subprocess in order for it to have an isolated
   # Spark session
   SCRIPT_PATH = testutil.get_fixture_path('test_spark_with_custom_library.py')
@@ -59,6 +59,18 @@ def test_spark_with_custom_library():
   from oarphpy import util
   out = util.run_cmd(sys.executable + ' ' + SCRIPT_PATH, collect=True)
   assert b'test_spark_with_custom_library success!' in out
+
+
+@skip_if_no_spark
+def test_spark_script_in_standalone_lib():
+  # We must run this test in a subprocess in order for it to have an isolated
+  # Spark session
+  SCRIPT_PATH = testutil.get_fixture_path(
+    'test_spark_script_in_standalone_lib.py')
+  
+  from oarphpy import util
+  out = util.run_cmd(sys.executable + ' ' + SCRIPT_PATH, collect=True)
+  assert b'test_spark_script_in_standalone_lib success!' in out
 
 
 @skip_if_no_spark

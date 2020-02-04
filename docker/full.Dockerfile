@@ -100,6 +100,7 @@ RUN \
     ssh \
     sudo \
     tree \
+    unzip \
     vim \
     wget \
         && \

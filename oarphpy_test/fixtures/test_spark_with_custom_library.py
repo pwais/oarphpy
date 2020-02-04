@@ -21,7 +21,7 @@ if __name__ == '__main__':
   
   from oarphpy import util
 
-  TEST_TEMPDIR_ROOT = '/tmp/oarphpy_test_spark'
+  TEST_TEMPDIR_ROOT = '/tmp/test_spark_with_custom_library'
 
   # First create a clean dir and a custom python library
   my_src_root = os.path.join(TEST_TEMPDIR_ROOT, 'my_src_root')
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     {python} -c 'from mymodule.foo import pi; print(pi)'
   """.format(src_root=my_src_root, python=sys.executable)
   out = util.run_cmd(TEST_SCRIPT, collect=True)
-  assert out == b'3.14\n', "Check contents of %s" % (my_src_root)
+  assert out == b'3.14\n', "Check contents of %s" % (my_src_root,)
 
   # Force the spark session to use our custom source root
   from oarphpy_test.testutil import LocalSpark
@@ -55,8 +55,8 @@ if __name__ == '__main__':
     # The module should come from the included egg
     imp_path = mymodule.__file__
     assert re.match(
-      r'^(.*)spark-(.*)/my_src_root-0\.0\.0-py(.+)\.egg/mymodule/__init__\.py$',
-      imp_path)
+      r'^(.*)spark-(.*)/mymodule-0\.0\.0-py(.+)\.egg/mymodule/__init__\.py$',
+      imp_path), 'Got %s' % imp_path
 
     # Now verify the module itself
     from mymodule import foo
