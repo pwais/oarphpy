@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>oarphpy.spark &mdash; oarphpy 0.0.1 documentation</title>
+  <title>oarphpy.spark &mdash; oarphpy 0.0.3 documentation</title>
   
 
   
@@ -555,17 +555,149 @@
   <span class="c1"># }</span>
   <span class="n">CONF_KV</span> <span class="o">=</span> <span class="p">{}</span>
 
-  <span class="c1"># Force all sessions to package and use code in this source root directory</span>
-  <span class="c1"># (NO trailing slash!)</span>
+  <span class="c1"># Force all sessions to package and use code in this source root directory.</span>
+  <span class="c1"># Specify a path to the library dir, i.e. the given path should be a </span>
+  <span class="c1"># directory containing an __init__.py file (but a setup.py is not needed).</span>
+  <span class="c1"># If False-y, we&#39;ll try to auto-deduce this path from the calling code.</span>
   <span class="n">SRC_ROOT</span> <span class="o">=</span> <span class="kc">None</span>
+
+  <span class="c1"># If you have more than one python module in `SRC_ROOT`, provide a list</span>
+  <span class="c1"># of their names, or the list [&#39;*&#39;] to match all eligible modules (i.e.</span>
+  <span class="c1"># every subdirectory with an __init__.py).</span>
+  <span class="n">SRC_ROOT_MODULES</span> <span class="o">=</span> <span class="p">[]</span>
   
 
   <span class="c1">### Core Features</span>
 
+
+  <span class="c1">#### create_egg() and Support</span>
+
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">_create_egg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">src_root</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tmp_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">_resolve_src_root</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="n">src_root</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span>
+    <span class="k">if</span> <span class="n">src_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+      <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Trying to auto-resolve path to src root ...&quot;</span><span class="p">)</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">inspect</span>
+        <span class="n">frames</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span><span class="c1">#[2][0]</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+          <span class="c1"># Ignore frames associated with this class</span>
+          <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;oarphpy/spark.py&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="o">.</span><span class="n">filename</span> <span class="ow">and</span> 
+                <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">frame</span><span class="o">.</span><span class="n">function</span><span class="p">)):</span>
+            <span class="k">continue</span>
+          
+          <span class="c1"># Ignore user using ::sess() context manager</span>
+          <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;contextlib.py&#39;</span> <span class="ow">in</span> <span class="n">frame</span><span class="o">.</span><span class="n">filename</span> <span class="ow">and</span> 
+                <span class="n">frame</span><span class="o">.</span><span class="n">function</span> <span class="o">==</span> <span class="s1">&#39;__enter__&#39;</span><span class="p">):</span>
+            <span class="k">continue</span>
+          
+          <span class="c1"># Ok we might have found the calling user program!</span>
+          <span class="n">candidate</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+          <span class="n">i_am_in_a_module</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">candidate</span><span class="p">),</span> <span class="s1">&#39;__init__.py&#39;</span><span class="p">))</span>
+          <span class="k">if</span> <span class="n">i_am_in_a_module</span><span class="p">:</span>
+            <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">pardir</span><span class="p">))</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">src_root</span><span class="p">:</span>
+          <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ran out of candidate stack frames&quot;</span><span class="p">)</span>
+      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="n">e</span>
+        <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+          <span class="s2">&quot;Failed to auto-resolve src root (error: </span><span class="si">%s</span><span class="s2">) &quot;</span>
+          <span class="s2">&quot;falling back to </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span><span class="p">))</span>
+        <span class="n">src_root</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span>
+    
+    <span class="k">if</span> <span class="n">src_root</span> <span class="ow">and</span> <span class="n">src_root</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
+      <span class="n">src_root</span> <span class="o">=</span> <span class="n">src_root</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">src_root</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">_create_tmp_workdir</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="c1"># Create a working directory for the build and the egg. The spark context</span>
+    <span class="c1"># dies upon process exit, so we&#39;ll keep the temp directory alive for</span>
+    <span class="c1"># the same duration.</span>
+    <span class="kn">import</span> <span class="nn">atexit</span>
+    <span class="kn">import</span> <span class="nn">shutil</span>
+    <span class="kn">import</span> <span class="nn">tempfile</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;_oarphpy_eggbuild&#39;</span><span class="p">)</span>
+    <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">path</span>
+
+  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">_create_new_egg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">src_root</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">src_root</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
+
+    <span class="n">MODNAME</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">src_root</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+      <span class="c1"># For whatever reason,</span>
+      <span class="c1"># In py 2.7.x, setuptools wants the path of the python module</span>
+      <span class="c1"># In py 3.x, setuptools wants the directory containing the python module</span>
+      <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">src_root</span><span class="p">)</span>
+    
+    <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using source root </span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">src_root</span><span class="p">)</span>
+
+    <span class="c1"># Below is a programmatic way to run something like:</span>
+    <span class="c1"># $ cd /opt/au &amp;&amp; python setup.py clean bdist_egg</span>
+    <span class="c1"># But we don&#39;t actually need a setup.py (!)</span>
+    <span class="c1"># Based upon https://github.com/pypa/setuptools/blob/a94ccbf404a79d56f9b171024dee361de9a948da/setuptools/tests/test_bdist_egg.py#L30</span>
+    <span class="c1"># See also: </span>
+    <span class="c1"># * https://github.com/pypa/setuptools/blob/f52b3b1c976e54df7a70db42bf59ca283412b461/setuptools/dist.py</span>
+    <span class="c1"># * https://github.com/pypa/setuptools/blob/46af765c49f548523b8212f6e08e1edb12f22ab6/setuptools/tests/test_sdist.py#L123</span>
+    <span class="c1"># * https://github.com/pypa/setuptools/blob/566f3aadfa112b8d6b9a1ecf5178552f6e0f8c6c/setuptools/__init__.py#L51</span>
+    <span class="kn">from</span> <span class="nn">setuptools.dist</span> <span class="k">import</span> <span class="n">Distribution</span>
+    <span class="kn">from</span> <span class="nn">setuptools</span> <span class="k">import</span> <span class="n">PackageFinder</span>
+    <span class="n">MODNAME</span> <span class="o">=</span> <span class="n">MODNAME</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="c1"># setuptools will do it anyways</span>
+    
+    <span class="c1"># By default we only want MODNAME in the egg, but we&#39;ll support</span>
+    <span class="c1"># multiple modules (e.g. both oarphpy and oaprhpy_test).</span>
+    <span class="n">include</span> <span class="o">=</span> <span class="p">[</span><span class="n">MODNAME</span> <span class="o">+</span> <span class="s1">&#39;*&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT_MODULES</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;*&#39;</span><span class="p">]:</span>
+      <span class="n">include</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT_MODULES</span>
+    <span class="k">elif</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT_MODULES</span><span class="p">:</span>
+      <span class="n">include</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="o">+</span> <span class="s1">&#39;*&#39;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT_MODULES</span><span class="p">]</span>
+
+    <span class="c1"># We want to confine setuptools to a clean directory because it&#39;ll create</span>
+    <span class="c1"># stateful files and directories like `build/`</span>
+    <span class="n">setuptools_workdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="s1">&#39;workdir&#39;</span><span class="p">)</span>
+    <span class="n">util</span><span class="o">.</span><span class="n">cleandir</span><span class="p">(</span><span class="n">setuptools_workdir</span><span class="p">)</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">Distribution</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+        <span class="n">script_name</span><span class="o">=</span><span class="s1">&#39;setup.py&#39;</span><span class="p">,</span>
+        <span class="n">script_args</span><span class="o">=</span><span class="p">[</span>
+          <span class="s1">&#39;clean&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;bdist_egg&#39;</span><span class="p">,</span> 
+            <span class="s1">&#39;--dist-dir&#39;</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">,</span>
+            <span class="s1">&#39;--bdist-dir&#39;</span><span class="p">,</span> <span class="n">setuptools_workdir</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">MODNAME</span><span class="p">,</span>
+        <span class="n">src_root</span><span class="o">=</span><span class="n">src_root</span><span class="p">,</span>
+        <span class="n">packages</span><span class="o">=</span><span class="n">PackageFinder</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="n">src_root</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="n">include</span><span class="p">),</span>
+    <span class="p">))</span>
+    <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating egg to </span><span class="si">%s</span><span class="s2"> ...&quot;</span> <span class="o">%</span> <span class="n">out_dir</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">util</span><span class="o">.</span><span class="n">with_cwd</span><span class="p">(</span><span class="n">setuptools_workdir</span><span class="p">):</span>
+      <span class="k">with</span> <span class="n">util</span><span class="o">.</span><span class="n">quiet</span><span class="p">():</span>
+        <span class="n">dist</span><span class="o">.</span><span class="n">parse_command_line</span><span class="p">()</span>
+        <span class="n">dist</span><span class="o">.</span><span class="n">run_commands</span><span class="p">()</span>
+
+    <span class="c1"># NB: This approach didn&#39;t work so well:</span>
+    <span class="c1"># Typically we want to give spark the egg from:</span>
+    <span class="c1">#  $ python setup.py bdist_egg</span>
+    <span class="c1"># from setuptools.command import bdist_egg</span>
+    <span class="c1"># cmd = bdist_egg.bdist_egg(</span>
+    <span class="c1">#                 bdist_dir=os.path.dirname(setup_py_path), editable=True)</span>
+    <span class="c1"># cmd.run()</span>
+
+    <span class="n">egg_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">MODNAME</span> <span class="o">+</span> <span class="s1">&#39;-0.0.0&#39;</span> <span class="o">+</span> <span class="n">_egg_py_suffix</span><span class="p">())</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">egg_path</span><span class="p">),</span> <span class="s2">&quot;Can&#39;t find </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">egg_path</span><span class="p">)</span>
+    <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;... done.  Egg at </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">egg_path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">egg_path</span>
+
+<div class="viewcode-block" id="SessionFactory.create_egg"><a class="viewcode-back" href="../../index.html#oarphpy.spark.SessionFactory.create_egg">[docs]</a>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">create_egg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">force_new</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Build a Python Egg from the current project and return a path</span>
-<span class="sd">    to the artifact.  </span>
+<span class="sd">    to the artifact.  The path may be to a cached, pre-computed egg only</span>
+<span class="sd">    if not `force_new`.  The &#39;current project&#39; is either class-defaulted or</span>
+<span class="sd">    auto-deduced.</span>
 
 <span class="sd">    Why an Egg?  `pyspark` supports zipfiles and egg files as Python artifacts.</span>
 <span class="sd">    One might wish to use a wheel instead of an egg.  See this excellent</span>
@@ -583,98 +715,31 @@
 <span class="sd">     * Spark treats wheels as zip files and unzips them on every run; this</span>
 <span class="sd">        unzip operation can be very expensive if the zipfile contains large</span>
 <span class="sd">        binaries (e.g. tensorflow)</span>
+<span class="sd">     * Wheels are not yet officially supported:</span>
+<span class="sd">        https://issues.apache.org/jira/browse/SPARK-6764</span>
 <span class="sd">    </span>
 <span class="sd">    In comparison, an Egg provides the main benefits we want (to ship project</span>
 <span class="sd">    code, often pre-committed code, to workers).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">log</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">create_log</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">tmp_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="kn">import</span> <span class="nn">tempfile</span>
-      <span class="kn">import</span> <span class="nn">uuid</span>
-      <span class="n">tempdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">()</span>
-
-      <span class="n">SUBDIR_NAME</span> <span class="o">=</span> <span class="s1">&#39;op_spark_eggs_</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
-      <span class="n">tmp_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tempdir</span><span class="p">,</span> <span class="n">SUBDIR_NAME</span><span class="p">)</span>
-      <span class="n">util</span><span class="o">.</span><span class="n">cleandir</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
-
-    <span class="n">src_root</span> <span class="o">=</span> <span class="n">src_root</span> <span class="ow">or</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span>
-    <span class="k">if</span> <span class="n">src_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Trying to auto-resolve path to src root ...&quot;</span><span class="p">)</span>
-      <span class="k">try</span><span class="p">:</span>
-        <span class="kn">import</span> <span class="nn">inspect</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getfile</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">currentframe</span><span class="p">())</span>
-        <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
-        <span class="n">i_am_in_a_module</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span>
-          <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">src_root</span><span class="p">),</span> <span class="s1">&#39;__init__.py&#39;</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">i_am_in_a_module</span><span class="p">:</span>
-          <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src_root</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">pardir</span><span class="p">))</span>
-      <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-          <span class="s2">&quot;Failed to auto-resolve src root, &quot;</span>
-          <span class="s2">&quot;falling back to </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span><span class="p">)</span>
-        <span class="n">src_root</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span>
+    <span class="k">if</span> <span class="n">force_new</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_cached_egg_path&#39;</span><span class="p">):</span>
+      <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
     
-    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
-      <span class="c1"># For whatever reason,</span>
-      <span class="c1"># In py 2.7.x, setuptools wants the path of the python module</span>
-      <span class="c1"># In py 3.x, setuptools wants the directory containing the python module</span>
-      <span class="n">src_root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">src_root</span><span class="p">)</span>
-    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using source root </span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">src_root</span><span class="p">)</span>
-
-    <span class="c1"># Below is a programmatic way to run something like:</span>
-    <span class="c1"># $ cd /opt/au &amp;&amp; python setup.py clean bdist_egg</span>
-    <span class="c1"># Based upon https://github.com/pypa/setuptools/blob/a94ccbf404a79d56f9b171024dee361de9a948da/setuptools/tests/test_bdist_egg.py#L30</span>
-    <span class="c1"># See also: </span>
-    <span class="c1"># * https://github.com/pypa/setuptools/blob/f52b3b1c976e54df7a70db42bf59ca283412b461/setuptools/dist.py</span>
-    <span class="c1"># * https://github.com/pypa/setuptools/blob/46af765c49f548523b8212f6e08e1edb12f22ab6/setuptools/tests/test_sdist.py#L123</span>
-    <span class="c1"># * https://github.com/pypa/setuptools/blob/566f3aadfa112b8d6b9a1ecf5178552f6e0f8c6c/setuptools/__init__.py#L51</span>
-    <span class="kn">from</span> <span class="nn">setuptools.dist</span> <span class="k">import</span> <span class="n">Distribution</span>
-    <span class="kn">from</span> <span class="nn">setuptools</span> <span class="k">import</span> <span class="n">PackageFinder</span>
-    <span class="n">MODNAME</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">src_root</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">MODNAME</span> <span class="o">=</span> <span class="n">MODNAME</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="c1"># setuptools will do it anyways</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span><span class="p">:</span>
+      <span class="c1"># Lazyily egg-ify `src_root`. NB: We don&#39;t delete any previous eggs</span>
+      <span class="c1"># if `force_new` because some Spark session might still try to read</span>
+      <span class="c1"># the old file.</span>
+      <span class="n">out_dir</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_tmp_workdir</span><span class="p">()</span>
     
-    <span class="c1"># We want to confine setuptools to a clean directory because it&#39;ll create</span>
-    <span class="c1"># stateful files and directories like `build/`</span>
-    <span class="n">setuptools_workdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="s1">&#39;workdir&#39;</span><span class="p">)</span>
-    <span class="n">util</span><span class="o">.</span><span class="n">cleandir</span><span class="p">(</span><span class="n">setuptools_workdir</span><span class="p">)</span>
-    <span class="n">dist</span> <span class="o">=</span> <span class="n">Distribution</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
-        <span class="n">script_name</span><span class="o">=</span><span class="s1">&#39;setup.py&#39;</span><span class="p">,</span>
-        <span class="n">script_args</span><span class="o">=</span><span class="p">[</span>
-          <span class="s1">&#39;clean&#39;</span><span class="p">,</span>
-          <span class="s1">&#39;bdist_egg&#39;</span><span class="p">,</span> 
-            <span class="s1">&#39;--dist-dir&#39;</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">,</span>
-            <span class="s1">&#39;--bdist-dir&#39;</span><span class="p">,</span> <span class="n">setuptools_workdir</span><span class="p">,</span>
-        <span class="p">],</span>
-        <span class="n">name</span><span class="o">=</span><span class="n">MODNAME</span><span class="p">,</span>
-        <span class="n">src_root</span><span class="o">=</span><span class="n">src_root</span><span class="p">,</span>
-        <span class="n">packages</span><span class="o">=</span><span class="n">PackageFinder</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">where</span><span class="o">=</span><span class="n">src_root</span><span class="p">),</span>
-    <span class="p">))</span>
-    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Generating egg to </span><span class="si">%s</span><span class="s2"> ...&quot;</span> <span class="o">%</span> <span class="n">tmp_path</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">util</span><span class="o">.</span><span class="n">with_cwd</span><span class="p">(</span><span class="n">setuptools_workdir</span><span class="p">):</span>
-      <span class="k">with</span> <span class="n">util</span><span class="o">.</span><span class="n">quiet</span><span class="p">():</span>
-        <span class="n">dist</span><span class="o">.</span><span class="n">parse_command_line</span><span class="p">()</span>
-        <span class="n">dist</span><span class="o">.</span><span class="n">run_commands</span><span class="p">()</span>
+      <span class="c1"># Now decide the source root that we&#39;ll egg-ify.</span>
+      <span class="n">src_root</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_resolve_src_root</span><span class="p">()</span>
+      <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using source root </span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">src_root</span><span class="p">)</span>
 
-    <span class="n">egg_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">MODNAME</span> <span class="o">+</span> <span class="s1">&#39;-0.0.0&#39;</span> <span class="o">+</span> <span class="n">_egg_py_suffix</span><span class="p">())</span>
-    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">egg_path</span><span class="p">),</span> <span class="s2">&quot;Can&#39;t find </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">egg_path</span><span class="p">)</span>
-    <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;... done.  Egg at </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">egg_path</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">egg_path</span>
+      <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_new_egg</span><span class="p">(</span><span class="n">src_root</span><span class="p">,</span> <span class="n">out_dir</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span></div>
 
-    <span class="c1"># NB: This approach didn&#39;t work so well:</span>
-    <span class="c1"># Typically we want to give spark the egg from:</span>
-    <span class="c1">#  $ python setup.py bdist_egg</span>
-    <span class="c1"># from setuptools.command import bdist_egg</span>
-    <span class="c1"># cmd = bdist_egg.bdist_egg(</span>
-    <span class="c1">#                 bdist_dir=os.path.dirname(setup_py_path), editable=True)</span>
-    <span class="c1"># cmd.run()</span>
 
-  <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">egg_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_cached_egg_path&#39;</span><span class="p">):</span>
-      <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_create_egg</span><span class="p">()</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_cached_egg_path</span>
+  <span class="c1">## Primary Public Interface    </span>
 
 <div class="viewcode-block" id="SessionFactory.getOrCreate"><a class="viewcode-back" href="../../index.html#oarphpy.spark.SessionFactory.getOrCreate">[docs]</a>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">getOrCreate</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
@@ -687,8 +752,11 @@
 <span class="sd">      A `pyspark.sql.session.SparkSession` instance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># Warm the cache; surface build errors before trying to start spark.</span>
-    <span class="n">_</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">egg_path</span><span class="p">()</span>
+    <span class="c1"># TODO: take a SparkConf like SparkSession does.</span>
+
+    <span class="c1"># Warm the cache; this call surfaces build errors *before* trying</span>
+    <span class="c1"># to start spark.</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_egg</span><span class="p">()</span>
 
     <span class="kn">from</span> <span class="nn">pyspark</span> <span class="k">import</span> <span class="n">sql</span>
     <span class="n">builder</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span>
@@ -731,7 +799,7 @@
 
     <span class="c1"># spark.sparkContext.setLogLevel(&#39;INFO&#39;)</span>
 
-    <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">addPyFile</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">egg_path</span><span class="p">())</span>
+    <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">addPyFile</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">create_egg</span><span class="p">())</span>
     <span class="k">return</span> <span class="n">spark</span></div>
   
   <span class="nd">@classmethod</span>
@@ -745,10 +813,11 @@
       <span class="k">yield</span> <span class="n">spark</span>
 
   <span class="nd">@classmethod</span>
-  <span class="k">def</span> <span class="nf">selftest</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">selftest</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">modname</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="k">with</span> <span class="bp">cls</span><span class="o">.</span><span class="n">sess</span><span class="p">()</span> <span class="k">as</span> <span class="n">spark</span><span class="p">:</span>
       <span class="n">test_pi</span><span class="p">(</span><span class="n">spark</span><span class="p">)</span>
-      <span class="n">test_egg</span><span class="p">(</span><span class="n">spark</span><span class="p">)</span>
+      <span class="k">if</span> <span class="n">modname</span><span class="p">:</span>
+        <span class="n">test_egg</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">modname</span><span class="o">=</span><span class="n">modname</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span></div>
 
 <div class="viewcode-block" id="LocalK8SSpark"><a class="viewcode-back" href="../../index.html#oarphpy.spark.LocalK8SSpark">[docs]</a><span class="k">class</span> <span class="nc">LocalK8SSpark</span><span class="p">(</span><span class="n">SessionFactory</span><span class="p">):</span>
@@ -767,9 +836,9 @@
   <span class="p">}</span></div>
 
 
-<span class="c1"># NBSpark is a session builder for local Jupyter notebooks.  NBSpark also serves</span>
+<span class="c1"># NBSpark is a session builder for local Jupyter notebooks. NBSpark also serves</span>
 <span class="c1"># as an example of how to subclass the Spark factory above for use with the</span>
-<span class="c1"># `sparkmonitor` jupyter package</span>
+<span class="c1"># `sparkmonitor` jupyter package.</span>
 <span class="c1"># (FMI see demo https://krishnan-r.github.io/sparkmonitor/)</span>
 
 <span class="c1"># Try to find sparkmonitor&#39;s Spark interop jar</span>
@@ -781,15 +850,94 @@
 <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
   <span class="n">SPARKMONITOR_JAR_PATH</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
 
+<span class="k">def</span> <span class="nf">_dict_concat</span><span class="p">(</span><span class="o">*</span><span class="n">dicts</span><span class="p">):</span>
+  <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dicts</span><span class="p">:</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">d</span><span class="p">)</span>
+  <span class="k">return</span> <span class="n">out</span>
+
+
 <div class="viewcode-block" id="NBSpark"><a class="viewcode-back" href="../../index.html#oarphpy.spark.NBSpark">[docs]</a><span class="k">class</span> <span class="nc">NBSpark</span><span class="p">(</span><span class="n">SessionFactory</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;NBSpark is a session builder for local Jupyter notebooks.  Also includes</span>
 <span class="sd">  support for the `sparkmonitor` jupyter package, see </span>
 <span class="sd">  https://krishnan-r.github.io/sparkmonitor/</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="n">CONF_KV</span> <span class="o">=</span> <span class="p">({</span>
+  
+  <span class="c1"># Enable support for shipping local modifications to library code without</span>
+  <span class="c1"># needing to restart the notebook kernel.  This feature will attempt to</span>
+  <span class="c1"># re-build the user code Egg if there are new local changes and update the</span>
+  <span class="c1"># Egg in the current Spark session.  Enabling this feature leads to small</span>
+  <span class="c1"># potential performance degredation; see below.  </span>
+  <span class="c1"># NB: If you have an RDD or DataFrame that uses Egg data structures or code,</span>
+  <span class="c1"># you&#39;ll need to re-compute that RDD or DataFrame for updated code to take</span>
+  <span class="c1"># effect; updating the egg does not invalidate any `cache()ed` or</span>
+  <span class="c1"># `persist()ed` Spark data.</span>
+  <span class="n">MAYBE_REBUILD_EGG_EVERY_CELL_RUN</span> <span class="o">=</span> <span class="kc">True</span>
+  
+  <span class="c1"># Options to support dynamic Egg updating.  Firstly, `spark.files.overwrite`</span>
+  <span class="c1"># is needed to accomodate updates to SparkFiles at all; `pyspark` will error</span>
+  <span class="c1"># on update otherwise.  Secondly, while updating SparkFiles works as</span>
+  <span class="c1"># expected, updating *Python* modules can lead to &#39;zipimport malformed zip</span>
+  <span class="c1"># header&#39; crashes because:</span>
+  <span class="c1">#  * zipimport caches loaded modules: </span>
+  <span class="c1">#      https://github.com/python/cpython/blob/83d3202b92fb4c2fc6df5b035d57f3a1cf715f20/Lib/zipimport.py#L37</span>
+  <span class="c1">#        Clearing this private global can fix the error, but it must be</span>
+  <span class="c1">#        cleared immediately before import, which is an undesirable</span>
+  <span class="c1">#        constraint to impress upon the user.</span>
+  <span class="c1">#  * pyspark clears importlib caches, but only in the driver:</span>
+  <span class="c1">#      https://spark.apache.org/docs/2.4.4/api/python/_modules/pyspark/context.html#SparkContext.addPyFile</span>
+  <span class="c1"># A fix we&#39;ve found reliable is to disable Python process re-use via</span>
+  <span class="c1"># `spark.python.worker.reuse` so that the Spark Python worker always has</span>
+  <span class="c1"># an empty zipimport cache prior to execution.</span>
+  <span class="n">REBUILD_EGG_OPTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;spark.files.overwrite&#39;</span><span class="p">:</span> <span class="s1">&#39;true&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;spark.python.worker.reuse&#39;</span><span class="p">:</span> <span class="s1">&#39;false&#39;</span><span class="p">,</span>
+  <span class="p">}</span>
+
+  <span class="c1"># These settings are required as part of standard `sparkmonitor` setup</span>
+  <span class="c1"># https://github.com/krishnan-r/sparkmonitor/blob/b023845a245010fb7dd9c4be73747f0e5a8c93bd/extension/sparkmonitor/kernelextension.py#L203</span>
+  <span class="n">SPARKMONITOR_OPTS</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;spark.extraListeners&#39;</span><span class="p">:</span> <span class="s1">&#39;sparkmonitor.listener.JupyterSparkMonitorListener&#39;</span><span class="p">,</span>
     <span class="s1">&#39;spark.driver.extraClassPath&#39;</span><span class="p">:</span> <span class="n">SPARKMONITOR_JAR_PATH</span><span class="p">,</span>
-  <span class="p">}</span> <span class="k">if</span> <span class="n">SPARKMONITOR_JAR_PATH</span> <span class="k">else</span> <span class="p">{})</span></div>
+  <span class="p">}</span>
+
+  <span class="n">CONF_KV</span> <span class="o">=</span> <span class="n">_dict_concat</span><span class="p">(</span>
+              <span class="n">REBUILD_EGG_OPTS</span> <span class="k">if</span> <span class="n">MAYBE_REBUILD_EGG_EVERY_CELL_RUN</span> <span class="k">else</span> <span class="p">{},</span>
+              <span class="n">SPARKMONITOR_OPTS</span> <span class="k">if</span> <span class="n">SPARKMONITOR_JAR_PATH</span> <span class="k">else</span> <span class="p">{}</span>
+  <span class="p">)</span>
+
+<div class="viewcode-block" id="NBSpark.getOrCreate"><a class="viewcode-back" href="../../index.html#oarphpy.spark.NBSpark.getOrCreate">[docs]</a>  <span class="nd">@classmethod</span>
+  <span class="k">def</span> <span class="nf">getOrCreate</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="n">spark</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">NBSpark</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
+    
+    <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">MAYBE_REBUILD_EGG_EVERY_CELL_RUN</span><span class="p">:</span>
+      <span class="k">def</span> <span class="nf">maybe_rebuild_egg</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="n">egg_path</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_egg</span><span class="p">()</span>
+        <span class="n">egg_time</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">egg_path</span><span class="p">)</span>
+
+        <span class="n">src_root</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_resolve_src_root</span><span class="p">()</span>
+        <span class="n">latest_src_time</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">src_root</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">util</span><span class="o">.</span><span class="n">all_files_recursive</span><span class="p">(</span><span class="n">src_root</span><span class="p">):</span>
+          <span class="n">latest_src_time</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">latest_src_time</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">latest_src_time</span> <span class="o">&gt;</span> <span class="n">egg_time</span><span class="p">:</span>
+          <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Source has changed! Rebuilding Egg ...&quot;</span><span class="p">)</span>
+          <span class="n">egg_path</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_egg</span><span class="p">(</span><span class="n">force_new</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+          <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span><span class="o">.</span><span class="n">addPyFile</span><span class="p">(</span><span class="n">egg_path</span><span class="p">)</span> <span class="c1"># Updated!</span>
+
+      <span class="c1"># Patch into IPython / Jupyter / Google Colab to maybe rebuild the egg</span>
+      <span class="c1"># every cell run.  NB:</span>
+      <span class="c1"># * `get_ipython()` is a global provided in any IPython-esque session</span>
+      <span class="c1"># * Using pre_run_code_hook triggers a UserWarning / deprecation</span>
+      <span class="c1">#     warning, but the suggested events don&#39;t exist ...</span>
+      <span class="kn">import</span> <span class="nn">warnings</span>
+      <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+        <span class="n">action</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span>
+        <span class="n">message</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Hook pre_run_code_hook is deprecated&#39;</span><span class="p">)</span>
+      <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">set_hook</span><span class="p">(</span><span class="s1">&#39;pre_run_code_hook&#39;</span><span class="p">,</span> <span class="n">maybe_rebuild_egg</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">spark</span></div></div>
+
 
 
 <span class="c1">################################################################################</span>

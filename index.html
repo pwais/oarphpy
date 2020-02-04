@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Quickstart &mdash; oarphpy 0.0.1 documentation</title>
+  <title>Quickstart &mdash; oarphpy 0.0.3 documentation</title>
   
 
   
@@ -81,7 +81,8 @@
               <!-- Local TOC -->
               <div class="local-toc"><ul>
 <li><a class="reference internal" href="#">Quickstart</a></li>
-<li><a class="reference internal" href="#dockerized-development-environments">Dockerized Development Environments</a><ul>
+<li><a class="reference internal" href="#dockerized-development-environments">Dockerized Development Environments</a></li>
+<li><a class="reference internal" href="#development">Development</a><ul>
 <li><a class="reference internal" href="#oarphpy-api-documentation">OarphPy API Documentation</a></li>
 </ul>
 </li>
@@ -194,7 +195,7 @@ notebook or project environment.  To include all extras, use
 $ docker run -it --net=host oarphpy/full bash
 </pre></div>
 </div>
-<p>See also <a class="reference external" href="APIdocumentation">https://pwais.github.io/oarphpy/</a>.</p>
+<p>See also <a class="reference external" href="https://pwais.github.io/oarphpy/">API documentation</a>.</p>
 </div>
 <div class="section" id="dockerized-development-environments">
 <h1>Dockerized Development Environments<a class="headerlink" href="#dockerized-development-environments" title="Permalink to this headline">¶</a></h1>
@@ -216,6 +217,10 @@ to ensure clean interop with other projects.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">oarphpy/tensorflow</span></code> – Tests <code class="docutils literal notranslate"><span class="pre">oarphpy</span></code> with Tensorflow 1.x to ensure basic
 compatibility (e.g. of <code class="docutils literal notranslate"><span class="pre">oarphpy.util.tfutil</span></code>).</p></li>
 </ul>
+</div>
+<div class="section" id="development">
+<h1>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h1>
+<p>See <code class="docutils literal notranslate"><span class="pre">./oarphcli</span> <span class="pre">--help</span></code> for the development and release workflow.</p>
 <div class="section" id="oarphpy-api-documentation">
 <h2>OarphPy API Documentation<a class="headerlink" href="#oarphpy-api-documentation" title="Permalink to this headline">¶</a></h2>
 </div>
@@ -234,6 +239,20 @@ compatibility (e.g. of <code class="docutils literal notranslate"><span class="p
 <dd><p>NBSpark is a session builder for local Jupyter notebooks.  Also includes
 support for the <cite>sparkmonitor</cite> jupyter package, see
 <a class="reference external" href="https://krishnan-r.github.io/sparkmonitor/">https://krishnan-r.github.io/sparkmonitor/</a></p>
+<dl class="method">
+<dt id="oarphpy.spark.NBSpark.getOrCreate">
+<em class="property">classmethod </em><code class="sig-name descname">getOrCreate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#NBSpark.getOrCreate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.NBSpark.getOrCreate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spark sessions are typically instantiated using the
+<cite>Builder.getOrCreate()</cite> or <cite>SparkSession.getOrCreate()</cite> methods.  This
+method is a drop-in replacement that uses class-specified defaults,
+includes the local python module as a PyFile, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A <cite>pyspark.sql.session.SparkSession</cite> instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
@@ -324,6 +343,54 @@ for the <cite>spark-submit</cite> shell script.</p>
 <p>See <cite>LocalK8SSpark</cite> below for an example of how to subclass this factory for
 your own project.  See also <cite>NBSpark</cite> below for an example subclass
 that enables interop with the <cite>sparkmonitor</cite> package for jupyter.</p>
+<dl class="method">
+<dt id="oarphpy.spark.SessionFactory.create_egg">
+<em class="property">classmethod </em><code class="sig-name descname">create_egg</code><span class="sig-paren">(</span><em class="sig-param">force_new=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory.create_egg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory.create_egg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a Python Egg from the current project and return a path
+to the artifact.  The path may be to a cached, pre-computed egg only
+if not <cite>force_new</cite>.  The ‘current project’ is either class-defaulted or
+auto-deduced.</p>
+<p>Why an Egg?  <cite>pyspark</cite> supports zipfiles and egg files as Python artifacts.
+One might wish to use a wheel instead of an egg.  See this excellent
+article and repo:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://bytes.grubhub.com/managing-dependencies-and-artifacts-in-pyspark-7641aa89ddb7">https://bytes.grubhub.com/managing-dependencies-and-artifacts-in-pyspark-7641aa89ddb7</a></p></li>
+<li><p><a class="reference external" href="https://github.com/alekseyig/spark-submit-deps">https://github.com/alekseyig/spark-submit-deps</a></p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>The drawbacks to using a wheel include:</dt><dd><ul class="simple">
+<li><dl class="simple">
+<dt>wheels often require native libraries to be installed (e.g. via</dt><dd><p><cite>apt-get</cite>), and those deps are typically best baked into the Spark
+Worker environment (versus installed every job run).</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>The <cite>BdistSpark</cite> example above is actually rather slow, especially</dt><dd><p>when Tensorflow is a dependency, and <cite>BdistSpark</cite> must run before
+every job is submitted.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Spark treats wheels as zip files and unzips them on every run; this</dt><dd><p>unzip operation can be very expensive if the zipfile contains large
+binaries (e.g. tensorflow)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Wheels are not yet officially supported:</dt><dd><p><a class="reference external" href="https://issues.apache.org/jira/browse/SPARK-6764">https://issues.apache.org/jira/browse/SPARK-6764</a></p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<p>In comparison, an Egg provides the main benefits we want (to ship project
+code, often pre-committed code, to workers).</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="oarphpy.spark.SessionFactory.getOrCreate">
 <em class="property">classmethod </em><code class="sig-name descname">getOrCreate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory.getOrCreate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory.getOrCreate" title="Permalink to this definition">¶</a></dt>
