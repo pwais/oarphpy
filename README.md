@@ -40,6 +40,10 @@ Or use the dockerized environment hosted on [DockerHub](https://hub.docker.com/u
 
 See also [API documentation](https://pwais.github.io/oarphpy/).
 
+## Demos
+
+ * [Automagically Shipping Custom Libraries in Spark Using OarphPy](https://pwais.github.io/oarph-oarphs/2020/02/03/atrick.html)
+
 ## Dockerized Development Environments
 
 OarphPy is built and tested in a variety of environments to ensure the
