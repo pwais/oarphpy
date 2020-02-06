@@ -433,7 +433,6 @@ class SessionFactory(object):
   def _resolve_src_root(cls):
     src_root = cls.SRC_ROOT
     if src_root is None:
-      util.log.info("Trying to auto-resolve path to src root ...")
       try:
         import inspect
         frames = inspect.stack()#[2][0]
@@ -458,7 +457,6 @@ class SessionFactory(object):
         if not src_root:
           raise ValueError("Ran out of candidate stack frames")
       except Exception as e:
-        assert False, e
         util.log.info(
           "Failed to auto-resolve src root (error: %s) "
           "falling back to %s" % (e, cls.SRC_ROOT))
