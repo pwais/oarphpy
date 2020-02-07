@@ -67,7 +67,7 @@ except Exception as e:
       That will fix import errors.  To get Java, try:
         $ apt-get install -y openjdk-8-jdk && echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
       If you have spark installed locally (e.g. from source), set $SPARK_HOME
-      Original error: %s
+      *** Original error: %s
   """ % (e,)
   raise ImportError(msg)
 

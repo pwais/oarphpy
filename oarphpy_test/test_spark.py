@@ -354,6 +354,16 @@ class Unslotted(object):
     )
     return "Unslotted(%s)" % str(sorted(attrs.items()))
 
+
+def _pandas_compare_str(pdf, expected):
+  import pandas as pd
+  pd.set_option('display.max_colwidth', None)
+  def cleaned(s):
+    lines = [l.strip() for l in s.split('\n')]
+    return '\n'.join(l for l in lines if l)
+  assert cleaned(str(pdf)) == cleaned(expected)
+
+
 def _check_serialization(spark, rows, testname, schema=None):
   from oarphpy import util
   from oarphpy.spark import RowAdapter 
@@ -383,11 +393,12 @@ def _check_serialization(spark, rows, testname, schema=None):
   # because numpy syntatic sugar breaks ==
   import pprint
   def sorted_row_str(rowz):
-    return pprint.pformat(sorted(rowz, key=lambda row: row['id']))
+    return pprint.pformat(sorted(rowz))#, key=lambda row: row['id']))
   assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
 
+
 @skip_if_no_spark
-def test_row_adapter():
+def test_row_adapter_basic():
   import numpy as np
 
   from pyspark.sql import Row
@@ -432,6 +443,23 @@ def test_row_adapter():
   with testutil.LocalSpark.sess() as spark:
 
     ## Test basic round-trip serialization and adaptation
+    
+    df_all = spark.createDataFrame([RowAdapter.to_row(r) for r in rows])
+    EXPECTED_ALL = """
+                                                                              0                                            1
+    a                                (oarphpy.spark.Tensor, int64, C, [1], [1])  (oarphpy.spark.Tensor, float64, C, [0], [])
+    b              {'foo': ('oarphpy.spark.Tensor', 'uint8', 'C', [1, 1], [1])}                                           {}
+    c          [(oarphpy.spark.Tensor, float64, C, [3, 1, 1], [1.0, 2.0, 3.0])]                                           []
+    d                              (oarphpy_test.test_spark.Slotted, 1, abc, 5)                                         None
+    e                            [(oarphpy_test.test_spark.Slotted, 1, def, 6)]                                           []
+    f                                 (oarphpy_test.test_spark.Unslotted, 1, 4)                                         None
+    g                                      (oarphpy_test.test_spark.Unslotted,)                                         None
+    h                                                                    (1, 2)                                       (3, 3)
+    id                                                                        1                                            2
+    np_number                                                                 1                                            2
+    """
+    _pandas_compare_str(df_all.orderBy('id').toPandas().T, EXPECTED_ALL)
+
     _check_serialization(spark, rows, 'basic')
 
     ## Test Schema Deduction
@@ -483,51 +511,88 @@ def test_row_adapter():
     _check_serialization(spark, [mostly_empty], 'with_schema', schema=schema)
 
 
-
 ### Test With `attrs` Package
-### NB: Need these classes defined package-level
 
 try:
   import attr
   import numpy as np
-  @attr.s
+  
+  # NB: Need these classes defined package-level
+  
+  @attr.s(eq=True)
   class AttrsUnslotted(object):
     foo = attr.ib(default="moof")
     bar = attr.ib(default=5)
-    arr = attr.ib(default=np.array([]))
+    arr = attr.ib(default=np.array([1.]))
   
-  @attr.s(slots=True)
+  @attr.s(slots=True, eq=True)
   class AttrsSlotted(object):
     foo = attr.ib(default="moof")
     bar = attr.ib(default=5)
-    arr = attr.ib(default=np.array([]))
+    arr = attr.ib(default=np.array([1.]))
 
 except ImportError:
   pass
 
-@skip_if_no_spark
-def test_row_adapter_schema_deduction_with_attrs():
-  pytest.importorskip('attr')
+
+def _test_attrs_objs(spark, objs, testname):
   from oarphpy.spark import RowAdapter
 
-  rows = [AttrsUnslotted(), AttrsUnslotted(foo="foom")]
+  schema = RowAdapter.to_schema(objs[0])
+  rows = [RowAdapter.to_row(obj) for obj in objs]
 
-  schema = RowAdapter.to_schema(rows[0])
+  df = spark.createDataFrame(rows, schema=schema, verifySchema=False)
+
+  # NB: both attrs-based examples have the same schema
+  EXPECTED_SCHEMA = [
+    ('__pyclass__', 'string'),
+    ('arr', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<double>>'),
+    ('bar', 'bigint'),
+    ('foo', 'string'),
+  ]
+  assert df.dtypes == EXPECTED_SCHEMA
+
+  _check_serialization(spark, objs, testname, schema=schema)
+
+  return df
+
+@skip_if_no_spark
+def test_row_adapter_with_attrs():
+  pytest.importorskip('attr')
+
+  objs = [
+    AttrsUnslotted(),
+    AttrsUnslotted(foo="foom"),
+    AttrsUnslotted(foo="123", arr=np.array([1., 2., 3.])),
+  ]
 
   with testutil.LocalSpark.sess() as spark:
-    df = spark.createDataFrame(
-      [RowAdapter.to_row(r) for r in rows], schema=schema, verifySchema=False)
+    df = _test_attrs_objs(spark, objs, 'test_row_adapter_with_attrs')
 
-    EXPECTED_SCHEMA = [
-      ('__pyclass__', 'string'),
-      ('arr', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<null>>'),
-      ('bar', 'bigint'),
-      ('foo', 'string'),
-    ]
+    EXPECTED = """
+                                  __pyclass__                                                       arr  bar   foo
+    0  oarphpy_test.test_spark.AttrsUnslotted  (oarphpy.spark.Tensor, float64, C, [3], [1.0, 2.0, 3.0])    5   123
+    1  oarphpy_test.test_spark.AttrsUnslotted            (oarphpy.spark.Tensor, float64, C, [1], [1.0])    5  foom
+    2  oarphpy_test.test_spark.AttrsUnslotted            (oarphpy.spark.Tensor, float64, C, [1], [1.0])    5  moof
+    """
+    _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
 
-    assert df.dtypes == EXPECTED_SCHEMA
-    
-    df_row = df.take(1)[0]
-    assert df_row['__pyclass__'] == 'oarphpy_test.test_spark.AttrsUnslotted'
 
-    # TODO: test slotted, test the contents as a demo too, test serialization
+@skip_if_no_spark
+def test_row_adapter_with_slotted_attrs():
+  pytest.importorskip('attr')
+
+  objs = [
+    AttrsSlotted(),
+    AttrsSlotted(foo="foom"),
+  ]
+
+  with testutil.LocalSpark.sess() as spark:
+    df = _test_attrs_objs(spark, objs, 'test_row_adapter_with_slotted_attrs')
+
+    EXPECTED = """
+                                __pyclass__                                             arr  bar   foo
+    0  oarphpy_test.test_spark.AttrsSlotted  (oarphpy.spark.Tensor, float64, C, [1], [1.0])    5  foom
+    1  oarphpy_test.test_spark.AttrsSlotted  (oarphpy.spark.Tensor, float64, C, [1], [1.0])    5  moof
+    """
+    _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
