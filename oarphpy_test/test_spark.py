@@ -356,12 +356,10 @@ class Unslotted(object):
 
 
 def _pandas_compare_str(pdf, expected):
-  import pandas as pd
-  pd.set_option('display.max_colwidth', None)
   def cleaned(s):
     lines = [l.strip() for l in s.split('\n')]
     return '\n'.join(l for l in lines if l)
-  assert cleaned(str(pdf)) == cleaned(expected)
+  assert cleaned(pdf.to_string()) == cleaned(expected)
 
 
 def _check_serialization(spark, rows, testname, schema=None):
