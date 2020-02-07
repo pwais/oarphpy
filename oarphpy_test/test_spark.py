@@ -481,3 +481,53 @@ def test_row_adapter():
 
     # ... and we can also read/write the empty-ish row!
     _check_serialization(spark, [mostly_empty], 'with_schema', schema=schema)
+
+
+
+### Test With `attrs` Package
+### NB: Need these classes defined package-level
+
+try:
+  import attr
+  import numpy as np
+  @attr.s
+  class AttrsUnslotted(object):
+    foo = attr.ib(default="moof")
+    bar = attr.ib(default=5)
+    arr = attr.ib(default=np.array([]))
+  
+  @attr.s(slots=True)
+  class AttrsSlotted(object):
+    foo = attr.ib(default="moof")
+    bar = attr.ib(default=5)
+    arr = attr.ib(default=np.array([]))
+
+except ImportError:
+  pass
+
+@skip_if_no_spark
+def test_row_adapter_schema_deduction_with_attrs():
+  pytest.importorskip('attr')
+  from oarphpy.spark import RowAdapter
+
+  rows = [AttrsUnslotted(), AttrsUnslotted(foo="foom")]
+
+  schema = RowAdapter.to_schema(rows[0])
+
+  with testutil.LocalSpark.sess() as spark:
+    df = spark.createDataFrame(
+      [RowAdapter.to_row(r) for r in rows], schema=schema, verifySchema=False)
+
+    EXPECTED_SCHEMA = [
+      ('__pyclass__', 'string'),
+      ('arr', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<null>>'),
+      ('bar', 'bigint'),
+      ('foo', 'string'),
+    ]
+
+    assert df.dtypes == EXPECTED_SCHEMA
+    
+    df_row = df.take(1)[0]
+    assert df_row['__pyclass__'] == 'oarphpy_test.test_spark.AttrsUnslotted'
+
+    # TODO: test slotted, test the contents as a demo too, test serialization
