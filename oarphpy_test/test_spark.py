@@ -594,3 +594,13 @@ def test_row_adapter_with_slotted_attrs():
     1  oarphpy_test.test_spark.AttrsSlotted  (oarphpy.spark.Tensor, float64, C, [1], [1.0])    5  moof
     """
     _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
+
+
+@skip_if_no_spark
+def test_row_adapter_packed_numpy_arr():
+  import sys
+  from oarphpy.spark import TENSOR_AUTO_PACK_MIN_BYTES
+
+  expect_unpacked = np.array(range(10))
+  
+
