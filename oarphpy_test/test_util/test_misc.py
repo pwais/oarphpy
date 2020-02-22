@@ -55,13 +55,13 @@ class TestGetSizeOfDeep(unittest.TestCase):
 
   def test_generators(self):
     a = [1, 2]
-    assert util.get_size_of_deep(iter(a)) == 5
+    assert util.get_size_of_deep(iter(a)) == sys.getsizeof(iter(a))
 
     def ima_gen():
       for i in range(10):
         yield i
     
-    assert util.get_size_of_deep(ima_gen()) == sys.getsizeof(ima_generator)
+    assert util.get_size_of_deep(ima_gen()) == sys.getsizeof(ima_gen())
 
   def test_obj(self):
     pytest.importorskip('six', reason='Uses six for compatibility')
@@ -99,8 +99,12 @@ class TestGetSizeOfDeep(unittest.TestCase):
 
     # Case: consider we have a large array, like a Tensor
     # but as a list. We want get_size_of_deep() to be fast.
-    arr = list(range(int(1e7)))
+    arr = list(range(int(1e6)))
     assert util.get_size_of_deep(arr) == (len(arr) * sys.getsizeof(0))
+
+    # A big list of strings will still require a slower reduce
+    ss = list(str(i) for i in range(100))
+    assert util.get_size_of_deep(ss) == sum(sys.getsizeof(s) for s in ss)
 
 
 def test_stable_hash():

@@ -391,8 +391,10 @@ def _check_serialization(spark, rows, testname, schema=None):
   # because numpy syntatic sugar breaks ==
   import pprint
   def sorted_row_str(rowz):
-    return pprint.pformat(sorted(rowz))#, key=lambda row: row['id']))
+    return pprint.pformat(sorted(rowz))
   assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
+  
+  return df
 
 
 @skip_if_no_spark
@@ -596,11 +598,27 @@ def test_row_adapter_with_slotted_attrs():
     _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
 
 
+### Extended Tests of `Tensor`
+
 @skip_if_no_spark
 def test_row_adapter_packed_numpy_arr():
   import sys
-  from oarphpy.spark import TENSOR_AUTO_PACK_MIN_BYTES
-
-  expect_unpacked = np.array(range(10))
+  import numpy as np
+  from oarphpy.spark import RowAdapter
+  from oarphpy.spark import TENSOR_AUTO_PACK_MIN_KBYTES
   
+  with testutil.LocalSpark.sess() as spark:
+    
+    expect_unpacked = np.ones((5, 2))
+    df = _check_serialization(
+      spark, [expect_unpacked], 'unpacked_numpy_arr')
+    
+    N = int(TENSOR_AUTO_PACK_MIN_KBYTES * (2**10) / np.dtype(int).itemsize) + 1
+    expect_packed = np.reshape(np.array(range(2 * N)), (2, N))
+    schema = RowAdapter.to_schema(np.ones((5, 2)))
+    dfp = _check_serialization(
+      spark, [expect_packed], 'packed_numpy_arr', schema=schema)
+
+    # import pdb; pdb.set_trace()
+    # print()
 

@@ -65,7 +65,7 @@ def get_size_of_deep(v):
     if len(v) == 0:
       return 0
     if isinstance(v[0], FIXED_SIZE_TYPES):
-      return len(v[0]) * sys.getsizeof(v[0])
+      return len(v) * sys.getsizeof(v[0])
     else:
       return sum(get_size_of_deep(v[i]) for i in range(len(v)))
   elif hasattr(v, '__next__'):

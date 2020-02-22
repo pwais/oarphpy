@@ -799,7 +799,7 @@ class NBSpark(SessionFactory):
 ### Spark SQL Type Adaption Utils
 ###
 
-TENSOR_AUTO_PACK_MIN_BYTES = 500 * (2**10) # 500KBytes
+TENSOR_AUTO_PACK_MIN_KBYTES = 2
 
 class Tensor(object):
   """An ndarray-like object designed to store numpy arrays in Parquet / 
@@ -817,9 +817,9 @@ class Tensor(object):
     t.dtype = arr.dtype.name
     t.order = 'C' # C-style row-major
 
-    if arr.nbytes >= TENSOR_AUTO_PACK_MIN_BYTES:
+    if arr.nbytes >= TENSOR_AUTO_PACK_MIN_KBYTES * (2**10):
       t.values = []
-      t.values_packed = bytearray(np.tobytes(order='C'))
+      t.values_packed = bytearray(arr.tobytes(order='C'))
     else:
       t.values = arr.flatten(order='C').tolist()
       t.values_packed = bytearray()
