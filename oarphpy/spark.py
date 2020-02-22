@@ -799,6 +799,8 @@ class NBSpark(SessionFactory):
 ### Spark SQL Type Adaption Utils
 ###
 
+TENSOR_AUTO_PACK_MIN_BYTES = 500 * (2**10) # 500KBytes
+
 class Tensor(object):
   """An ndarray-like object designed to store numpy arrays in Parquet / 
   Spark SQL format.  Spark's DenseVector and Matrix unfortunately don't 
@@ -806,7 +808,7 @@ class Tensor(object):
   an explicit order accessible to external readers such as Eigen in C++
   or nd4j / BLAS wrappers in Java.
   """
-  __slots__ = ('shape', 'dtype', 'order', 'values')
+  __slots__ = ('shape', 'dtype', 'order', 'values', 'values_packed')
 
   @staticmethod
   def from_numpy(arr):
@@ -814,13 +816,24 @@ class Tensor(object):
     t.shape = list(arr.shape)
     t.dtype = arr.dtype.name
     t.order = 'C' # C-style row-major
-    t.values = arr.flatten(order='C').tolist()
+
+    if arr.nbytes >= TENSOR_AUTO_PACK_MIN_BYTES:
+      t.values = []
+      t.values_packed = bytearray(np.tobytes(order='C'))
+    else:
+      t.values = arr.flatten(order='C').tolist()
+      t.values_packed = bytearray()
     return t
   
   @staticmethod
   def to_numpy(t):
     import numpy as np
-    return np.array(
+    if t.values_packed:
+      return np.reshape(
+        np.frombuffer(t.values_packed, dtype=np.dtype(t.dtype)),
+        t.shape)
+    else:
+      return np.array(
               np.reshape(t.values, t.shape, order=t.order),
               dtype=np.dtype(t.dtype))
 
