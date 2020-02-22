@@ -394,7 +394,7 @@ class SessionFactory(object):
   
   # Default set of `SparkConf` key-value settings to use for any new sesion,
   # e.g. {
-  #   'spark.port.maxRetries', '96'
+  #   'spark.port.maxRetries': '96',
   #       # For local instances with many CPUs, let Spark use tons of ports
   #
   #   'spark.driver.memory': '8g',
