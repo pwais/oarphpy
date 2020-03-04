@@ -68,7 +68,8 @@ def get_size_of_deep(v):
       return len(v) * sys.getsizeof(v[0])
     else:
       return sum(get_size_of_deep(v[i]) for i in range(len(v)))
-  elif hasattr(v, '__next__'):
+  elif hasattr(v, '__next__') or (
+            sys.version_info[0] == 2 and hasattr(v, 'next')):
     # Don't consume generators
     return sys.getsizeof(v)
   elif hasattr(v, '__iter__'):
