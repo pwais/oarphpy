@@ -28,15 +28,15 @@ RUN pip uninstall -y enum34
 
 ### Core
 ### Required for installing and testing things
-RUN apt-get update
 RUN \
+  apt-get update && \
   apt-get install -y \
-  curl \
-  git \
-  python-dev \
-  python-pip \
-  python3-dev \
-  wget
+    curl \
+    git \
+    python-dev \
+    python-pip \
+    python3-dev \
+    wget
 
 
 ### Spark (& Hadoop)
@@ -68,6 +68,7 @@ RUN curl -L --retry 3 \
 
 ## Java 8.  NB: can't use Java 11 yet for Spark
 RUN \
+  apt-get update && \
   apt-get install -y openjdk-8-jdk && \
   ls -lhat /usr/lib/jvm/java-8-openjdk-amd64 && \
   echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
