@@ -64,7 +64,7 @@ if not HAVE_SYSTEM_SPARK:
 
 TF_DEPS = [
   'crcmod',
-  'tensorflow<=1.15.0',
+  'tensorflow<=1.15.2',
 ]
 
 UTILS = [
