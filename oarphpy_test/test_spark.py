@@ -245,8 +245,8 @@ def test_get_balanced_sample():
     expected_arr = np.array([expected[k] for k in ks])
     
     import numpy.testing as npt
-    npt.assert_allclose(actual_arr, expected_arr, rtol=0.2)
-      # NB: We can only test to about 20% accuracy with this few samples
+    npt.assert_allclose(actual_arr, expected_arr, rtol=0.3)
+      # NB: We can only test to about 30% accuracy with this few samples
 
   with testutil.LocalSpark.sess() as spark:
     df = spark.createDataFrame(rows)
