@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM tensorflow/tensorflow:1.15.0-jupyter
+FROM tensorflow/tensorflow:1.15.2-jupyter
 
 # We don't care for __pycache__ and .pyc files; sometimes VSCode doesn't clean
 # up properly when deleting things and the cache gets stale.
@@ -34,7 +34,7 @@ RUN \
     curl \
     git \
     python-dev \
-    python-pip \
+    python3-pip \
     python3-dev \
     wget
 
