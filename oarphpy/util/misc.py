@@ -38,7 +38,8 @@ try:
   FIXED_SIZE_TYPES = tuple(itertools.chain.from_iterable(
         (six.integer_types, (float,))))
   INTEGRAL_TYPES = tuple(itertools.chain.from_iterable(
-        (six.string_types, six.class_types, FIXED_SIZE_TYPES)))
+        (six.string_types, six.class_types,
+          (bytes, bytearray), FIXED_SIZE_TYPES)))
 except Exception as e:
   FIXED_SIZE_TYPES = tuple()
   INTEGRAL_TYPES = tuple()

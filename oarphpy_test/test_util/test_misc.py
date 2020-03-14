@@ -43,6 +43,11 @@ class TestGetSizeOfDeep(unittest.TestCase):
     assert util.get_size_of_deep("") == sys.getsizeof("")
     assert util.get_size_of_deep(0) == sys.getsizeof(0)
 
+    bs = b"abc"
+    assert util.get_size_of_deep(bytes(bs)) == sys.getsizeof(bytes(bs))
+    assert \
+      util.get_size_of_deep(bytearray(bs)) == sys.getsizeof(bytearray(bs))
+
   def test_sequences(self):
     pytest.importorskip('six', reason='Uses six for compatibility')
 
