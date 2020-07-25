@@ -30,7 +30,7 @@ RUN \
 RUN \
   apt-get install -y openjdk-8-jdk && \
   echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
-RUN pip3 install pyspark==2.4.4
+RUN pip3 install pyspark==2.4.6
 RUN pip3 install numpy pandas>=1.0.0
 ENV PYSPARK_PYTHON python3
 ENV PYSPARK_DRIVER_PYTHON python3
