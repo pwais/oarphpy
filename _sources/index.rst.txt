@@ -47,5 +47,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-autodoc_member_order = 'bysource'

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>oarphpy.util.misc &mdash; oarphpy 0.0.3 documentation</title>
+  <title>oarphpy.util.misc &mdash; oarphpy 0.0.4 documentation</title>
   
 
   
@@ -176,26 +176,48 @@
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
 
 
+<span class="k">try</span><span class="p">:</span>
+  <span class="kn">import</span> <span class="nn">six</span>
+  <span class="n">FIXED_SIZE_TYPES</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">integer_types</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,))))</span>
+  <span class="n">INTEGRAL_TYPES</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">class_types</span><span class="p">,</span>
+          <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">),</span> <span class="n">FIXED_SIZE_TYPES</span><span class="p">)))</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+  <span class="n">FIXED_SIZE_TYPES</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+  <span class="n">INTEGRAL_TYPES</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+
 <div class="viewcode-block" id="get_size_of_deep"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.get_size_of_deep">[docs]</a><span class="k">def</span> <span class="nf">get_size_of_deep</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;(Hacky) Get size of the value `v` in bytes.  Does not rely on a more</span>
 <span class="sd">  precise library like guppy or pympler.  Intended for values `v` that </span>
 <span class="sd">  contain large binary blobs.&quot;&quot;&quot;</span>
-  <span class="kn">import</span> <span class="nn">six</span>
-  <span class="n">INTEGRAL_TYPES</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="o">.</span><span class="n">from_iterable</span><span class="p">(</span>
-        <span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">integer_types</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">class_types</span><span class="p">,</span>
-        <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">))))</span>
-    <span class="c1"># The above types can trigger expensive recursion unless we base case them</span>
+
+  <span class="c1"># NB: requires `six` module!</span>
+  
   <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">INTEGRAL_TYPES</span><span class="p">):</span>
+    <span class="c1"># These types can trigger expensive recursion unless we base case them</span>
     <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-  <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;nbytes&#39;</span><span class="p">):</span>
+  <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;nbytes&#39;</span><span class="p">):</span>
     <span class="k">return</span> <span class="n">v</span><span class="o">.</span><span class="n">nbytes</span>
   <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;items&#39;</span><span class="p">):</span>
     <span class="c1"># Typically a dict</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>
       <span class="n">get_size_of_deep</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">+</span> <span class="n">get_size_of_deep</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
       <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
-  <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
+  <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;__getitem__&#39;</span><span class="p">):</span>
     <span class="c1"># Typically a list or tuple</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+      <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">FIXED_SIZE_TYPES</span><span class="p">):</span>
+      <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">get_size_of_deep</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+  <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;__next__&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;next&#39;</span><span class="p">)):</span>
+    <span class="c1"># Don&#39;t consume generators</span>
+    <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+  <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
+    <span class="c1"># Some other sequence type, but NOT a generator (see above)</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">get_size_of_deep</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">iter</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
   <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span>

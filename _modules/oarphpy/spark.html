@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>oarphpy.spark &mdash; oarphpy 0.0.3 documentation</title>
+  <title>oarphpy.spark &mdash; oarphpy 0.0.4 documentation</title>
   
 
   
@@ -210,7 +210,7 @@
 <span class="s2">      That will fix import errors.  To get Java, try:</span>
 <span class="s2">        $ apt-get install -y openjdk-8-jdk &amp;&amp; echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 &gt;&gt; /etc/environment</span>
 <span class="s2">      If you have spark installed locally (e.g. from source), set $SPARK_HOME</span>
-<span class="s2">      Original error: </span><span class="si">%s</span><span class="s2"></span>
+<span class="s2">      *** Original error: </span><span class="si">%s</span><span class="s2"></span>
 <span class="s2">  &quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,)</span>
   <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
@@ -537,7 +537,7 @@
   
   <span class="c1"># Default set of `SparkConf` key-value settings to use for any new sesion,</span>
   <span class="c1"># e.g. {</span>
-  <span class="c1">#   &#39;spark.port.maxRetries&#39;, &#39;96&#39;</span>
+  <span class="c1">#   &#39;spark.port.maxRetries&#39;: &#39;96&#39;,</span>
   <span class="c1">#       # For local instances with many CPUs, let Spark use tons of ports</span>
   <span class="c1">#</span>
   <span class="c1">#   &#39;spark.driver.memory&#39;: &#39;8g&#39;,</span>
@@ -576,7 +576,6 @@
   <span class="k">def</span> <span class="nf">_resolve_src_root</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
     <span class="n">src_root</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span>
     <span class="k">if</span> <span class="n">src_root</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-      <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Trying to auto-resolve path to src root ...&quot;</span><span class="p">)</span>
       <span class="k">try</span><span class="p">:</span>
         <span class="kn">import</span> <span class="nn">inspect</span>
         <span class="n">frames</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span><span class="c1">#[2][0]</span>
@@ -601,7 +600,6 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">src_root</span><span class="p">:</span>
           <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Ran out of candidate stack frames&quot;</span><span class="p">)</span>
       <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="kc">False</span><span class="p">,</span> <span class="n">e</span>
         <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
           <span class="s2">&quot;Failed to auto-resolve src root (error: </span><span class="si">%s</span><span class="s2">) &quot;</span>
           <span class="s2">&quot;falling back to </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">SRC_ROOT</span><span class="p">))</span>
@@ -944,6 +942,8 @@
 <span class="c1">### Spark SQL Type Adaption Utils</span>
 <span class="c1">###</span>
 
+<span class="n">TENSOR_AUTO_PACK_MIN_KBYTES</span> <span class="o">=</span> <span class="mi">2</span>
+
 <div class="viewcode-block" id="Tensor"><a class="viewcode-back" href="../../index.html#oarphpy.spark.Tensor">[docs]</a><span class="k">class</span> <span class="nc">Tensor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
   <span class="sd">&quot;&quot;&quot;An ndarray-like object designed to store numpy arrays in Parquet / </span>
 <span class="sd">  Spark SQL format.  Spark&#39;s DenseVector and Matrix unfortunately don&#39;t </span>
@@ -951,7 +951,7 @@
 <span class="sd">  an explicit order accessible to external readers such as Eigen in C++</span>
 <span class="sd">  or nd4j / BLAS wrappers in Java.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
-  <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;shape&#39;</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">,</span> <span class="s1">&#39;order&#39;</span><span class="p">,</span> <span class="s1">&#39;values&#39;</span><span class="p">)</span>
+  <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;shape&#39;</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">,</span> <span class="s1">&#39;order&#39;</span><span class="p">,</span> <span class="s1">&#39;values&#39;</span><span class="p">,</span> <span class="s1">&#39;values_packed&#39;</span><span class="p">)</span>
 
   <span class="nd">@staticmethod</span>
   <span class="k">def</span> <span class="nf">from_numpy</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
@@ -959,13 +959,24 @@
     <span class="n">t</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
     <span class="n">t</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span>
     <span class="n">t</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="s1">&#39;C&#39;</span> <span class="c1"># C-style row-major</span>
-    <span class="n">t</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">&gt;=</span> <span class="n">TENSOR_AUTO_PACK_MIN_KBYTES</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">10</span><span class="p">):</span>
+      <span class="n">t</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+      <span class="n">t</span><span class="o">.</span><span class="n">values_packed</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">tobytes</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">t</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+      <span class="n">t</span><span class="o">.</span><span class="n">values_packed</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">t</span>
   
   <span class="nd">@staticmethod</span>
   <span class="k">def</span> <span class="nf">to_numpy</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
     <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">values_packed</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">values_packed</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">dtype</span><span class="p">)),</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
               <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">order</span><span class="p">),</span>
               <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span></div>
 
