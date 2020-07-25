@@ -245,8 +245,8 @@ def test_get_balanced_sample():
     expected_arr = np.array([expected[k] for k in ks])
     
     import numpy.testing as npt
-    npt.assert_allclose(actual_arr, expected_arr, rtol=0.2)
-      # NB: We can only test to about 20% accuracy with this few samples
+    npt.assert_allclose(actual_arr, expected_arr, rtol=0.3)
+      # NB: We can only test to about 30% accuracy with this few samples
 
   with testutil.LocalSpark.sess() as spark:
     df = spark.createDataFrame(rows)
@@ -354,6 +354,16 @@ class Unslotted(object):
     )
     return "Unslotted(%s)" % str(sorted(attrs.items()))
 
+
+def _pandas_compare_str(pdf, expected):
+  def cleaned(s):
+    lines = [l.strip() for l in s.split('\n')]
+    return '\n'.join(l for l in lines if l)
+  actual = pdf.to_string()
+  assert cleaned(actual) == cleaned(expected), \
+    "\n\nExpected %s \n\nActual %s\n\n" % (expected, actual)
+
+
 def _check_serialization(spark, rows, testname, schema=None):
   from oarphpy import util
   from oarphpy.spark import RowAdapter 
@@ -383,11 +393,14 @@ def _check_serialization(spark, rows, testname, schema=None):
   # because numpy syntatic sugar breaks ==
   import pprint
   def sorted_row_str(rowz):
-    return pprint.pformat(sorted(rowz, key=lambda row: row['id']))
+    return pprint.pformat(sorted(rowz))
   assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
+  
+  return df
+
 
 @skip_if_no_spark
-def test_row_adapter():
+def test_row_adapter_basic():
   import numpy as np
 
   from pyspark.sql import Row
@@ -432,6 +445,23 @@ def test_row_adapter():
   with testutil.LocalSpark.sess() as spark:
 
     ## Test basic round-trip serialization and adaptation
+    
+    df_all = spark.createDataFrame([RowAdapter.to_row(r) for r in rows])
+    EXPECTED_ALL = """
+                                                                                  0                                                1
+    a                                (oarphpy.spark.Tensor, int64, C, [1], [1], [])  (oarphpy.spark.Tensor, float64, C, [0], [], [])
+    b              {'foo': ('oarphpy.spark.Tensor', 'uint8', 'C', [1, 1], [1], [])}                                               {}
+    c          [(oarphpy.spark.Tensor, float64, C, [3, 1, 1], [1.0, 2.0, 3.0], [])]                                               []
+    d                                  (oarphpy_test.test_spark.Slotted, 1, abc, 5)                                             None
+    e                                [(oarphpy_test.test_spark.Slotted, 1, def, 6)]                                               []
+    f                                     (oarphpy_test.test_spark.Unslotted, 1, 4)                                             None
+    g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
+    h                                                                        (1, 2)                                           (3, 3)
+    id                                                                            1                                                2
+    np_number                                                                     1                                                2
+    """
+    _pandas_compare_str(df_all.orderBy('id').toPandas().T, EXPECTED_ALL)
+
     _check_serialization(spark, rows, 'basic')
 
     ## Test Schema Deduction
@@ -460,9 +490,9 @@ def test_row_adapter():
       [mostly_empty_adapted], schema=schema, verifySchema=False)
 
     EXPECTED_SCHEMA = [
-      ('a', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<bigint>>'),
-      ('b', 'map<string,struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<bigint>>>'),
-      ('c', 'array<struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<double>>>'),
+      ('a', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<bigint>,values_packed:binary>'),
+      ('b', 'map<string,struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<bigint>,values_packed:binary>>'),
+      ('c', 'array<struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<double>,values_packed:binary>>'),
       ('d', 'struct<__pyclass__:string,_not_hidden:bigint,bar:string,foo:bigint>'),
       ('e', 'array<struct<__pyclass__:string,_not_hidden:bigint,bar:string,foo:bigint>>'),
       ('f', 'struct<__pyclass__:string,_not_hidden:bigint,meow:bigint>'),
@@ -481,3 +511,118 @@ def test_row_adapter():
 
     # ... and we can also read/write the empty-ish row!
     _check_serialization(spark, [mostly_empty], 'with_schema', schema=schema)
+
+
+### Test With `attrs` Package
+
+try:
+  import attr
+  import numpy as np
+  
+  # NB: Need these classes defined package-level
+  
+  @attr.s(eq=True)
+  class AttrsUnslotted(object):
+    foo = attr.ib(default="moof")
+    bar = attr.ib(default=5)
+    arr = attr.ib(default=np.array([1.]))
+  
+  @attr.s(slots=True, eq=True)
+  class AttrsSlotted(object):
+    foo = attr.ib(default="moof")
+    bar = attr.ib(default=5)
+    arr = attr.ib(default=np.array([1.]))
+
+except ImportError:
+  pass
+
+
+def _test_attrs_objs(spark, objs, testname):
+  from oarphpy.spark import RowAdapter
+
+  schema = RowAdapter.to_schema(objs[0])
+  rows = [RowAdapter.to_row(obj) for obj in objs]
+
+  df = spark.createDataFrame(rows, schema=schema, verifySchema=False)
+
+  # NB: both attrs-based examples have the same schema
+  EXPECTED_SCHEMA = [
+    ('__pyclass__', 'string'),
+    ('arr', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<double>,values_packed:binary>'),
+    ('bar', 'bigint'),
+    ('foo', 'string'),
+  ]
+  assert df.dtypes == EXPECTED_SCHEMA
+
+  _check_serialization(spark, objs, testname, schema=schema)
+
+  return df
+
+@skip_if_no_spark
+def test_row_adapter_with_attrs():
+  pytest.importorskip('attr')
+
+  objs = [
+    AttrsUnslotted(),
+    AttrsUnslotted(foo="foom"),
+    AttrsUnslotted(foo="123", arr=np.array([1., 2., 3.])),
+  ]
+
+  with testutil.LocalSpark.sess() as spark:
+    df = _test_attrs_objs(spark, objs, 'test_row_adapter_with_attrs')
+
+    EXPECTED = """
+                                  __pyclass__                                                           arr  bar   foo
+    0  oarphpy_test.test_spark.AttrsUnslotted  (oarphpy.spark.Tensor, float64, C, [3], [1.0, 2.0, 3.0], [])    5   123
+    1  oarphpy_test.test_spark.AttrsUnslotted            (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  foom
+    2  oarphpy_test.test_spark.AttrsUnslotted            (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  moof
+    """
+    _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
+
+
+@skip_if_no_spark
+def test_row_adapter_with_slotted_attrs():
+  pytest.importorskip('attr')
+
+  objs = [
+    AttrsSlotted(),
+    AttrsSlotted(foo="foom"),
+  ]
+
+  with testutil.LocalSpark.sess() as spark:
+    df = _test_attrs_objs(spark, objs, 'test_row_adapter_with_slotted_attrs')
+
+    EXPECTED = """
+                                __pyclass__                                                 arr  bar   foo
+    0  oarphpy_test.test_spark.AttrsSlotted  (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  foom
+    1  oarphpy_test.test_spark.AttrsSlotted  (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  moof
+    """
+    _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
+
+
+### Extended Tests of `Tensor`
+
+@skip_if_no_spark
+def test_row_adapter_packed_numpy_arr():
+  import sys
+  import numpy as np
+  from oarphpy.spark import RowAdapter
+  from oarphpy.spark import TENSOR_AUTO_PACK_MIN_KBYTES
+  
+  with testutil.LocalSpark.sess() as spark:
+    
+    expect_unpacked = np.ones((5, 2))
+    df = _check_serialization(
+      spark, [expect_unpacked], 'unpacked_numpy_arr')
+    
+    N = int(TENSOR_AUTO_PACK_MIN_KBYTES * (2**10) / np.dtype(int).itemsize) + 1
+    expect_packed = np.reshape(np.array(range(2 * N)), (2, N))
+    schema = RowAdapter.to_schema(np.ones((5, 2)))
+    dfp = _check_serialization(
+      spark, [expect_packed], 'packed_numpy_arr', schema=schema)
+
+    # Verify that we actually have a column of packed values
+    assert dfp.select('*').first().values == []
+    bin_data = dfp.select('*').first().values_packed
+    assert len(bin_data) == expect_packed.size * expect_packed.dtype.itemsize
+      # For ints, usually 8 bytes per int * 2 * N

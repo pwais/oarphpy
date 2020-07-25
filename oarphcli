@@ -22,7 +22,7 @@ development workflow.
 
 ## Use & Development
 
-$ ./oarphpy --shell
+$ ./oarphcli --shell
 Drop into a dockerized dev environment shell, do some work. Local code mounted
 at /opt/oarphpy, and outer filesystem mounted at /outer_root .
 
@@ -33,10 +33,10 @@ $$ pytest
 $$ python setup.up test
 In the dockerized shell, run unit tests using your local code changes.
 
-$ ./oarphpy --test-all
+$ ./oarphcli --test-all
 Outside the container, run unit tests in all environments.
 
-$ ./oarphpy --build-env --push-as-latest
+$ ./oarphcli --build-env --push-as-latest
 Rebuild all dockerized environments
 
 
@@ -44,7 +44,7 @@ Rebuild all dockerized environments
 
 To update the oarphpy package version, first edit `oarphpy/__init__.py`.
 Push your changes to the master branch, then on master run:
-$ ./oarphpy --release
+$ ./oarphcli --release
 
 """
 

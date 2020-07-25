@@ -67,7 +67,7 @@ except Exception as e:
       That will fix import errors.  To get Java, try:
         $ apt-get install -y openjdk-8-jdk && echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
       If you have spark installed locally (e.g. from source), set $SPARK_HOME
-      Original error: %s
+      *** Original error: %s
   """ % (e,)
   raise ImportError(msg)
 
@@ -394,7 +394,7 @@ class SessionFactory(object):
   
   # Default set of `SparkConf` key-value settings to use for any new sesion,
   # e.g. {
-  #   'spark.port.maxRetries', '96'
+  #   'spark.port.maxRetries': '96',
   #       # For local instances with many CPUs, let Spark use tons of ports
   #
   #   'spark.driver.memory': '8g',
@@ -433,7 +433,6 @@ class SessionFactory(object):
   def _resolve_src_root(cls):
     src_root = cls.SRC_ROOT
     if src_root is None:
-      util.log.info("Trying to auto-resolve path to src root ...")
       try:
         import inspect
         frames = inspect.stack()#[2][0]
@@ -458,7 +457,6 @@ class SessionFactory(object):
         if not src_root:
           raise ValueError("Ran out of candidate stack frames")
       except Exception as e:
-        assert False, e
         util.log.info(
           "Failed to auto-resolve src root (error: %s) "
           "falling back to %s" % (e, cls.SRC_ROOT))
@@ -801,6 +799,8 @@ class NBSpark(SessionFactory):
 ### Spark SQL Type Adaption Utils
 ###
 
+TENSOR_AUTO_PACK_MIN_KBYTES = 2
+
 class Tensor(object):
   """An ndarray-like object designed to store numpy arrays in Parquet / 
   Spark SQL format.  Spark's DenseVector and Matrix unfortunately don't 
@@ -808,7 +808,7 @@ class Tensor(object):
   an explicit order accessible to external readers such as Eigen in C++
   or nd4j / BLAS wrappers in Java.
   """
-  __slots__ = ('shape', 'dtype', 'order', 'values')
+  __slots__ = ('shape', 'dtype', 'order', 'values', 'values_packed')
 
   @staticmethod
   def from_numpy(arr):
@@ -816,13 +816,24 @@ class Tensor(object):
     t.shape = list(arr.shape)
     t.dtype = arr.dtype.name
     t.order = 'C' # C-style row-major
-    t.values = arr.flatten(order='C').tolist()
+
+    if arr.nbytes >= TENSOR_AUTO_PACK_MIN_KBYTES * (2**10):
+      t.values = []
+      t.values_packed = bytearray(arr.tobytes(order='C'))
+    else:
+      t.values = arr.flatten(order='C').tolist()
+      t.values_packed = bytearray()
     return t
   
   @staticmethod
   def to_numpy(t):
     import numpy as np
-    return np.array(
+    if t.values_packed:
+      return np.reshape(
+        np.frombuffer(t.values_packed, dtype=np.dtype(t.dtype)),
+        t.shape)
+    else:
+      return np.array(
               np.reshape(t.values, t.shape, order=t.order),
               dtype=np.dtype(t.dtype))
 

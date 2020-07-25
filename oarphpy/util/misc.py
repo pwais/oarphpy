@@ -33,26 +33,48 @@ def np_truthy(v):
     return bool(v)
 
 
+try:
+  import six
+  FIXED_SIZE_TYPES = tuple(itertools.chain.from_iterable(
+        (six.integer_types, (float,))))
+  INTEGRAL_TYPES = tuple(itertools.chain.from_iterable(
+        (six.string_types, six.class_types,
+          (bytes, bytearray), FIXED_SIZE_TYPES)))
+except Exception as e:
+  FIXED_SIZE_TYPES = tuple()
+  INTEGRAL_TYPES = tuple()
+
 def get_size_of_deep(v):
   """(Hacky) Get size of the value `v` in bytes.  Does not rely on a more
   precise library like guppy or pympler.  Intended for values `v` that 
   contain large binary blobs."""
-  import six
-  INTEGRAL_TYPES = tuple(itertools.chain.from_iterable(
-        (six.string_types, six.integer_types, six.class_types,
-        (bytes, bytearray))))
-    # The above types can trigger expensive recursion unless we base case them
+
+  # NB: requires `six` module!
+  
   if isinstance(v, INTEGRAL_TYPES):
+    # These types can trigger expensive recursion unless we base case them
     return sys.getsizeof(v)
-  if hasattr(v, 'nbytes'):
+  elif hasattr(v, 'nbytes'):
     return v.nbytes
   elif hasattr(v, 'items'):
     # Typically a dict
     return sum(
       get_size_of_deep(key) + get_size_of_deep(value)
       for key, value in v.items())
-  elif hasattr(v, '__iter__'):
+  elif hasattr(v, '__len__') and hasattr(v, '__getitem__'):
     # Typically a list or tuple
+    if len(v) == 0:
+      return 0
+    if isinstance(v[0], FIXED_SIZE_TYPES):
+      return len(v) * sys.getsizeof(v[0])
+    else:
+      return sum(get_size_of_deep(v[i]) for i in range(len(v)))
+  elif hasattr(v, '__next__') or (
+            sys.version_info[0] == 2 and hasattr(v, 'next')):
+    # Don't consume generators
+    return sys.getsizeof(v)
+  elif hasattr(v, '__iter__'):
+    # Some other sequence type, but NOT a generator (see above)
     return sum(get_size_of_deep(el) for el in iter(v))
   elif hasattr(v, '__dict__'):
     return sum(

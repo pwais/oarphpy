@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM tensorflow/tensorflow:1.15.0-py3-jupyter
+FROM tensorflow/tensorflow:1.15.2-jupyter
 
 # We don't care for __pycache__ and .pyc files; sometimes VSCode doesn't clean
 # up properly when deleting things and the cache gets stale.
@@ -28,15 +28,15 @@ RUN pip uninstall -y enum34
 
 ### Core
 ### Required for installing and testing things
-RUN apt-get update
 RUN \
+  apt-get update && \
   apt-get install -y \
-  curl \
-  git \
-  python-dev \
-  python-pip \
-  python3-dev \
-  wget
+    curl \
+    git \
+    python-dev \
+    python3-pip \
+    python3-dev \
+    wget
 
 
 ### Spark (& Hadoop)
@@ -55,7 +55,7 @@ RUN curl -L --retry 3 \
  && mv /opt/hadoop-$HADOOP_VERSION $HADOOP_HOME \
  && rm -rf $HADOOP_HOME/share/doc
 
-ENV SPARK_VERSION 2.4.4
+ENV SPARK_VERSION 2.4.6
 ENV SPARK_PACKAGE spark-${SPARK_VERSION}-bin-without-hadoop
 ENV SPARK_HOME /opt/spark
 ENV SPARK_DIST_CLASSPATH "$HADOOP_HOME/etc/hadoop/*:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*:$HADOOP_HOME/share/hadoop/tools/lib/*"
@@ -68,6 +68,7 @@ RUN curl -L --retry 3 \
 
 ## Java 8.  NB: can't use Java 11 yet for Spark
 RUN \
+  apt-get update && \
   apt-get install -y openjdk-8-jdk && \
   ls -lhat /usr/lib/jvm/java-8-openjdk-amd64 && \
   echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment

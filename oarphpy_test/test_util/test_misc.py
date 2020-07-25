@@ -43,6 +43,11 @@ class TestGetSizeOfDeep(unittest.TestCase):
     assert util.get_size_of_deep("") == sys.getsizeof("")
     assert util.get_size_of_deep(0) == sys.getsizeof(0)
 
+    bs = b"abc"
+    assert util.get_size_of_deep(bytes(bs)) == sys.getsizeof(bytes(bs))
+    assert \
+      util.get_size_of_deep(bytearray(bs)) == sys.getsizeof(bytearray(bs))
+
   def test_sequences(self):
     pytest.importorskip('six', reason='Uses six for compatibility')
 
@@ -52,6 +57,16 @@ class TestGetSizeOfDeep(unittest.TestCase):
 
     assert util.get_size_of_deep({0: 0}) == 2 * sys.getsizeof(0)
     assert util.get_size_of_deep({0: [0]}) == 2 * sys.getsizeof(0)
+
+  def test_generators(self):
+    a = [1, 2]
+    assert util.get_size_of_deep(iter(a)) == sys.getsizeof(iter(a))
+
+    def ima_gen():
+      for i in range(10):
+        yield i
+    
+    assert util.get_size_of_deep(ima_gen()) == sys.getsizeof(ima_gen())
 
   def test_obj(self):
     pytest.importorskip('six', reason='Uses six for compatibility')
@@ -83,6 +98,18 @@ class TestGetSizeOfDeep(unittest.TestCase):
     assert util.get_size_of_deep([arr]) == arr.nbytes
     assert util.get_size_of_deep([arr, arr]) == 2 * arr.nbytes
     assert util.get_size_of_deep({0: arr}) == (sys.getsizeof(0) + arr.nbytes)
+
+  def test_big_lists(self):
+    pytest.importorskip('six', reason='Uses six for compatibility')
+
+    # Case: consider we have a large array, like a Tensor
+    # but as a list. We want get_size_of_deep() to be fast.
+    arr = list(range(int(1e6)))
+    assert util.get_size_of_deep(arr) == (len(arr) * sys.getsizeof(0))
+
+    # A big list of strings will still require a slower reduce
+    ss = list(str(i) for i in range(100))
+    assert util.get_size_of_deep(ss) == sum(sys.getsizeof(s) for s in ss)
 
 
 def test_stable_hash():

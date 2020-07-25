@@ -42,8 +42,18 @@ def find_version():
 setup_requires = ['pytest-runner']
 tests_require = ['pytest']
 if sys.version_info[0] < 3:
-  setup_requires = ['pytest-runner<5']
-  tests_require = ['pytest<5']
+  setup_requires = [
+    'pytest-runner==4.2.0',
+    # Pin to a variety of old versions because python2 support is
+    # deteriorating-- new versions break the build
+    'configparser==3.5.0',
+    'contextlib2==0.5.4',
+    'scandir==1.5.0',
+    'importlib-metadata==0.12',
+    'atomicwrites==1.0.0',
+    'attrs==17.4.0',
+  ]
+  tests_require = ['pytest==4.2.0']
 
 ## Optional Dependencies
 # OarphPy works in standard python 2 and 3 environments, but we provide extras
@@ -64,7 +74,7 @@ if not HAVE_SYSTEM_SPARK:
 
 TF_DEPS = [
   'crcmod',
-  'tensorflow<=1.15.0',
+  'tensorflow<=1.15.2',
 ]
 
 UTILS = [
