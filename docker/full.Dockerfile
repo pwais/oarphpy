@@ -107,7 +107,7 @@ RUN \
         && \
   pip3 install --upgrade setuptools wheel && \
   pip3 install ipdb pytest && \
-  pip3 install sphinx recommonmark m2r sphinx-rtd-theme && \
+  pip3 install sphinx recommonmark m2r2 sphinx-rtd-theme && \
   curl -LO https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep_0.10.0_amd64.deb && \
   dpkg -i ripgrep_0.10.0_amd64.deb
 RUN \
