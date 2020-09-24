@@ -62,7 +62,7 @@ if sys.version_info[0] < 3:
 # README.md.
 
 SPARK_DEPS = [
-  'findspark==1.3.0',
+  'findspark==1.4.0',
   'numpy',
   'pandas>=0.19.2',
 ]
@@ -70,7 +70,7 @@ HAVE_SYSTEM_SPARK = (
   os.environ.get('SPARK_HOME') or
   os.path.exists('/opt/spark'))
 if not HAVE_SYSTEM_SPARK:
-  SPARK_DEPS += ['pyspark>=2.4.4']
+  SPARK_DEPS += ['pyspark>=3.0.1']
 
 TF_DEPS = [
   'crcmod',
@@ -97,6 +97,9 @@ UTILS = [
 
   # For oarphpy.plotting
   'bokeh==1.0.4',
+
+  # For misc utils
+  'cloudpickle>=1.5.0',
 ]
 
 ALL_DEPS = UTILS + SPARK_DEPS + TF_DEPS

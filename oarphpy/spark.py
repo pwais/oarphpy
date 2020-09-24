@@ -633,7 +633,6 @@ class SessionFactory(object):
     #   builder = builder.enableHiveSupport()
     
     try:
-
       spark = builder.getOrCreate()
 
     except Exception as e:
