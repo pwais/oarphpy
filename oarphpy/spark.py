@@ -935,6 +935,8 @@ class RowAdapter(object):
       return Row(**dict([tag] + obj_attrs))
     elif isinstance(obj, list):
       return [cls.to_row(x) for x in obj]
+    elif isinstance(obj, tuple):
+      return tuple(cls.to_row(x) for x in obj)
     elif isinstance(obj, dict):
       return dict((k, cls.to_row(v)) for k, v in obj.items())
     else:
@@ -971,6 +973,8 @@ class RowAdapter(object):
         return Row(**attrs)
     elif isinstance(row, list):
       return [cls.from_row(x) for x in row]
+    elif isinstance(row, tuple):
+      return tuple(cls.from_row(x) for x in row)
     elif isinstance(row, dict):
       return dict((k, cls.from_row(v)) for k, v in row.items())
     return row

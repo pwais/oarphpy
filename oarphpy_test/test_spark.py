@@ -374,7 +374,7 @@ def _check_serialization(spark, rows, testname, schema=None):
   if schema:
     df = spark.createDataFrame(
       adapted_rows, schema=schema, verifySchema=False)
-        # verifySchema is expensive and improperly erros on mostly empty rows
+        # verifySchema is expensive and improperly errors on mostly empty rows
   else:
     df = spark.createDataFrame(adapted_rows)
       # Automatically samples both rows to get schema
@@ -398,6 +398,186 @@ def _check_serialization(spark, rows, testname, schema=None):
   
   return df
 
+
+@skip_if_no_spark
+class TestRowAdapter(unittest.TestCase):
+
+  ## Tests
+
+  def test_nonadapted_input(self):
+    from oarphpy.spark import RowAdapter
+
+    ## RowAdapter leaves non-container input unchanged
+    for datum in (True, 1, 1.0, "moof", bytes(b"moof")):
+      assert RowAdapter.to_row(datum) == datum
+      assert RowAdapter.from_row(datum) == datum
+
+  def test_python_basic_values(self):
+    from pyspark.sql import Row
+    
+    ## Columns with basic python types get translated as-is; FMI see Spary's
+    ## core type mappings: https://github.com/apache/spark/blob/master/python/pyspark/sql/types.py#L875
+    row_expected_schema = [
+      (Row(x=True),                 [('x', 'boolean')]),
+      (Row(x=1),                    [('x', 'bigint')]),
+      (Row(x=1.0),                  [('x', 'double')]),
+      (Row(x="moof"),               [('x', 'string')]),
+      (Row(x=bytearray(b"moof")),   [('x', 'binary')]),
+      (Row(x=None),                 [('x', 'null')]),
+    ]
+    
+    self._check_raw_adaption([(r, r) for r, s in row_expected_schema])
+    
+    for row, expected_schema in row_expected_schema:
+      schema = self._check_schema([row], expected_schema)
+      if all(t != 'null' for colname, t in expected_schema):
+        # In most cases, data can be written as expected
+        self._check_serialization([row])
+      else:
+        # NB: None / null can't be written
+        with pytest.raises(Exception) as excinfo:
+          self._check_serialization([row], schema=schema)
+        assert ("Parquet data source does not support null data type" 
+          in str(excinfo.value))
+
+
+  def test_python_basic_containers_adaption(self):
+    from pyspark.sql import Row
+    
+    ## RowAdapters translates basic python containers recursively 
+    rows = [
+      Row(x=[]),
+      Row(x=tuple()),
+      Row(x={}),
+      
+      Row(x=[1, 2, 3]),
+      Row(x=(True, False)),
+      Row(x={'a': 1, 'b': 2}),
+
+      Row(x=[{'a': 1}, {'c': 2}]),
+
+      Row(x=[Row(a={'b': Row(c=None)})]),
+        # NB: as we'll see below, RowAdapter translates
+        # `dict` as "map" and `Row` as "struct"
+    ]
+    self._check_raw_adaption([(r, r) for r in rows])
+    
+  def test_python_basic_empty_containers(self):
+    from pyspark.sql import Row
+
+    # NOTE!!  Empty containers can't have their types auto-deduced!!
+    rows = [
+      Row(id=0, l=[]),
+      Row(id=1, l=[]),
+    ]
+    with pytest.raises(ValueError) as excinfo:
+      self._check_serialization(rows)
+    assert "Some of types cannot be determined" in str(excinfo.value)
+    
+    # RowAdapter can deduce the type, but `array<null>` can't be serialized
+    # (same with map<null, null>)
+    schema = self._check_schema(
+                      rows,
+                      [('id', 'bigint'), ('l', 'array<null>')])
+    with pytest.raises(Exception) as excinfo:
+      self._check_serialization(rows, schema=schema)
+    assert ("Parquet data source does not support array<null> data type" 
+      in str(excinfo.value))
+
+    # WORKAROUND: If you compute a schema based upon a prototype row, then you
+    # can use that schema to write empty containers
+    PROTOTYPE_ROW = Row(id=0, l=[0])
+    schema = self._check_schema(
+                      [PROTOTYPE_ROW],
+                      [('id', 'bigint'), ('l', 'array<bigint>')])
+    self._check_serialization(rows, schema=schema)
+
+  def test_python_basic_nonempty_containers(self):
+    from pyspark.sql import Row
+    
+    # Data with non-empty containers enjoys auto schema deduction from Spark
+    rows = [
+      Row(id=0, l=[1],    d={'a': 'foo'}),
+      Row(id=1, l=[2, 3], d={'b': 'bar'}),
+      Row(id=2, l=[],     d={}),    # Some rows with empty containers are OK
+      Row(id=3, l=None,   d=None)   # Null data is OK too
+    ]
+    self._check_serialization(rows)
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('l', 'array<bigint>'),
+             ('d', 'map<string,string>')
+            ])
+
+
+
+    # for row in rows:
+    #   self._check_serialization([row])
+
+
+
+
+  ## Support
+
+  def _check_raw_adaption(self, raw_expected):
+    from oarphpy.spark import RowAdapter
+    
+    for raw_data, expected_row in raw_expected:
+      actual_row = RowAdapter.to_row(raw_data)
+      assert actual_row == expected_row
+
+      actual_data = RowAdapter.from_row(expected_row)
+      assert actual_data == raw_data
+
+  def _check_schema(self, rows, expected_schema):
+    from oarphpy.spark import RowAdapter
+    schema = RowAdapter.to_schema(rows[0])
+    with testutil.LocalSpark.sess() as spark:
+      df = spark.createDataFrame(rows, schema=schema, verifySchema=False)
+        # verifySchema is expensive and improperly erros on mostly empty rows
+      assert df.dtypes == expected_schema
+    return schema
+
+  def _check_serialization(self, rows, schema=None):
+    import inspect
+    from oarphpy import util
+    from oarphpy.spark import RowAdapter 
+
+    test_name = inspect.stack()[1][3]
+
+    TEST_TEMPDIR = testutil.test_tempdir('TestRowAdapter.' + test_name)
+
+    adapted_rows = [RowAdapter.to_row(r) for r in rows]
+    
+    with testutil.LocalSpark.sess() as spark:
+      if schema:
+        df = spark.createDataFrame(
+          adapted_rows, schema=schema, verifySchema=False)
+            # verifySchema is expensive and improperly errors on mostly
+            # empty rows
+      else:
+        df = spark.createDataFrame(adapted_rows)
+          # Automatically samples both rows to get schema
+      outpath = os.path.join(TEST_TEMPDIR, 'rowdata_%s' % test_name)
+      df.write.parquet(outpath)
+
+      df2 = spark.read.parquet(outpath)
+      decoded_wrapped_rows = df2.collect()
+      
+      decoded_rows = [
+        RowAdapter.from_row(row)
+        for row in decoded_wrapped_rows
+      ]
+      
+      # We can't do assert sorted(rows) == sorted(decoded_rows)
+      # because numpy syntatic sugar breaks ==
+      import pprint
+      def sorted_row_str(rowz):
+        return pprint.pformat(sorted(rowz))
+      assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
+      
+      return df
 
 @skip_if_no_spark
 def test_row_adapter_basic():
@@ -513,7 +693,10 @@ def test_row_adapter_basic():
     _check_serialization(spark, [mostly_empty], 'with_schema', schema=schema)
 
 
-### Test With `attrs` Package
+
+###
+### Tests With `attrs` Package
+###
 
 try:
   import attr
