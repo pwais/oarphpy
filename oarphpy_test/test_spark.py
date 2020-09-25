@@ -449,11 +449,22 @@ class TestRowAdapter(unittest.TestCase):
   def test_nonadapted_input(self):
     from oarphpy.spark import RowAdapter
 
-    ## RowAdapter leaves bare data input unchanged
+    # RowAdapter leaves bare data input unchanged
     BARE_VALUES = True, 1, 1.0, "moof", bytes(b"moof")
     for datum in BARE_VALUES:
       assert RowAdapter.to_row(datum) == datum
       assert RowAdapter.from_row(datum) == datum
+
+
+  def test_pesky_numpy(self):
+    import numpy as np
+    from oarphpy.spark import RowAdapter
+
+    # RowAdapter translates pesky numpy-boxed numbers ...
+    assert RowAdapter.to_row(Row(x=np.float32(1.))) == Row(x=1.)
+
+    # ... but only one way! In practice, just don't save boxed numbers in rows.
+    assert RowAdapter.from_row(Row(x=np.float32(1.))) == Row(x=np.float32(1.))
 
 
   def test_python_basic_values(self):
@@ -783,7 +794,25 @@ class TestRowAdapter(unittest.TestCase):
 
 
   def test_rowadapter_slotted(self):
-    pass
+    
+    # RowAdapter will treat slotted objects like normal (unslotted) objects. 
+    # The main difference is that if the slotted type changes and _loses_
+    # slots, RowAdapter won't try to setattr() on missing slots.
+    rows = [
+      Row(id=0, x=Slotted(foo=5, bar="abc", _not_hidden=1)),
+      Row(id=1, x=Slotted(foo=7, bar="cba", _not_hidden=3)),
+    ]
+    df = self._check_serialization(rows)
+    assert _select_distinct(df, 'x.__pyclass__') == [
+      'oarphpy_test.test_spark.Slotted']
+
+    # RowAdapter encodes objects as structs (even though in Python objects are
+    # very dict-like).
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('x',  'struct<__pyclass__:string,foo:bigint,bar:string,_not_hidden:bigint>'),
+            ])
 
 
   ## Test Support
