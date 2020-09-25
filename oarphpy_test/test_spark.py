@@ -394,13 +394,13 @@ try:
 except Exception:
   pass
 
-# def _pandas_compare_str(pdf, expected):
-#   def cleaned(s):
-#     lines = [l.strip() for l in s.split('\n')]
-#     return '\n'.join(l for l in lines if l)
-#   actual = pdf.to_string()
-#   assert cleaned(actual) == cleaned(expected), \
-#     "\n\nExpected %s \n\nActual %s\n\n" % (expected, actual)
+def _pandas_compare_str(pdf, expected):
+  def cleaned(s):
+    lines = [l.strip() for l in s.split('\n')]
+    return '\n'.join(l for l in lines if l)
+  actual = pdf.to_string()
+  assert cleaned(actual) == cleaned(expected), \
+    "\n\nExpected %s \n\nActual %s\n\n" % (expected, actual)
 
 
 # def _check_serialization(spark, rows, testname, schema=None):
@@ -725,10 +725,63 @@ class TestRowAdapter(unittest.TestCase):
             ])
 
 
-  def test_rowadapter_numpy(self):
-    pass
+  def test_rowadapter_numpy_unpacked(self):
+    
+    import numpy as np
+    
+    # RowAdapter translates Numpy arrays to a oarphy Tensor object that affords
+    # SQL-based inspection for small arrays (and uses a more efficient row- or
+    # column-major packed encoding for large arrays; see next test)
+    rows = [
+      Row(id=0, x=np.array([1, 2, 3])),
+      Row(id=1, x=np.array([4, 5, 6])),
+    ]
+    df = self._check_serialization(rows)
+    assert _select_distinct(df, 'x.__pyclass__') == [
+              'oarphpy.spark.Tensor']
+    EXPECTED = """
+        id                                                     x
+    0   0  (oarphpy.spark.Tensor, [3], int64, C, [1, 2, 3], [])
+    1   1  (oarphpy.spark.Tensor, [3], int64, C, [4, 5, 6], [])
+    """
+    _pandas_compare_str(df.orderBy('id').toPandas(), EXPECTED)
+
+    # _check_serialization() verifies that the data gets decoded as numpy
+    # arrays, but just to make things visible in this test:
+    from oarphpy.spark import RowAdapter
+    decoded = [RowAdapter.from_row(r) for r in df.orderBy('id').collect()]
+    np.testing.assert_equal(decoded[0].x, np.array([1, 2, 3]))
+    np.testing.assert_equal(decoded[1].x, np.array([4, 5, 6]))
   
-  
+
+  def test_rowadapter_numpy_packed(self):
+    import numpy as np
+    from oarphpy.spark import TENSOR_AUTO_PACK_MIN_KBYTES
+
+    N = int(TENSOR_AUTO_PACK_MIN_KBYTES * (2**10) / np.dtype(int).itemsize) + 1
+    expect_packed = np.reshape(np.array(range(2 * N)), (2, N))
+
+    rows = [
+      Row(id=0, x=expect_packed),
+      Row(id=1, x=(expect_packed + 1)),
+    ]
+    df = self._check_serialization(rows)
+    assert _select_distinct(df, 'x.__pyclass__') == [
+              'oarphpy.spark.Tensor']
+    
+    # Verify that we actually have a column of packed values
+    bin_data = df.select('*').first().x.values_packed
+    assert len(bin_data) == expect_packed.size * expect_packed.dtype.itemsize
+      # For ints, usually 8 bytes per int * 2 * N
+    
+    # _check_serialization() verifies that the data gets decoded as numpy
+    # arrays, but just to make things visible in this test:
+    from oarphpy.spark import RowAdapter
+    decoded = [RowAdapter.from_row(r) for r in df.orderBy('id').collect()]
+    np.testing.assert_equal(decoded[0].x, expect_packed)
+    np.testing.assert_equal(decoded[1].x, expect_packed + 1)
+
+
   def test_rowadapter_slotted(self):
     pass
 
@@ -790,17 +843,13 @@ class TestRowAdapter(unittest.TestCase):
           RowAdapter.from_row(row)
           for row in decoded_wrapped_rows
         ]
-        
-        import numpy as np
-        if isinstance(decoded_rows[0], np.ndarray):
-          # We can't do assert sorted(rows) == sorted(decoded_rows)
-          # because numpy syntatic sugar breaks ==
-          import pprint
-          def sorted_row_str(rowz):
-            return pprint.pformat(sorted(rowz))
-          assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
-        else:
-          assert sorted(rows) == sorted(decoded_rows)
+        # We can't do assert sorted(rows) == sorted(decoded_rows)
+        # because numpy syntatic sugar breaks __eq__, so use pprint,
+        # which is safe for our tests
+        import pprint
+        def sorted_row_str(rowz):
+          return pprint.pformat(sorted(rowz))
+        assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
       
       return df
 
