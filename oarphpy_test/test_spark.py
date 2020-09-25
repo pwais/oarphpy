@@ -325,7 +325,7 @@ def test_spark_df_to_tf_dataset():
 ### Test Row Adapter
 
 ## NB: these classes must be declared package-level (rather than test-scoped)
-## for cloudpickle / spark to discover them properly
+## for cloudpickle / Spark / RowAdapter to discover them properly
 
 class Slotted(object):
   __slots__ = ('foo', 'bar', '_not_hidden')
@@ -353,50 +353,92 @@ class Unslotted(object):
               if not k.startswith('__')
     )
     return "Unslotted(%s)" % str(sorted(attrs.items()))
-
-
-def _pandas_compare_str(pdf, expected):
-  def cleaned(s):
-    lines = [l.strip() for l in s.split('\n')]
-    return '\n'.join(l for l in lines if l)
-  actual = pdf.to_string()
-  assert cleaned(actual) == cleaned(expected), \
-    "\n\nExpected %s \n\nActual %s\n\n" % (expected, actual)
-
-
-def _check_serialization(spark, rows, testname, schema=None):
-  from oarphpy import util
-  from oarphpy.spark import RowAdapter 
-
-  TEST_TEMPDIR = testutil.test_tempdir('spark_row_adapter_test')
-
-  adapted_rows = [RowAdapter.to_row(r) for r in rows]
-  if schema:
-    df = spark.createDataFrame(
-      adapted_rows, schema=schema, verifySchema=False)
-        # verifySchema is expensive and improperly errors on mostly empty rows
-  else:
-    df = spark.createDataFrame(adapted_rows)
-      # Automatically samples both rows to get schema
-  outpath = os.path.join(TEST_TEMPDIR, 'rowdata_%s' % testname)
-  df.write.parquet(outpath)
-
-  df2 = spark.read.parquet(outpath)
-  decoded_wrapped_rows = df2.collect()
   
-  decoded_rows = [
-    RowAdapter.from_row(row)
-    for row in decoded_wrapped_rows
-  ]
+  def __eq__(self, other):
+    # Just for testing
+    return repr(self) == repr(other)
+
+# Tests for attrs-based classes are optional
+try:
+  import attr
+  import numpy as np
   
-  # We can't do assert sorted(rows) == sorted(decoded_rows)
-  # because numpy syntatic sugar breaks ==
-  import pprint
-  def sorted_row_str(rowz):
-    return pprint.pformat(sorted(rowz))
-  assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
+  # NB: Need these classes defined package-level
   
-  return df
+  @attr.s(eq=True)
+  class AttrsUnslotted(object):
+    foo = attr.ib(default="moof")
+    bar = attr.ib(default=5)
+  
+  @attr.s(slots=True, eq=True)
+  class AttrsSlotted(object):
+    foo = attr.ib(default="moof")
+    bar = attr.ib(default=5)
+
+except ImportError:
+  pass
+
+# Tests for dataclasses are optional
+try:
+  from dataclasses import dataclass
+  @dataclass
+  class DataclassObj:
+    x: str
+    y: float
+except Exception:
+  pass
+
+# We use Row a lot in the tests below; tests are skipped w/out Spark
+try:
+  from pyspark.sql import Row
+except Exception:
+  pass
+
+# def _pandas_compare_str(pdf, expected):
+#   def cleaned(s):
+#     lines = [l.strip() for l in s.split('\n')]
+#     return '\n'.join(l for l in lines if l)
+#   actual = pdf.to_string()
+#   assert cleaned(actual) == cleaned(expected), \
+#     "\n\nExpected %s \n\nActual %s\n\n" % (expected, actual)
+
+
+# def _check_serialization(spark, rows, testname, schema=None):
+#   from oarphpy import util
+#   from oarphpy.spark import RowAdapter 
+
+#   TEST_TEMPDIR = testutil.test_tempdir('spark_row_adapter_test')
+
+#   adapted_rows = [RowAdapter.to_row(r) for r in rows]
+#   if schema:
+#     df = spark.createDataFrame(
+#       adapted_rows, schema=schema, verifySchema=False)
+#         # verifySchema is expensive and improperly errors on mostly empty rows
+#   else:
+#     df = spark.createDataFrame(adapted_rows)
+#       # Automatically samples both rows to get schema
+#   outpath = os.path.join(TEST_TEMPDIR, 'rowdata_%s' % testname)
+#   df.write.parquet(outpath)
+
+#   df2 = spark.read.parquet(outpath)
+#   decoded_wrapped_rows = df2.collect()
+  
+#   decoded_rows = [
+#     RowAdapter.from_row(row)
+#     for row in decoded_wrapped_rows
+#   ]
+  
+#   # We can't do assert sorted(rows) == sorted(decoded_rows)
+#   # because numpy syntatic sugar breaks ==
+#   import pprint
+#   def sorted_row_str(rowz):
+#     return pprint.pformat(sorted(rowz))
+#   assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
+  
+#   return df
+
+def _select_distinct(df, col):
+  return list(set(r[0] for r in df.select(col).collect()))
 
 
 @skip_if_no_spark
@@ -407,14 +449,15 @@ class TestRowAdapter(unittest.TestCase):
   def test_nonadapted_input(self):
     from oarphpy.spark import RowAdapter
 
-    ## RowAdapter leaves non-container input unchanged
-    for datum in (True, 1, 1.0, "moof", bytes(b"moof")):
+    ## RowAdapter leaves bare data input unchanged
+    BARE_VALUES = True, 1, 1.0, "moof", bytes(b"moof")
+    for datum in BARE_VALUES:
       assert RowAdapter.to_row(datum) == datum
       assert RowAdapter.from_row(datum) == datum
 
+
   def test_python_basic_values(self):
-    from pyspark.sql import Row
-    
+
     ## Columns with basic python types get translated as-is; FMI see Spary's
     ## core type mappings: https://github.com/apache/spark/blob/master/python/pyspark/sql/types.py#L875
     row_expected_schema = [
@@ -442,7 +485,6 @@ class TestRowAdapter(unittest.TestCase):
 
 
   def test_python_basic_containers_adaption(self):
-    from pyspark.sql import Row
     
     ## RowAdapters translates basic python containers recursively 
     rows = [
@@ -461,9 +503,9 @@ class TestRowAdapter(unittest.TestCase):
         # `dict` as "map" and `Row` as "struct"
     ]
     self._check_raw_adaption([(r, r) for r in rows])
-    
+
+
   def test_python_basic_empty_containers(self):
-    from pyspark.sql import Row
 
     # NOTE!!  Empty containers can't have their types auto-deduced!!
     rows = [
@@ -492,8 +534,8 @@ class TestRowAdapter(unittest.TestCase):
                       [('id', 'bigint'), ('l', 'array<bigint>')])
     self._check_serialization(rows, schema=schema)
 
+
   def test_python_basic_nonempty_containers(self):
-    from pyspark.sql import Row
     
     # Data with non-empty containers enjoys auto schema deduction from Spark
     rows = [
@@ -511,14 +553,187 @@ class TestRowAdapter(unittest.TestCase):
             ])
 
 
+  def test_basic_structs(self):
 
-    # for row in rows:
-    #   self._check_serialization([row])
+    # Spark treats `Row` like a 'struct' rather than a map; here's how you can
+    # use raw `Row` instances:
+    rows = [
+      Row(id=0, x=Row(shape='square', area=1)),
+      Row(id=1, x=Row(shape='circle', area=2)),
+    ]
+    self._check_serialization(rows)
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('x',  'struct<shape:string,area:bigint>'),
+            ])
 
 
+  def test_built_in_unslotted(self):
+
+    # Spark actually has built-in support for adapting plain Python objects,
+    # but ...
+    rows = [
+      Row(id=0, x=Unslotted(v=4)),
+      Row(id=1, x=Unslotted(v=5)),
+    ]
+    df = self._check_serialization(rows, do_adaption=False)
+    
+    # ... Spark deserializes 'objects' as generic `Row` instances.
+    df_rows = df.collect()
+    assert sorted(df_rows) == sorted([
+      Row(id=0, v=Row(v=4)), Row(id=1, x=Row(v=5))
+    ])
 
 
-  ## Support
+  def test_built_in_dataclasses(self):
+    pytest.importorskip('dataclasses')
+
+    # Spark also has built-in support for Python dataclasses, but ...
+    rows = [
+      Row(id=0, x=DataclassObj(x='foo', y=5.)),
+      Row(id=1, x=DataclassObj(x='bar', y=6.)),
+    ]
+    df = self._check_serialization(rows, do_adaption=False)
+    
+    # ... Spark deserializes 'dataclasses' as generic `Row` instances.
+    df_rows = df.collect()
+    assert sorted(df_rows) == sorted([
+      Row(id=0, v=Row(x='foo', y=5.)), Row(id=1, x=Row(x='bar', y=6.))
+    ])
+
+
+  # def test_built_in_attrs(self):
+  #   pytest.importorskip('attr')
+
+  #   # Spark can NOT handle attrs-based objects
+  #   rows = [
+  #     Row(id=0, x=AttrsUnslotted()),
+  #     Row(id=1, x=AttrsUnslotted(foo="foom")),
+  #   ]
+  #   with pytest.raises(TypeError) as excinfo:
+  #     self._check_serialization(rows, do_adaption=False)
+  #   assert (
+  #     "not supported type: <class 'oarphpy_test.test_spark.AttrsUnslotted'>"
+  #     in str(excinfo.value))
+
+
+  def test_built_in_numpy(self):
+    import numpy as np
+    
+    # Spark can NOT handle complex objects like numpy arrays
+    rows = [
+      Row(id=0, x=np.array([1, 2, 3])),
+      Row(id=1, x=np.array([4, 5, 6])),
+    ]
+    with pytest.raises(TypeError) as excinfo:
+      self._check_serialization(rows, do_adaption=False)
+    assert "not supported type: <class 'numpy.ndarray'>" in str(excinfo.value)
+
+
+  def test_built_in_slotted(self):
+    
+    # Spark does NOT have built-in support for *slotted* objects
+    rows = [
+      Row(id=0, x=Slotted(foo=5, bar="abc", _not_hidden=1)),
+      Row(id=1, x=Slotted(foo=7, bar="cba", _not_hidden=3)),
+    ]
+    with pytest.raises(TypeError) as excinfo:
+      self._check_serialization(rows, do_adaption=False)
+    assert ("not supported type: <class 'oarphpy_test.test_spark.Slotted'>"
+      in str(excinfo.value))
+
+
+  def test_rowadapter_unslotted(self):
+    
+    # RowAdapter will deserialize and re-create Python objects, using the
+    # `Unslotted` class defined at runtime.
+    rows = [
+      Row(id=0, x=Unslotted(v=4)),
+      Row(id=1, x=Unslotted(v=5)),
+    ]
+    df = self._check_serialization(rows)
+    
+    # NB: The check above also checks that `Unslotted` instances are created
+    # and checks equality via __eq__ or pprint.pformat().  But just to make
+    # things visible in this test:
+    from oarphpy.spark import RowAdapter
+    decoded = sorted(RowAdapter.from_row(r) for r in df.collect())
+    assert [r.x for r in decoded] == [Unslotted(v=4), Unslotted(v=5)]
+
+    # RowAdapter records the (full) class name in the table as the
+    # `__pyclass__` attribute of each value of the `x` column.
+    assert _select_distinct(df, 'x.__pyclass__') == [
+      'oarphpy_test.test_spark.Unslotted']
+
+    # RowAdapter encodes objects as structs (even though in Python objects are
+    # very dict-like).
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('x',  'struct<__pyclass__:string,v:bigint>'),
+            ])
+    
+  
+  def test_rowadapter_dataclasses(self):
+    pytest.importorskip('dataclasses')
+
+    rows = [
+      Row(id=0, x=DataclassObj(x='foo', y=5.)),
+      Row(id=1, x=DataclassObj(x='bar', y=6.)),
+    ]
+    df = self._check_serialization(rows)
+    
+    assert _select_distinct(df, 'x.__pyclass__') == [
+      'oarphpy_test.test_spark.DataclassObj']
+
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('x',  'struct<__pyclass__:string,x:string,y:double>'),
+            ])
+  
+  
+  def test_rowadapter_attrs(self):
+    pytest.importorskip('attr')
+
+    rows = [
+      Row(id=0, x=AttrsUnslotted()),
+      Row(id=1, x=AttrsUnslotted(foo="foom")),
+    ]
+    df = self._check_serialization(rows)
+    assert _select_distinct(df, 'x.__pyclass__') == [
+      'oarphpy_test.test_spark.AttrsUnslotted']
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('x',  'struct<__pyclass__:string,foo:string,bar:bigint>'),
+            ])
+    
+    rows = [
+      Row(id=0, x=AttrsSlotted()),
+      Row(id=1, x=AttrsSlotted(foo="foom")),
+    ]
+    df = self._check_serialization(rows)
+    assert _select_distinct(df, 'x.__pyclass__') == [
+      'oarphpy_test.test_spark.AttrsSlotted']
+    
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('x',  'struct<__pyclass__:string,foo:string,bar:bigint>'),
+            ])
+
+
+  def test_rowadapter_numpy(self):
+    pass
+  
+  
+  def test_rowadapter_slotted(self):
+    pass
+
+
+  ## Test Support
 
   def _check_raw_adaption(self, raw_expected):
     from oarphpy.spark import RowAdapter
@@ -533,13 +748,15 @@ class TestRowAdapter(unittest.TestCase):
   def _check_schema(self, rows, expected_schema):
     from oarphpy.spark import RowAdapter
     schema = RowAdapter.to_schema(rows[0])
+    adapted_rows = [RowAdapter.to_row(r) for r in rows]
     with testutil.LocalSpark.sess() as spark:
-      df = spark.createDataFrame(rows, schema=schema, verifySchema=False)
-        # verifySchema is expensive and improperly erros on mostly empty rows
+      df = spark.createDataFrame(
+        adapted_rows, schema=schema, verifySchema=False)
+        # verifySchema is expensive and improperly errors on mostly empty rows
       assert df.dtypes == expected_schema
     return schema
 
-  def _check_serialization(self, rows, schema=None):
+  def _check_serialization(self, rows, schema=None, do_adaption=True):
     import inspect
     from oarphpy import util
     from oarphpy.spark import RowAdapter 
@@ -548,8 +765,11 @@ class TestRowAdapter(unittest.TestCase):
 
     TEST_TEMPDIR = testutil.test_tempdir('TestRowAdapter.' + test_name)
 
-    adapted_rows = [RowAdapter.to_row(r) for r in rows]
-    
+    if do_adaption:
+      adapted_rows = [RowAdapter.to_row(r) for r in rows]
+    else:
+      adapted_rows = rows
+
     with testutil.LocalSpark.sess() as spark:
       if schema:
         df = spark.createDataFrame(
@@ -558,26 +778,59 @@ class TestRowAdapter(unittest.TestCase):
             # empty rows
       else:
         df = spark.createDataFrame(adapted_rows)
-          # Automatically samples both rows to get schema
+          # Automatically samples rows to get schema
       outpath = os.path.join(TEST_TEMPDIR, 'rowdata_%s' % test_name)
       df.write.parquet(outpath)
 
       df2 = spark.read.parquet(outpath)
       decoded_wrapped_rows = df2.collect()
       
-      decoded_rows = [
-        RowAdapter.from_row(row)
-        for row in decoded_wrapped_rows
-      ]
-      
-      # We can't do assert sorted(rows) == sorted(decoded_rows)
-      # because numpy syntatic sugar breaks ==
-      import pprint
-      def sorted_row_str(rowz):
-        return pprint.pformat(sorted(rowz))
-      assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
+      if do_adaption:
+        decoded_rows = [
+          RowAdapter.from_row(row)
+          for row in decoded_wrapped_rows
+        ]
+        
+        import numpy as np
+        if isinstance(decoded_rows[0], np.ndarray):
+          # We can't do assert sorted(rows) == sorted(decoded_rows)
+          # because numpy syntatic sugar breaks ==
+          import pprint
+          def sorted_row_str(rowz):
+            return pprint.pformat(sorted(rowz))
+          assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
+        else:
+          assert sorted(rows) == sorted(decoded_rows)
       
       return df
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @skip_if_no_spark
 def test_row_adapter_basic():
@@ -708,13 +961,11 @@ try:
   class AttrsUnslotted(object):
     foo = attr.ib(default="moof")
     bar = attr.ib(default=5)
-    arr = attr.ib(default=np.array([1.]))
   
   @attr.s(slots=True, eq=True)
   class AttrsSlotted(object):
     foo = attr.ib(default="moof")
     bar = attr.ib(default=5)
-    arr = attr.ib(default=np.array([1.]))
 
 except ImportError:
   pass

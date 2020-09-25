@@ -945,10 +945,11 @@ class RowAdapter(object):
   @classmethod
   def from_row(cls, row):
     if hasattr(row, '__fields__'):
+      # Probably a pyspark Row instance; try to convert it to an object
       if '__pyclass__' in row.__fields__:
         obj_cls_name = row['__pyclass__']
         obj_cls = RowAdapter._get_class_from_path(obj_cls_name)
-        obj = obj_cls()
+        obj = obj_cls.__new__(obj_cls)
 
         if hasattr(obj, '__slots__'):
           for k in obj.__slots__:
@@ -968,6 +969,7 @@ class RowAdapter(object):
         return obj
       
       else:
+        # No known __pyclass__, so fall back to generic
         from pyspark.sql import Row
         attrs = dict((k, cls.from_row(v)) for k, v in row.asDict().items())
         return Row(**attrs)
