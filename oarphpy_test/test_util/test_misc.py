@@ -115,12 +115,12 @@ class TestGetSizeOfDeep(unittest.TestCase):
 def test_stable_hash():
   # pickle serializes objects differently in 2 vs 3
   if sys.version_info[0] < 3:
-    # Python3: pinned to pickle protocol 3
-    assert util.stable_hash("foo") == 5556954555383891854232548057894286426
-    assert util.stable_hash(5) == 241800825220357117529312993105008763563
-    assert util.stable_hash(object()) == 117626811236905479645034640080018324566
+    # Python2: pinned to pickle protocol 2
+    assert util.stable_hash("foo") == 231290827449591418329105380467963919721
+    assert util.stable_hash(5) == 335425996500234075338788053721602902452
+    assert util.stable_hash(object()) == 282611958877452113859631854844508872387
   else:
-    # Python2: uses pickle protocol 2
+    # Python3: pinned to pickle protocol 3
     assert util.stable_hash("foo") == 315796808559568577246078438196621234360
     assert util.stable_hash(5) == 160000050781405605007085407481456440406
     assert util.stable_hash(object()) == 303935568206769042132548381433370108855

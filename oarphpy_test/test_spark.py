@@ -379,14 +379,8 @@ except ImportError:
   pass
 
 # Tests for dataclasses are optional
-try:
-  from dataclasses import dataclass
-  @dataclass
-  class DataclassObj:
-    x: str
-    y: float
-except Exception:
-  pass
+if sys.version_info[0] >= 3:
+  from oarphpy_test.dataclass_obj import *
 
 # We use Row a lot in the tests below; tests are skipped w/out Spark
 try:
