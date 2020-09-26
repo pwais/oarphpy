@@ -614,19 +614,21 @@ class TestRowAdapter(unittest.TestCase):
     ])
 
 
-  # def test_built_in_attrs(self):
-  #   pytest.importorskip('attr')
+  def test_built_in_attrs(self):
+    pytest.importorskip('attr')
 
-  #   # Spark can NOT handle attrs-based objects
-  #   rows = [
-  #     Row(id=0, x=AttrsUnslotted()),
-  #     Row(id=1, x=AttrsUnslotted(foo="foom")),
-  #   ]
-  #   with pytest.raises(TypeError) as excinfo:
-  #     self._check_serialization(rows, do_adaption=False)
-  #   assert (
-  #     "not supported type: <class 'oarphpy_test.test_spark.AttrsUnslotted'>"
-  #     in str(excinfo.value))
+    # Spark also has built-in support for attrs-based objects, but ...
+    rows = [
+      Row(id=0, x=AttrsUnslotted()),
+      Row(id=1, x=AttrsUnslotted(foo="foom")),
+    ]
+    df = self._check_serialization(rows, do_adaption=False)
+    
+    # ... Spark deserializes 'attrs' objects as generic `Row` instances.
+    df_rows = df.collect()
+    assert sorted(df_rows) == sorted([
+      Row(id=0, x=Row(bar=5, foo='moof')), Row(id=1, x=Row(bar=5, foo='foom'))
+    ])
 
 
   def test_built_in_numpy(self):
@@ -653,6 +655,35 @@ class TestRowAdapter(unittest.TestCase):
       self._check_serialization(rows, do_adaption=False)
     assert ("not supported type: <class 'oarphpy_test.test_spark.Slotted'>"
       in str(excinfo.value))
+
+
+  def test_built_in_contained_udt(self):
+    from pyspark.ml.linalg import DenseVector
+    from pyspark.sql.types import StructType
+
+    # As of Spark 3.x, Spark DOES support lists, maps, and structs of UDTs ...
+    assert hasattr(DenseVector, '__UDT__')
+    rows = [
+      Row(id=0, x=[DenseVector([-1.0, -1.0])]),
+      Row(id=0, x=[DenseVector([-2.0, -2.0])]),
+    ]
+    df = self._check_serialization(rows, do_adaption=False)
+    
+    # ... and will reconstruct python objects when querying data ...
+    assert df.collect() == rows
+
+    # But there are several drawbacks:
+    #  1) You must manually write the schema for your UDT using Spark's type
+    #       objects:
+    assert type(DenseVector.__UDT__.sqlType()) == StructType
+    #  2) For ndarrays, Spark ML only supports double-valued structures and
+    #        offers no packed encoding for large arrays; compare with
+    #        RowAdapter's Tensor below and see also:
+    #          https://github.com/apache/spark/blob/6c805470a7e8d1f44747dc64c2e49ebd302f9ba4/python/pyspark/ml/linalg/__init__.py#L144
+    values_field = [
+      f for f in DenseVector.__UDT__.sqlType().fields if f.name == 'values'
+    ][0]
+    assert str(values_field.dataType) == 'ArrayType(DoubleType,false)'
 
 
   def test_rowadapter_unslotted(self):
@@ -737,7 +768,6 @@ class TestRowAdapter(unittest.TestCase):
 
 
   def test_rowadapter_numpy_unpacked(self):
-    
     import numpy as np
     
     # RowAdapter translates Numpy arrays to a oarphy Tensor object that affords
@@ -815,6 +845,124 @@ class TestRowAdapter(unittest.TestCase):
             ])
 
 
+  def test_rowadapter_contained_objects(self):
+    
+      # RowAdapter will process containers of translatable objects recursively
+      s1 = Slotted(foo=5, bar="abc", _not_hidden=1)
+      s2 = Slotted(foo=7, bar="cba", _not_hidden=3)
+      rows = [
+        Row(id=0, x={'a': [{'b': [s1]}]}),
+        Row(id=1, x={'a': [{'b': [s2]}]}),
+      ]
+      df = self._check_serialization(rows)
+      
+      # The resulting type is very complicated ...
+      self._check_schema(
+              rows,
+              [('id', 'bigint'),
+              ('x',  'map<string,array<map<string,array<struct<__pyclass__:string,foo:bigint,bar:string,_not_hidden:bigint>>>>>'),
+              ])
+      
+      # ... but not hard to query!
+      assert 0 ==  df.select('*').where("x.a[0].b[0].foo = 5").first().id
+      assert 1 ==  df.select('*').where("x.a[0].b[0].bar = 'cba'").first().id
+
+
+  def test_rowadapter_complex(self):
+    from oarphpy.spark import RowAdapter
+
+    # A large-ish example that covers the above cases in aggregate
+    rows = [
+      Row(
+        id=1,
+        np_number=np.float32(1.),
+        a=np.array([1]), 
+        b={
+          'foo': np.array( [ [1] ], dtype=np.uint8)
+        },
+        c=[
+          np.array([[[1.]], [[2.]], [[3.]]])
+        ],
+        d=Slotted(foo=5, bar="abc", _not_hidden=1),
+        e=[Slotted(foo=6, bar="def", _not_hidden=1)],
+        f=Unslotted(meow=4, _not_hidden=1, __hidden=2),
+        g=Unslotted(), # Intentionally empty; adapter should set nothing
+        h=Row(i=1, j=2),
+      ),
+
+      # Include a mostly empty row below to exercise Spark type validation.
+      # Spark will ensure the row below and row above have the same schema;
+      # note that `None` (or 'null') is only allowed for Struct / Row types.
+      Row(
+        id=2,
+        np_number=np.float32(2.),
+        a=np.array([]),
+        b={},
+        c=[],
+        d=None,
+        e=[],
+        f=None,
+        g=None,
+        h=Row(i=3, j=3),
+      ),
+    ]
+
+    df = self._check_serialization(rows)
+    EXPECTED_ALL = """
+                                                                                  0                                                1
+    id                                                                            1                                                2
+    np_number                                                                     1                                                2
+    a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
+    b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
+    c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
+    d                                  (oarphpy_test.test_spark.Slotted, 5, abc, 1)                                             None
+    e                                [(oarphpy_test.test_spark.Slotted, 6, def, 1)]                                               []
+    f                                     (oarphpy_test.test_spark.Unslotted, 4, 1)                                             None
+    g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
+    h                                                                        (1, 2)                                           (3, 3)
+    """
+    _pandas_compare_str(df.orderBy('id').toPandas().T, EXPECTED_ALL)
+
+    # Test Schema Deduction
+    mostly_empty = Row(
+      id=2,
+      np_number=None,
+      a=None,
+      b={},
+      c=[],
+      d=None,
+      e=[],
+      f=None,
+      g=None,
+      h=None,
+    )
+    mostly_empty_adapted = RowAdapter.to_row(mostly_empty)
+
+    # Spark can't deduce schema from the empty-ish row ...
+    with pytest.raises(ValueError) as excinfo:
+      self._check_serialization([mostly_empty_adapted], do_adaption=False)
+    assert "Some of types cannot be determined" in str(excinfo.value)
+    
+    # ... but this works if we tell it the schema!
+    schema = RowAdapter.to_schema(rows[0])
+    self._check_serialization([mostly_empty_adapted], schema=schema)
+
+    # Let's check that RowAdapter schema deduction works as expected
+    EXPECTED_SCHEMA = [
+      ('id', 'bigint'),
+      ('np_number', 'double'),
+      ('a', 'struct<__pyclass__:string,shape:array<bigint>,dtype:string,order:string,values:array<bigint>,values_packed:binary>'),
+      ('b', 'map<string,struct<__pyclass__:string,shape:array<bigint>,dtype:string,order:string,values:array<bigint>,values_packed:binary>>'),
+      ('c', 'array<struct<__pyclass__:string,shape:array<bigint>,dtype:string,order:string,values:array<double>,values_packed:binary>>'),
+      ('d', 'struct<__pyclass__:string,foo:bigint,bar:string,_not_hidden:bigint>'),
+      ('e', 'array<struct<__pyclass__:string,foo:bigint,bar:string,_not_hidden:bigint>>'),
+      ('f', 'struct<__pyclass__:string,meow:bigint,_not_hidden:bigint>'),
+      ('g', 'struct<__pyclass__:string>'),
+      ('h', 'struct<i:bigint,j:bigint>'),
+    ]
+    self._check_schema(rows, EXPECTED_SCHEMA)
+   
+
   ## Test Support
 
   def _check_raw_adaption(self, raw_expected):
@@ -881,260 +1029,3 @@ class TestRowAdapter(unittest.TestCase):
         assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
       
       return df
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@skip_if_no_spark
-def test_row_adapter_basic():
-  import numpy as np
-
-  from pyspark.sql import Row
-
-  from oarphpy.spark import RowAdapter
-  
-  rows = [
-    Row(
-      id=1,
-      np_number=np.float32(1.),
-      a=np.array([1]), 
-      b={
-        'foo': np.array( [ [1] ], dtype=np.uint8)
-      },
-      c=[
-        np.array([[[1.]], [[2.]], [[3.]]])
-      ],
-      d=Slotted(foo=5, bar="abc", _not_hidden=1),
-      e=[Slotted(foo=6, bar="def", _not_hidden=1)],
-      f=Unslotted(meow=4, _not_hidden=1, __hidden=2),
-      g=Unslotted(), # Intentionally empty; adapter should set nothing
-      h=Row(i=1, j=2),
-    ),
-
-    # Include a mostly empty row below to exercise Spark type validation.
-    # Spark will ensure the row below and row above have the same schema;
-    # note that `None` (or 'null') is only allowed for Struct / Row types.
-    Row(
-      id=2,
-      np_number=np.float32(2.),
-      a=np.array([]),
-      b={},
-      c=[],
-      d=None,
-      e=[],
-      f=None,
-      g=None,
-      h=Row(i=3, j=3),
-    ),
-  ]
-
-  with testutil.LocalSpark.sess() as spark:
-
-    ## Test basic round-trip serialization and adaptation
-    
-    df_all = spark.createDataFrame([RowAdapter.to_row(r) for r in rows])
-    EXPECTED_ALL = """
-                                                                                  0                                                1
-    a                                (oarphpy.spark.Tensor, int64, C, [1], [1], [])  (oarphpy.spark.Tensor, float64, C, [0], [], [])
-    b              {'foo': ('oarphpy.spark.Tensor', 'uint8', 'C', [1, 1], [1], [])}                                               {}
-    c          [(oarphpy.spark.Tensor, float64, C, [3, 1, 1], [1.0, 2.0, 3.0], [])]                                               []
-    d                                  (oarphpy_test.test_spark.Slotted, 1, abc, 5)                                             None
-    e                                [(oarphpy_test.test_spark.Slotted, 1, def, 6)]                                               []
-    f                                     (oarphpy_test.test_spark.Unslotted, 1, 4)                                             None
-    g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
-    h                                                                        (1, 2)                                           (3, 3)
-    id                                                                            1                                                2
-    np_number                                                                     1                                                2
-    """
-    _pandas_compare_str(df_all.orderBy('id').toPandas().T, EXPECTED_ALL)
-
-    _check_serialization(spark, rows, 'basic')
-
-    ## Test Schema Deduction
-    mostly_empty = Row(
-      id=2,
-      np_number=None,
-      a=None,
-      b={},
-      c=[],
-      d=None,
-      e=[],
-      f=None,
-      g=None,
-      h=None,
-    )
-    mostly_empty_adapted = RowAdapter.to_row(mostly_empty)
-
-    # Spark can't deduce schema from the empty-ish row ...
-    with pytest.raises(ValueError) as excinfo:
-      df = spark.createDataFrame([mostly_empty_adapted])
-    assert "Some of types cannot be determined" in str(excinfo.value)
-    
-    # ... but this works if we tell it the schema!
-    schema = RowAdapter.to_schema(rows[0])
-    df = spark.createDataFrame(
-      [mostly_empty_adapted], schema=schema, verifySchema=False)
-
-    EXPECTED_SCHEMA = [
-      ('a', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<bigint>,values_packed:binary>'),
-      ('b', 'map<string,struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<bigint>,values_packed:binary>>'),
-      ('c', 'array<struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<double>,values_packed:binary>>'),
-      ('d', 'struct<__pyclass__:string,_not_hidden:bigint,bar:string,foo:bigint>'),
-      ('e', 'array<struct<__pyclass__:string,_not_hidden:bigint,bar:string,foo:bigint>>'),
-      ('f', 'struct<__pyclass__:string,_not_hidden:bigint,meow:bigint>'),
-      ('g', 'struct<__pyclass__:string>'),
-      ('h', 'struct<i:bigint,j:bigint>'),
-      ('id', 'bigint'),
-      ('np_number', 'double'),
-    ]
-    assert df.dtypes == EXPECTED_SCHEMA
-    
-    # Check that pyspark retains the empty values in `mostly_empty`
-    for colname in sorted(df.columns):
-      values = df.select(colname).collect()
-      assert len(values) == 1
-      assert mostly_empty[colname] == values[0][colname]
-
-    # ... and we can also read/write the empty-ish row!
-    _check_serialization(spark, [mostly_empty], 'with_schema', schema=schema)
-
-
-
-###
-### Tests With `attrs` Package
-###
-
-try:
-  import attr
-  import numpy as np
-  
-  # NB: Need these classes defined package-level
-  
-  @attr.s(eq=True)
-  class AttrsUnslotted(object):
-    foo = attr.ib(default="moof")
-    bar = attr.ib(default=5)
-  
-  @attr.s(slots=True, eq=True)
-  class AttrsSlotted(object):
-    foo = attr.ib(default="moof")
-    bar = attr.ib(default=5)
-
-except ImportError:
-  pass
-
-
-def _test_attrs_objs(spark, objs, testname):
-  from oarphpy.spark import RowAdapter
-
-  schema = RowAdapter.to_schema(objs[0])
-  rows = [RowAdapter.to_row(obj) for obj in objs]
-
-  df = spark.createDataFrame(rows, schema=schema, verifySchema=False)
-
-  # NB: both attrs-based examples have the same schema
-  EXPECTED_SCHEMA = [
-    ('__pyclass__', 'string'),
-    ('arr', 'struct<__pyclass__:string,dtype:string,order:string,shape:array<bigint>,values:array<double>,values_packed:binary>'),
-    ('bar', 'bigint'),
-    ('foo', 'string'),
-  ]
-  assert df.dtypes == EXPECTED_SCHEMA
-
-  _check_serialization(spark, objs, testname, schema=schema)
-
-  return df
-
-@skip_if_no_spark
-def test_row_adapter_with_attrs():
-  pytest.importorskip('attr')
-
-  objs = [
-    AttrsUnslotted(),
-    AttrsUnslotted(foo="foom"),
-    AttrsUnslotted(foo="123", arr=np.array([1., 2., 3.])),
-  ]
-
-  with testutil.LocalSpark.sess() as spark:
-    df = _test_attrs_objs(spark, objs, 'test_row_adapter_with_attrs')
-
-    EXPECTED = """
-                                  __pyclass__                                                           arr  bar   foo
-    0  oarphpy_test.test_spark.AttrsUnslotted  (oarphpy.spark.Tensor, float64, C, [3], [1.0, 2.0, 3.0], [])    5   123
-    1  oarphpy_test.test_spark.AttrsUnslotted            (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  foom
-    2  oarphpy_test.test_spark.AttrsUnslotted            (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  moof
-    """
-    _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
-
-
-@skip_if_no_spark
-def test_row_adapter_with_slotted_attrs():
-  pytest.importorskip('attr')
-
-  objs = [
-    AttrsSlotted(),
-    AttrsSlotted(foo="foom"),
-  ]
-
-  with testutil.LocalSpark.sess() as spark:
-    df = _test_attrs_objs(spark, objs, 'test_row_adapter_with_slotted_attrs')
-
-    EXPECTED = """
-                                __pyclass__                                                 arr  bar   foo
-    0  oarphpy_test.test_spark.AttrsSlotted  (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  foom
-    1  oarphpy_test.test_spark.AttrsSlotted  (oarphpy.spark.Tensor, float64, C, [1], [1.0], [])    5  moof
-    """
-    _pandas_compare_str(df.orderBy('foo').toPandas(), EXPECTED)
-
-
-### Extended Tests of `Tensor`
-
-@skip_if_no_spark
-def test_row_adapter_packed_numpy_arr():
-  import sys
-  import numpy as np
-  from oarphpy.spark import RowAdapter
-  from oarphpy.spark import TENSOR_AUTO_PACK_MIN_KBYTES
-  
-  with testutil.LocalSpark.sess() as spark:
-    
-    expect_unpacked = np.ones((5, 2))
-    df = _check_serialization(
-      spark, [expect_unpacked], 'unpacked_numpy_arr')
-    
-    N = int(TENSOR_AUTO_PACK_MIN_KBYTES * (2**10) / np.dtype(int).itemsize) + 1
-    expect_packed = np.reshape(np.array(range(2 * N)), (2, N))
-    schema = RowAdapter.to_schema(np.ones((5, 2)))
-    dfp = _check_serialization(
-      spark, [expect_packed], 'packed_numpy_arr', schema=schema)
-
-    # Verify that we actually have a column of packed values
-    assert dfp.select('*').first().values == []
-    bin_data = dfp.select('*').first().values_packed
-    assert len(bin_data) == expect_packed.size * expect_packed.dtype.itemsize
-      # For ints, usually 8 bytes per int * 2 * N

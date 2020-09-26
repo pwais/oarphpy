@@ -850,12 +850,13 @@ class RowAdapter(object):
   
   Unfortunately, we can't use Spark's UDT API to embed this adapter (and 
   obviate user calls) because UDTs require schema definitions.  Furthermore,
-  Spark unfortunately can't handle UDTs nested in maps or lists; i.e.
+  Spark <=2.x could not handle UDTs nested in maps or lists; i.e.
   [UDT()] (i.e. a list of UDTs) and {'foo': UDT()} (i.e. a map with UDT values)
-  will cause Spark to crash.
+  would cause Spark to crash.  Moreover, for ndarray data, Spark's ml.linalg
+  package coerces all data to floats.
 
   Benefits of RowAdapter:
-    * Transparently handles numpy arrays and numpy scalar types
+    * Transparently handles numpy arrays and numpy boxed scalar types
         (e.g. np.float32).
     * Deep type adaptation; supports nested types.
     * At the decode stage, supports evolution of object types independent of
@@ -937,6 +938,7 @@ class RowAdapter(object):
       return [cls.to_row(x) for x in obj]
     elif isinstance(obj, tuple):
       return tuple(cls.to_row(x) for x in obj)
+        # Spark will typically transform to list
     elif isinstance(obj, dict):
       return dict((k, cls.to_row(v)) for k, v in obj.items())
     else:
@@ -975,8 +977,6 @@ class RowAdapter(object):
         return Row(**attrs)
     elif isinstance(row, list):
       return [cls.from_row(x) for x in row]
-    elif isinstance(row, tuple):
-      return tuple(cls.from_row(x) for x in row)
     elif isinstance(row, dict):
       return dict((k, cls.from_row(v)) for k, v in row.items())
     return row
