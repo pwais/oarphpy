@@ -620,8 +620,6 @@ class SessionFactory(object):
     elif 'SPARK_MASTER' in os.environ:
       # spark-submit honors this env var
       builder = builder.master(os.environ['SPARK_MASTER'])
-    else:
-      builder = builder.master('local')
     if cls.CONF is not None:
       builder = builder.config(conf=cls.CONF)
     if cls.CONF_KV is not None:
