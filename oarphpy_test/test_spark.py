@@ -388,48 +388,6 @@ try:
 except Exception:
   pass
 
-def _pandas_compare_str(pdf, expected):
-  def cleaned(s):
-    lines = [l.strip() for l in s.split('\n')]
-    return '\n'.join(l for l in lines if l)
-  actual = pdf.to_string()
-  assert cleaned(actual) == cleaned(expected), \
-    "\n\nExpected %s \n\nActual %s\n\n" % (expected, actual)
-
-
-# def _check_serialization(spark, rows, testname, schema=None):
-#   from oarphpy import util
-#   from oarphpy.spark import RowAdapter 
-
-#   TEST_TEMPDIR = testutil.test_tempdir('spark_row_adapter_test')
-
-#   adapted_rows = [RowAdapter.to_row(r) for r in rows]
-#   if schema:
-#     df = spark.createDataFrame(
-#       adapted_rows, schema=schema, verifySchema=False)
-#         # verifySchema is expensive and improperly errors on mostly empty rows
-#   else:
-#     df = spark.createDataFrame(adapted_rows)
-#       # Automatically samples both rows to get schema
-#   outpath = os.path.join(TEST_TEMPDIR, 'rowdata_%s' % testname)
-#   df.write.parquet(outpath)
-
-#   df2 = spark.read.parquet(outpath)
-#   decoded_wrapped_rows = df2.collect()
-  
-#   decoded_rows = [
-#     RowAdapter.from_row(row)
-#     for row in decoded_wrapped_rows
-#   ]
-  
-#   # We can't do assert sorted(rows) == sorted(decoded_rows)
-#   # because numpy syntatic sugar breaks ==
-#   import pprint
-#   def sorted_row_str(rowz):
-#     return pprint.pformat(sorted(rowz))
-#   assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
-  
-#   return df
 
 def _select_distinct(df, col):
   return list(set(r[0] for r in df.select(col).collect()))
@@ -779,7 +737,7 @@ class TestRowAdapter(unittest.TestCase):
     0   0  (oarphpy.spark.Tensor, [3], int64, C, [1, 2, 3], [])
     1   1  (oarphpy.spark.Tensor, [3], int64, C, [4, 5, 6], [])
     """
-    _pandas_compare_str(df.orderBy('id').toPandas(), EXPECTED)
+    self._pandas_compare_str(df.orderBy('id').toPandas(), EXPECTED)
 
     # _check_serialization() verifies that the data gets decoded as numpy
     # arrays, but just to make things visible in this test:
@@ -915,7 +873,7 @@ class TestRowAdapter(unittest.TestCase):
     g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
     h                                                                        (1, 2)                                           (3, 3)
     """
-    _pandas_compare_str(df.orderBy('id').toPandas().T, EXPECTED_ALL)
+    self._pandas_compare_str(df.orderBy('id').toPandas().T, EXPECTED_ALL)
 
     # Test Schema Deduction
     mostly_empty = Row(
@@ -959,6 +917,12 @@ class TestRowAdapter(unittest.TestCase):
 
   ## Test Support
 
+  def _is_spark_2x(self):
+    if not hasattr(self, '_is_spark_2x_cache'):
+      import pyspark
+      self._is_spark_2x_cache = pyspark.__version__.startswith('2.') 
+    return self._is_spark_2x_cache
+
   def _check_raw_adaption(self, raw_expected):
     from oarphpy.spark import RowAdapter
     
@@ -977,7 +941,20 @@ class TestRowAdapter(unittest.TestCase):
       df = spark.createDataFrame(
         adapted_rows, schema=schema, verifySchema=False)
         # verifySchema is expensive and improperly errors on mostly empty rows
-      assert df.dtypes == expected_schema
+      
+      if self._is_spark_2x():
+        # Spark 2.x returns schema values in a different order, so we do a more
+        # flexible test
+        def tokenize(s):
+          import re
+          return sorted(re.split('[<>,]+', s))
+        actual = dict((col, tokenize(s)) for col, s in df.dtypes)
+        expected = dict((col, tokenize(s)) for col, s in expected_schema)
+        assert actual == expected
+      else:
+        # Tests are written for Spark 3.x
+        assert df.dtypes == expected_schema
+    
     return schema
 
   def _check_serialization(self, rows, schema=None, do_adaption=True):
@@ -1019,7 +996,29 @@ class TestRowAdapter(unittest.TestCase):
         # which is safe for our tests
         import pprint
         def sorted_row_str(rowz):
-          return pprint.pformat(sorted(rowz))
+          if self._is_spark_2x():
+            # Spark 2.x has non-stable sorting semantics for Row
+            if len(rowz) > 1:
+              rowz = sorted(rowz, key=lambda r: r.id)
+            return pprint.pformat(rowz)
+          else:
+            return pprint.pformat(sorted(rowz))
         assert sorted_row_str(rows) == sorted_row_str(decoded_rows)
       
       return df
+    
+  def _pandas_compare_str(self, pdf, expected):
+    def cleaned(s):
+      lines = [l.strip() for l in s.split('\n')]
+      lines = [l for l in lines if l]
+      if self._is_spark_2x():
+        # Spark 2.x returns table rows and array values in different orders,
+        # so we do a more flexible test
+        def tokenize(s):
+          import re
+          return sorted(re.split('[\(\),]+', s))
+        lines = sorted(' '.join(tokenize(l)) for l in lines)
+      return '\n'.join(lines)
+    actual = pdf.to_string()
+    assert cleaned(actual) == cleaned(expected), \
+      "\n\nExpected %s \n\nActual %s\n\n" % (expected, actual)
