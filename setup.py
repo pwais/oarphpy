@@ -61,14 +61,20 @@ if sys.version_info[0] < 3:
 # For mor info, see "Dockerized Development Environments" in the root project
 # README.md.
 
+HAVE_SYSTEM_SPARK = False
+try:
+  import pyspark
+  HAVE_SYSTEM_SPARK = True
+except ImportError:
+  HAVE_SYSTEM_SPARK = (
+    os.environ.get('SPARK_HOME') or
+    os.path.exists('/opt/spark'))
+
 SPARK_DEPS = [
-  'findspark==1.4.0',
+  'findspark==1.3.0', # NB: v1.4 appears broken for Spark 3.0.1
   'numpy',
   'pandas>=0.19.2',
 ]
-HAVE_SYSTEM_SPARK = (
-  os.environ.get('SPARK_HOME') or
-  os.path.exists('/opt/spark'))
 if not HAVE_SYSTEM_SPARK:
   SPARK_DEPS += ['pyspark>=3.0.1']
 

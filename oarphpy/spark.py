@@ -65,7 +65,7 @@ except Exception as e:
       Java 8 or higher.  Mebbe try installing using:
         $ pip install pyspark
       That will fix import errors.  To get Java, try:
-        $ apt-get install -y openjdk-8-jdk && echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
+        $ apt-get install -y openjdk-11-jdk && echo JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 >> /etc/environment
       If you have spark installed locally (e.g. from source), set $SPARK_HOME
       *** Original error: %s
   """ % (e,)
@@ -588,9 +588,9 @@ class SessionFactory(object):
     
       # Now decide the source root that we'll egg-ify.
       src_root = cls._resolve_src_root()
-      util.log.info("Using source root %s " % src_root)
-
-      cls._cached_egg_path = cls._create_new_egg(src_root, out_dir)
+      if src_root:
+        util.log.info("Using source root %s " % src_root)
+        cls._cached_egg_path = cls._create_new_egg(src_root, out_dir)
     return cls._cached_egg_path
 
 
@@ -620,6 +620,8 @@ class SessionFactory(object):
     elif 'SPARK_MASTER' in os.environ:
       # spark-submit honors this env var
       builder = builder.master(os.environ['SPARK_MASTER'])
+    else:
+      builder = builder.master('local')
     if cls.CONF is not None:
       builder = builder.config(conf=cls.CONF)
     if cls.CONF_KV is not None:
@@ -653,7 +655,13 @@ class SessionFactory(object):
 
     # spark.sparkContext.setLogLevel('INFO')
 
-    spark.sparkContext.addPyFile(cls.create_egg())
+    egg_path = cls.create_egg()
+    if egg_path:
+      spark.sparkContext.addPyFile(egg_path)
+    else:
+      util.log.info(
+          "Could not resolve a source root, skipping auto-egg inclusion.")
+    
     return spark
   
   @classmethod

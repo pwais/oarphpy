@@ -721,7 +721,7 @@ class TestRowAdapter(unittest.TestCase):
     df = self._check_serialization(rows)
     
     assert _select_distinct(df, 'x.__pyclass__') == [
-      'oarphpy_test.test_spark.DataclassObj']
+      'oarphpy_test.dataclass_obj.DataclassObj']
 
     self._check_schema(
             rows,
