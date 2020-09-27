@@ -110,8 +110,8 @@ def test_pi():
 
 @skip_if_no_spark
 def test_spark_tensorflow():
+  tf = pytest.importorskip("tensorflow")
   from oarphpy import spark as S
-  pytest.importorskip("tensorflow")
   with testutil.LocalSpark.sess() as spark:
     S.test_tensorflow(spark)
 

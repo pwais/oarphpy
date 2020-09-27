@@ -86,6 +86,24 @@ def run_cmd(cmd):
   log.info("... done with %s " % cmd)
 
 
+def build_and_push_3p_images():
+  """Build and push third-party docker images.  This process does not need
+  to be run often but is provided here for self-documentation and 
+  maintenance releases (e.g. nVidia driver upgrades)
+  """
+
+  log.info(
+    "Building Lambda Stack docker images (these are not on DockerHub). "
+    "FMI see https://github.com/lambdal/lambda-stack-dockerfiles")
+  run_cmd("""
+    cd /tmp &&
+    git clone https://github.com/lambdal/lambda-stack-dockerfiles &&
+    cd lambda-stack-dockerfiles &&
+    docker build -t oarphpy/lambda-stack:20.04 -f Dockerfile.focal . &&
+    docker push oarphpy/lambda-stack:20.04
+    """)
+
+
 class DockerEnv(object):
   """Handle for a single Dockerized environment"""
 
@@ -297,6 +315,9 @@ def create_arg_parser():
     '--build-env', default=False, action='store_true',
     help='Build all oarphpy docker images')
   parser.add_argument(
+    '--build-and-push-3p-images', default=False, action='store_true',
+    help='Build and push third party images')
+  parser.add_argument(
     '--push-as-latest', default=False, action='store_true',
     help='Tag Docker images at latest and push them')
   
@@ -332,6 +353,9 @@ def main(args=None):
         env.run_tests()
       if args.push_as_latest:
         env.push_as_latest()
+
+  elif args.build_and_push_3p_images:
+    build_and_push_3p_images()
 
   elif args.shell or args.shell_rm:
     devenv = None

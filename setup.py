@@ -79,9 +79,8 @@ if not HAVE_SYSTEM_SPARK:
   SPARK_DEPS += ['pyspark>=3.0.1']
 
 TF_DEPS = [
-  'crcmod',
-  'tensorflow<=1.15.2',
-]
+  'crcmod', # TFRecords + GCloud needs this
+] # User must bring their own tensorflow (GPU or CPU)
 
 UTILS = [
   # For various
@@ -91,7 +90,7 @@ UTILS = [
   # 'fasteners==0.14.1', TODO clean up util.SystemLock
   
   # For lots of things
-  'pandas',
+  'pandas>=1.1.2',
 
   # For ThruputObserver
   'humanfriendly',

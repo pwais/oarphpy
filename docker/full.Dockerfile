@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM tensorflow/tensorflow:1.15.2-jupyter
+FROM oarphpy/lambda-stack:focal
 
 # We don't care for __pycache__ and .pyc files; sometimes VSCode doesn't clean
 # up properly when deleting things and the cache gets stale.
@@ -23,7 +23,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 # Tensorflow is broken: it includes enum34 improperly.  This in turn
 # breaks the Python `re` module when Spark tries to use it during pyspark
 # worker start-up.
-RUN pip uninstall -y enum34
+# RUN pip uninstall -y enum34
 
 
 ### Core
@@ -58,6 +58,7 @@ RUN curl -L --retry 3 \
 ENV SPARK_VERSION 3.0.1
 ENV SPARK_PACKAGE spark-${SPARK_VERSION}-bin-without-hadoop
 ENV SPARK_HOME /opt/spark
+ENV PYSPARK_PYTHON=python3
 ENV SPARK_DIST_CLASSPATH "$HADOOP_HOME/etc/hadoop/*:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*:$HADOOP_HOME/share/hadoop/tools/lib/*"
 ENV PATH $PATH:${SPARK_HOME}/bin
 RUN curl -L --retry 3 \
@@ -106,7 +107,7 @@ RUN \
     vim \
     wget \
         && \
-  pip3 install --upgrade setuptools wheel && \
+  pip3 install --upgrade pip setuptools wheel && \
   pip3 install ipdb pytest && \
   pip3 install sphinx recommonmark m2r2 sphinx-rtd-theme && \
   curl -LO https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep_0.10.0_amd64.deb && \
@@ -116,6 +117,15 @@ RUN \
 RUN \
   pip3 install imageio==2.4.1 && \
   python3 -c 'import imageio; imageio.plugins.ffmpeg.download()'
+
+# Jupyter & friends
+RUN pip3 install \
+      jupyterlab 'jupyter-client>=6.1.7' matplotlib \
+      jupyter_http_over_ws ipykernel nbformat \
+      scipy \
+      sklearn && \
+    jupyter serverextension enable --py jupyter_http_over_ws && \
+    ln -s /usr/bin/ipython3 /usr/bin/ipython
 
 # SparkMonitor from https://github.com/swan-cern/jupyter-extensions
 # NB: need nodejs v10, but only v8 available in Ubuntu 18.x
@@ -132,6 +142,7 @@ RUN \
 # Use the above until https://github.com/swan-cern/jupyter-extensions/pull/80 ships
 # For now, build that PR manually below:
 RUN \
+  pip3 install ipython jupyter && \
   curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
   apt-get install -y nodejs && \
   curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add - && \

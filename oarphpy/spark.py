@@ -318,6 +318,9 @@ def test_tensorflow(spark):
   def test_and_get_info():
     import random
     import tensorflow as tf
+
+    tf.compat.v1.disable_v2_behavior()
+      # NB: this only impacts the executor Python process
     
     x = int(10 * random.random())
     a = tf.constant(x)
