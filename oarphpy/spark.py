@@ -826,7 +826,8 @@ class Tensor(object):
     t.order = 'C' # C-style row-major
 
     if arr.nbytes >= TENSOR_AUTO_PACK_MIN_KBYTES * (2**10):
-      t.values = [0] # Need a non-empty array for type deduction
+      t.values = [arr.dtype.type(0)]
+        # Need a non-empty array for type deduction
       t.values_packed = bytearray(arr.tobytes(order='C'))
     else:
       t.values = arr.flatten(order='C').tolist()

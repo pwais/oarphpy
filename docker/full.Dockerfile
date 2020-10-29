@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM oarphpy/lambda-stack:focal
+FROM oarphpy/lambda-stack:20.04
 
 # We don't care for __pycache__ and .pyc files; sometimes VSCode doesn't clean
 # up properly when deleting things and the cache gets stale.
@@ -98,6 +98,7 @@ RUN \
     dnsutils \
     git \
     iputils-ping \
+    less \
     net-tools \
     screen \
     ssh \
