@@ -130,40 +130,15 @@ RUN pip3 install \
 
 # SparkMonitor from https://github.com/swan-cern/jupyter-extensions
 # NB: need nodejs v10, but only v8 available in Ubuntu 18.x
-# RUN \
-#   curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-#   apt-get install -y nodejs && \
-#   pip3 install sparkmonitor && \
-#   jupyter nbextension install sparkmonitor --py && \
-#   jupyter nbextension enable  sparkmonitor --py && \
-#   jupyter serverextension enable --py --system sparkmonitor  && \
-#   jupyter lab build && \
-#   ipython profile create && echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >>  $(ipython profile locate default)/ipython_kernel_config.py
-
-# Use the above until https://github.com/swan-cern/jupyter-extensions/pull/80 ships
-# For now, build that PR manually below:
-RUN \
-  pip3 install ipython jupyter && \
-  curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-  apt-get install -y nodejs && \
-  curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add - && \
-  echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list && \
-  apt-get update && apt-get install yarn && \
-  echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list  && \
-  curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add  && \
-  apt-get update  && \
-  apt-get install sbt  && \
-  cd /opt && \
-  git clone --branch pwais/sparkmonitor-support-spark-3 --single-branch https://github.com/pwais/jupyter-extensions.git && \
-  cd /opt/jupyter-extensions/SparkMonitor && \
-  pip3 install -e . && \
-  jupyter nbextension install sparkmonitor --py --sys-prefix && \
-  jupyter nbextension enable  sparkmonitor --py --sys-prefix && \
-  jupyter labextension link . && \
-  jupyter lab build && \
-  jlpm build && \
-  jupyter lab build && \
-  ipython profile create && echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >>  $(ipython profile locate default)/ipython_kernel_config.py
+ RUN \
+   curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+   apt-get install -y nodejs && \
+   pip3 install sparkmonitor>=1.1.0 && \
+   jupyter nbextension install sparkmonitor --py && \
+   jupyter nbextension enable  sparkmonitor --py && \
+   jupyter serverextension enable --py --system sparkmonitor  && \
+   jupyter lab build && \
+   ipython profile create && echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >>  $(ipython profile locate default)/ipython_kernel_config.py
 
 ## Phantomjs and Selenium
 ## Used for **testing** oarhpy.plotting / bokeh

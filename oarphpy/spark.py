@@ -706,10 +706,13 @@ class LocalK8SSpark(SessionFactory):
 
 # Try to find sparkmonitor's Spark interop jar
 try:
+  HAVE_SPARK_2 = pyspark.__version__.startswith('2')
   import sparkmonitor
   SPARKMONITOR_HOME = os.path.dirname(sparkmonitor.__file__)
-  SPARKMONITOR_JAR_PATH = os.path.join(SPARKMONITOR_HOME, 'listener.jar')
-    # E.g. /usr/local/lib/python3.6/dist-packages/sparkmonitor/listener.jar
+  SPARKMONITOR_JAR_PATH = os.path.join(
+        SPARKMONITOR_HOME,
+        'listener_2.11.jar' if HAVE_SPARK_2 else 'listener_2.12.jar')
+    # E.g. /usr/local/lib/python3.6/dist-packages/sparkmonitor/listener_x.xx.jar
 except Exception:
   SPARKMONITOR_JAR_PATH = ''
 
