@@ -687,16 +687,22 @@ class LocalK8SSpark(SessionFactory):
   """Example of how to subclass the Spark factory above for use with K8S"""
   MASTER = 'k8s://http://127.0.0.1:8001'
   CONF_KV = {
-    'spark.kubernetes.container.image': 'my-docker-image',
-
-    # In practice, we need to set `host` explicitly in order to get the
-    # proper driver IP address to the workers.  This choice may break
-    # cluster mode where the driver process will run in the cluster
-    # instead of locally.  This choice may also break in certain networking
-    # setups.  Spark networking is a pain :(
-    'spark.driver.host':
-      os.environ.get('SPARK_LOCAL_IP', util.get_non_loopback_iface()),
+    'spark.kubernetes.container.image': 'my-docker-image', 
   }
+
+  @classmethod
+  def getOrCreate(cls):
+    if 'spark.driver.host' not in cls.CONF_KV:
+      # In practice, we need to set `host` explicitly in order to get the
+      # proper driver IP address to the workers.  This choice may break
+      # cluster mode where the driver process will run in the cluster
+      # instead of locally.  This choice may also break in certain networking
+      # setups.  Spark networking is a pain :(
+      cls.CONF_KV['spark.driver.host'] = (
+        os.environ.get('SPARK_LOCAL_IP', util.get_non_loopback_iface()))
+
+    return super(NBSpark, cls).getOrCreate()
+  
 
 
 # NBSpark is a session builder for local Jupyter notebooks. NBSpark also serves
@@ -849,6 +855,42 @@ class Tensor(object):
               np.reshape(t.values, t.shape, order=t.order),
               dtype=np.dtype(t.dtype))
 
+
+class CloudpickeledCallable(object):
+  """
+
+  TODO: want to embed class definition .. ?
+
+  talk about how pyspark uses cloudpickle for functions but *pickle* for data
+
+  give example of a thunk pattern to use
+
+  hmm talk about main functions and classes for ipython ....
+
+  talk about thread safety... we may deser your func more than once,
+  but amortized constant cost versus __call__()
+
+  """
+
+  __slots__ = ('_func',)
+
+  def __init__(self, func=None):
+    self._func = func or b''
+  
+  def __call__(self, *args, **kwargs):
+    assert self._func is not b'', \
+      "This CloudpickeledCallable is the null CloudpickeledCallable"
+    return self._func(*args, **kwargs)
+
+  def __getstate__(self):
+    import cloudpickle
+    return (cloudpickle.dumps(self._func),)
+
+  def __setstate__(self, d):
+    import cloudpickle
+    self._func = cloudpickle.loads(d[0])
+
+  
 
 class RowAdapter(object):
   """Transforms between custom objects and `pyspark.sql.Row`s used in Spark SQL

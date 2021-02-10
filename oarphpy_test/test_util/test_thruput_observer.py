@@ -51,7 +51,8 @@ def test_union():
   t2 = util.ThruputObserver()
   t2.update_tallies(n=10)
   u = util.ThruputObserver.union((t1, t2))
-  assert str(u) == str(t2)
+  tail = lambda t: str(t).split()[2:] # Skip PID / ID header
+  assert tail(u) == tail(t2)
 
 
 def test_some_blocks_thru():
@@ -76,3 +77,20 @@ def test_decorated():
   assert re.search('N thru.*3', str(monitored_func.observer))
   assert re.search('N chunks.*3', str(monitored_func.observer))
   assert re.search('Total time.*0.03 seconds', str(monitored_func.observer))
+
+
+def test_wrap_generator():
+  import itertools
+  
+  def gen():
+    for i in range(10):
+      yield i
+  
+  tgen = util.ThruputObserver.to_monitored_generator(gen())
+
+  assert re.search('N thru.*0', str(tgen))
+  assert [0, 1, 2] == list(itertools.islice(tgen, 3))
+  assert re.search('N thru.*3', str(tgen))
+
+  assert [3, 4, 5, 6, 7, 8, 9] == list(tgen)
+  assert re.search('N thru.*10', str(tgen))

@@ -321,8 +321,34 @@ def test_spark_df_to_tf_dataset():
         np.testing.assert_array_equal(actual[i], exp[i])
     
 
+
 ################################################################################
-### Test Row Adapter
+### Test CloudpickeledCallable
+
+def expensive_func():
+  return "expensive_func"
+
+def ExpensiveCallable(object):
+  def __call__(self, x, y=5):
+    return "ExpensiveCallable(%s, y=%s)" % (x, y)
+
+@skip_if_no_spark
+class TestCloudpickeledCallable(unittest.TestCase):
+
+  def test_yay(self):
+    from oarphpy.spark import CloudpickeledCallable
+    f = CloudpickeledCallable(expensive_func)
+    assert f() == expensive_func()
+
+    import pickle
+    b = pickle.dumps(f)
+
+    f2 = pickle.loads(b)
+    assert f2() == expensive_func()
+
+
+################################################################################
+### Test RowAdapter
 
 ## NB: these classes must be declared package-level (rather than test-scoped)
 ## for cloudpickle / Spark / RowAdapter to discover them properly

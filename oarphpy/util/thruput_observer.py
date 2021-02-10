@@ -123,7 +123,8 @@ class ThruputObserver(object):
       ('Rate', 
         format_size(self.num_bytes / total_time) + ' / sec'
         if total_time else '-'),
-      ('Hz', float(self.n) / total_time if total_time else '-'),
+      ('Hz',
+        "%2.f" % (float(self.n) / total_time) if total_time else '-'),
     ]
     percent_complete = None
     if self.n_total is not None:
@@ -136,7 +137,7 @@ class ThruputObserver(object):
         (total_time / (percent_complete + 1e-10)))
       stats.extend([
         ('Progress', ''),
-        ('Percent Complete', percent_complete),
+        ('Percent Complete', "%2f"% percent_complete),
         ('Est. Time To Completion', format_timespan(eta_sec)),
       ])
     if len(self.ts) >= 2:
@@ -166,9 +167,10 @@ class ThruputObserver(object):
     import tabulate
     stats = self.get_stats()
     summary = tabulate.tabulate(stats)
+    prefix = '[Pid:%s Id:%s]' % (os.getpid(), id(self))
     if self.name:
-      prefix = '%s [Pid:%s Id:%s]' % (self.name, os.getpid(), id(self))
-      summary = prefix + '\n' + summary
+      prefix = '%s %s' % (self.name, prefix)
+    summary = '%s\n%s' % (prefix, summary)
     return summary
   
   def __del__(self):
@@ -213,6 +215,7 @@ class ThruputObserver(object):
   def wrap_func(func, **observer_init_kwargs):
     """Decorate `func` and observe a block on each call"""
     class MonitoredFunc(object):
+      __slots__ = ('func', 'observer')
       def __init__(self, func, observer_init_kwargs):
         self.func = func
         self.observer = ThruputObserver(**observer_init_kwargs)
@@ -224,3 +227,28 @@ class ThruputObserver(object):
         self.observer.maybe_log_progress()
         return ret
     return MonitoredFunc(func, observer_init_kwargs)
+
+  @staticmethod
+  def to_monitored_generator(gen, **observer_init_kwargs):
+    from oarphpy.util.misc import get_size_of_deep
+    class MonitoredGen(object):
+      __slots__ = ('gen', 'observer')
+      def __init__(self, gen):
+        self.gen = gen
+        self.observer = ThruputObserver(**observer_init_kwargs)
+      def __iter__(self):
+        return self
+      def __next__(self):
+        return self.next()
+      def next(self):
+        self.observer.start_block()
+        if hasattr(self.gen, '__next__'):
+          x = self.gen.__next__()
+        else:
+          x = self.gen.next()
+        self.observer.stop_block(n=1, num_bytes=get_size_of_deep(x))
+        self.observer.maybe_log_progress()
+        return x
+      def __str__(self):
+        return str(self.observer)
+    return MonitoredGen(gen)
