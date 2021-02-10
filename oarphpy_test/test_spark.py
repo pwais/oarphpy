@@ -889,7 +889,7 @@ class TestRowAdapter(unittest.TestCase):
     EXPECTED_ALL = """
                                                                                   0                                                1
     id                                                                            1                                                2
-    np_number                                                                     1                                                2
+    np_number                                                                   1.0                                              2.0
     a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
     b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
     c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []

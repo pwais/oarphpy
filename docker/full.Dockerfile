@@ -159,4 +159,7 @@ RUN chmod a+rwx /etc/bash.bashrc
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
 
+# FIXME pip3-install-editable isn't giving us the desired version of pandas
+RUN pip3 install --upgrade --force-reinstall pandas>=1.1.2
+
 RUN pip3 install -e ".[all]"

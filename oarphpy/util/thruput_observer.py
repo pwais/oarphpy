@@ -137,7 +137,7 @@ class ThruputObserver(object):
         (total_time / (percent_complete + 1e-10)))
       stats.extend([
         ('Progress', ''),
-        ('Percent Complete', "%2f"% percent_complete),
+        ('Percent Complete', "%2f" % percent_complete),
         ('Est. Time To Completion', format_timespan(eta_sec)),
       ])
     if len(self.ts) >= 2:
