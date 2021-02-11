@@ -877,8 +877,12 @@ class CloudpickeledCallable(object):
   def __init__(self, func=None):
     self._func = func or b''
   
+  @classmethod
+  def empty(cls):
+    return cls()
+  
   def __call__(self, *args, **kwargs):
-    assert self._func is not b'', \
+    assert self._func != b'', \
       "This CloudpickeledCallable is the null CloudpickeledCallable"
     return self._func(*args, **kwargs)
 
@@ -890,6 +894,8 @@ class CloudpickeledCallable(object):
     import cloudpickle
     self._func = cloudpickle.loads(d[0])
 
+  def __eq__(self, other):
+    return self.func == other.func 
   
 
 class RowAdapter(object):
