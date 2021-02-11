@@ -895,7 +895,7 @@ class CloudpickeledCallable(object):
     self._func = cloudpickle.loads(d[0])
 
   def __eq__(self, other):
-    return self.func == other.func 
+    return self._func == other._func 
   
 
 class RowAdapter(object):
