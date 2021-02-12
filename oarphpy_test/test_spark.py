@@ -339,12 +339,19 @@ class TestCloudpickeledCallable(unittest.TestCase):
     from oarphpy.spark import CloudpickeledCallable
     f = CloudpickeledCallable(expensive_func)
     assert f() == expensive_func()
+    assert str(f) == 'CloudpickeledCallable(_func_pyclass=oarphpy_test.test_spark.expensive_func)'
+
+    cl = CloudpickeledCallable(lambda x: x * x)
+    assert cl(2) == 4
+    assert str(cl) == 'CloudpickeledCallable(_func_pyclass=oarphpy_test.test_spark.<lambda>)'
 
     import pickle
     b = pickle.dumps(f)
 
-    f2 = pickle.loads(b)
-    assert f2() == expensive_func()
+    decoded = pickle.loads(b)
+    assert decoded() == expensive_func()
+    assert str(decoded) == 'CloudpickeledCallable(_func_pyclass=oarphpy_test.test_spark.expensive_func)'
+    assert decoded == f
 
 
 ################################################################################
@@ -799,6 +806,35 @@ class TestRowAdapter(unittest.TestCase):
     decoded = [RowAdapter.from_row(r) for r in df.orderBy('id').collect()]
     np.testing.assert_equal(decoded[0].x, expect_packed)
     np.testing.assert_equal(decoded[1].x, expect_packed + 1)
+
+
+  def test_rowadapter_cloudpickled_callable(self):
+    from oarphpy.spark import CloudpickeledCallable
+    
+    def moof():
+      return 'moof'
+    cc_moof = CloudpickeledCallable(moof)
+    assert cc_moof() == moof()
+
+    cc_empty = CloudpickeledCallable()
+    assert cc_empty == CloudpickeledCallable.empty()
+    with pytest.raises(Exception):
+      cc_empty()
+
+    rows = [
+      Row(id=0, f=cc_empty),
+      Row(id=1, f=cc_moof),
+    ]
+    df = self._check_serialization(rows)
+    assert _select_distinct(df, 'f.__pyclass__') == [
+              'oarphpy.spark.CloudpickeledCallableData']
+    
+    # Ensuring invoking the functions still works
+    from oarphpy.spark import RowAdapter
+    decoded = [RowAdapter.from_row(r) for r in df.orderBy('id').collect()]
+    with pytest.raises(Exception):
+      decoded[0].f()
+    assert decoded[1].f() == moof()
 
 
   def test_rowadapter_slotted(self):

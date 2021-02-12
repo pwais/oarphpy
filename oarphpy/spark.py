@@ -856,6 +856,12 @@ class Tensor(object):
               dtype=np.dtype(t.dtype))
 
 
+class CloudpickeledCallableData(object):
+    __slots__ = ('func_bytes', 'func_pyclass')
+    def __init__(self, **kwargs):
+      for k in self.__slots__:
+        setattr(self, k, kwargs.get(k))
+
 class CloudpickeledCallable(object):
   """
 
@@ -870,32 +876,77 @@ class CloudpickeledCallable(object):
   talk about thread safety... we may deser your func more than once,
   but amortized constant cost versus __call__()
 
+  TODO: we actually want special casing in rowadapter .....................................
+
   """
 
-  __slots__ = ('_func',)
+  __slots__ = ('_func', '_func_pyclass')
+
+  @staticmethod
+  def _get_func_name(func):
+    module = '<unknown_module>'
+    if hasattr(func, '__module__'):
+      module = func.__module__
+    if hasattr(func, '__name__'):
+      return '%s.%s' % (module, func.__name__)
+    else:
+      import inspect
+      src = inspect.getsource(func)
+      lambda_varname = inspect.getsource(func).split('=')[0].strip()
+      return '%s.%s' % (module, lambda_varname)
 
   def __init__(self, func=None):
-    self._func = func or b''
+    self._func = func
+    if func is None:
+      self._func_pyclass = '(empty CloudpickeledCallable)'
+    else:
+      self._func_pyclass = CloudpickeledCallable._get_func_name(func)
   
   @classmethod
   def empty(cls):
     return cls()
   
   def __call__(self, *args, **kwargs):
-    assert self._func != b'', \
+    assert self._func is not None, \
       "This CloudpickeledCallable is the null CloudpickeledCallable"
     return self._func(*args, **kwargs)
 
+  @classmethod
+  def to_cc_data(cls, cc):
+    if cc == cls.empty():
+      func_bytes = bytearray()
+    else:
+      import cloudpickle
+      func_bytes = bytearray(cloudpickle.dumps(cc._func))
+    
+    return CloudpickeledCallableData(
+              func_bytes=func_bytes,
+              func_pyclass=cc._func_pyclass)
+
+  @classmethod
+  def from_cc_data(cls, ccd):
+    if len(ccd.func_bytes) > 0:
+      import cloudpickle
+      func = cloudpickle.loads(ccd.func_bytes)
+    else:
+      func = None
+    cc = cls(func=func)
+    cc._func_pyclass = ccd.func_pyclass
+    return cc
+
   def __getstate__(self):
-    import cloudpickle
-    return (cloudpickle.dumps(self._func),)
+    return (self.to_cc_data(self),)
 
   def __setstate__(self, d):
-    import cloudpickle
-    self._func = cloudpickle.loads(d[0])
+    cc = self.from_cc_data(d[0])
+    self._func = cc._func
+    self._func_pyclass = cc._func_pyclass
 
   def __eq__(self, other):
-    return self._func == other._func 
+    return self._func == other._func
+
+  def __repr__(self):
+    return "CloudpickeledCallable(_func_pyclass=%s)" % self._func_pyclass
   
 
 class RowAdapter(object):
@@ -931,6 +982,7 @@ class RowAdapter(object):
         but not decoding).
     * Enables saving objects and numpy arrays to Parquet in a format accessible
         to external systems (no additional SERDES library required)
+    * Uses cloudpickle to serialize `CloudpickeledCallable`-wrapped functions.
   """
 
   IGNORE_PROTECTED = False
@@ -968,8 +1020,10 @@ class RowAdapter(object):
       # Row is immutable, so we have to recreate
       row_dict = obj.asDict()
       return Row(**cls.to_row(row_dict))
-    if isinstance(obj, np.ndarray):
+    elif isinstance(obj, np.ndarray):
       return cls.to_row(Tensor.from_numpy(obj))
+    elif isinstance(obj, CloudpickeledCallable):
+      return cls.to_row(CloudpickeledCallable.to_cc_data(obj))
     elif isinstance(obj, np.generic):
       # Those pesky boxed scalars like np.float32
       return obj.item()
@@ -1029,6 +1083,8 @@ class RowAdapter(object):
 
         if isinstance(obj, Tensor):
           obj = Tensor.to_numpy(obj)
+        elif isinstance(obj, CloudpickeledCallableData):
+          obj = CloudpickeledCallable.from_cc_data(obj)
         return obj
       
       else:
