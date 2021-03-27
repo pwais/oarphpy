@@ -968,21 +968,41 @@ class CloudpickeledCallableData(object):
         setattr(self, k, kwargs.get(k))
 
 class CloudpickeledCallable(object):
-  """
+  """Wraps callable objects (e.g. functions, including lambdas) and 
+  uses `cloudpickle` for serialization.  Spark uses `cloudpickle` for 
+  serializing _tasks_ (e.g. map functions) but uses `pickle` for 
+  serializing _data_.  In particular, data in a Spark RDD or DataFrame
+  must be pickleable.  `CloudpickeledCallable` provides a wrapper
+  so that you can embed Python functions as *data* in RDDs, DataFrames,
+  and other forms of data at rest (e.g. pickle files or Parquet data).
 
-  TODO: want to embed class definition .. ?
+  Note that `cloudpickle` can be selective about how much of the object tree
+  that it serializes; some imports and globals may get ignored.  When you
+  deserialize and invoke a `CloudpickeledCallable`, your interpreter should
+  have the same (or similar) code as that used when serializing the callable,
+  otherwise behavior may be difficult to predict.
 
-  talk about how pyspark uses cloudpickle for functions but *pickle* for data
+  Note that `cloudpickle` can't handle non-serializable data like thread local
+  variables, mutices, etc.  `CloudpickeledCallable` won't work for all code.
 
-  give example of a thunk pattern to use
+  `CloudpickeledCallable` is useful for embedding flyweights in your dataset.
+  (FMI see <https://en.wikipedia.org/wiki/Flyweight_pattern> )
+  For example:
 
-  hmm talk about main functions and classes for ipython ....
+  >>> def load_matrix(path):
+  >>>   import numpy as np
+  >>>   return np.loadtxt(path)
+  >>> my_db_row = {
+  >>>     'path': 'path/to/data.txt',
+  >>>     'factory': 
+  >>>        CloudpickeledCallable(lambda: load_matrix('path/to/data.txt'))
+  >>> }
+  >>> import pickle
+  >>> pickle.dump(my_db_row, open('dumped.pkl', 'wb'))
 
-  talk about thread safety... we may deser your func more than once,
-  but amortized constant cost versus __call__()
-
-  TODO: we actually want special casing in rowadapter .....................................
-
+  Now if you deserialize `my_db_row` from disk and run `my_db_row['factory']()`,
+  your `load_matrix()` helper will get invoked with the embedded path.  Thus
+  your `my_db_row` is a flyweight for the data in 'path/to/data.txt'.
   """
 
   __slots__ = ('_func', '_func_pyclass')
