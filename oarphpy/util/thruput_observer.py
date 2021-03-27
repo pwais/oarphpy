@@ -58,7 +58,7 @@ class ThruputObserver(object):
     """
 
     self.start_block()
-    yield
+    yield self
     self.stop_block(n=n, num_bytes=num_bytes)
   
   def start_block(self):
@@ -92,9 +92,10 @@ class ThruputObserver(object):
           # Exponentially decay logging frequency. Don't decay quite as
           # fast as Vowpal Wabbit did, though.
 
-  @staticmethod
-  def union(thruputs):
-    u = ThruputObserver()
+  @classmethod
+  def union(cls, thruputs):
+    """Support reduction for use in e.g. MapReduce jobs as a counter"""
+    u = cls()
     for t in thruputs:
       u += t
     return u
@@ -161,6 +162,12 @@ class ThruputObserver(object):
     self.n += other.n
     self.num_bytes += other.num_bytes
     self.ts.extend(other.ts)
+    if not self.name:
+      self.name = other.name
+    if self.n_total is None and other.n_total is not None:
+      self.n_total = other.n_total
+    if self.n_total_chunks is None and other.n_total_chunks is not None:
+      self.n_total_chunks = other.n_total_chunks
     return self
 
   def __str__(self):
@@ -173,6 +180,10 @@ class ThruputObserver(object):
     summary = '%s\n%s' % (prefix, summary)
     return summary
   
+  def __repr__(self):
+    # pprint and some other utils use __repr__ instead of __str__
+    return str(self)
+  
   def __del__(self):
     if self.log_on_del:
       self.stop_block()
@@ -181,6 +192,27 @@ class ThruputObserver(object):
       log = create_log()
       log.info('\n' + str(self) + '\n')
   
+  def __gt__(self, v):
+    # Support use in containers.Counter
+    if isinstance(v, self.__class__):
+      return self.name > v.name
+    else:
+      return self.n > v
+    
+  def __lt__(self, v):
+    # Support use in containers.Counter
+    if isinstance(v, self.__class__):
+      return self.name < v.name
+    else:
+      return self.n < v
+
+  def __add__(self, other):
+    # Support use in containers.Counter
+    if isinstance(other, self.__class__):
+      return self.union((self, other))
+    else:
+      return self
+
   @staticmethod
   def monitoring_tensor(name, tensor, **observer_init_kwargs):
     """Monitor the size of the given tensorflow `Tensor` and record a
