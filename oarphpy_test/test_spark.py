@@ -125,6 +125,37 @@ def test_spark_cpu_count():
 
 
 @skip_if_no_spark
+def test_spark_counters():
+  from oarphpy import spark as S
+  with testutil.LocalSpark.sess() as spark:
+    counters = S.CounterCollection(spark)
+
+    def run_counter(x, counters):
+      
+      # counters['iadd'] += 1
+      counters['itally'] = 1
+      counters.tally('my_tally', 2)
+      counters.kv_tally('my_hist', key=str(x), value=1)
+
+      return x
+    
+    task_rdd = spark.sparkContext.parallelize(range(10))
+
+    with counters.log_progress():
+      f = lambda x: run_counter(x, counters)
+      final = task_rdd.map(f).sum()
+      assert final == sum(range(10))
+    
+    assert counters['itally'] == 10
+    assert "itally: 10" in str(counters)
+    assert counters['my_tally'] == 20
+    assert "my_tally: 20" in str(counters)
+    assert \
+      counters.get_kv_tally('my_hist') == dict((str(k), 1) for k in range(10))
+    assert "my_hist: {" in str(counters)
+
+
+@skip_if_no_spark
 class TestArchiveRDD(unittest.TestCase):
 
   def _check_rdd(self, fw_rdd, fixture_strs):

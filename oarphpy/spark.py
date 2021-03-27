@@ -14,6 +14,7 @@
 
 import os
 import sys
+from collections import Counter
 from contextlib import contextmanager
 
 from oarphpy import util
@@ -345,6 +346,110 @@ def test_tensorflow(spark):
   import pprint
   util.log.info('\n\n' + pprint.pformat(res) + '\n\n')
 
+
+
+### Counters
+
+try:
+  from pyspark.accumulators import AccumulatorParam
+  AccumulatorParam_BASE = AccumulatorParam
+except:
+  class AccumulatorParam_BASE(object):
+    # A non-functional dummy when pyspark is not available
+    pass
+
+class CounterAccumulator(AccumulatorParam_BASE):
+  def zero(self, value):
+    return Counter({})
+  def addInPlace(self, value1, value2):
+    return value1 + value2
+
+def create_counter_accumulator(spark):
+  sc = spark.sparkContext
+  acc = sc.accumulator(Counter(), CounterAccumulator())
+  return acc
+
+class CounterCollection(object):
+  def __init__(self, spark, name=''):
+    self._acc = create_counter_accumulator(spark)
+    self._name = name
+  
+  def __getitem__(self, key):
+    return self._acc.value[key]
+  
+  def __setitem__(self, key, value):
+    self.tally(key, value)
+  
+  def tally(self, key, value):
+    c = Counter()
+    c[key] = value
+    self._acc += c
+
+  def kv_tally(self, tag, key='', value=0):
+    self.tally('__psegs_kv.' + tag + '.key=' + key, value)
+  
+  def get_kv_tally(self, tag):
+    key_prefix = '__psegs_kv.' + tag + '.key='
+    return dict(
+      (k[len(key_prefix):], v)
+      for k, v in self._acc.value.items()
+      if k.startswith(key_prefix)
+    )
+
+  def __str__(self):
+    import pprint
+
+    HEADER = (
+      "CounterCollection({name})\n"
+      "Spark Accumulator: {acc}\n"
+      "Counters:\n"
+    ).format(
+      name=self._name,
+      acc=self._acc.aid,
+    )
+    kv_tags = set()
+    kvs = []
+    kv_prefix = '__psegs_kv.'
+    for k, v in self._acc.value.items():
+      if k.startswith(kv_prefix):
+        k = k[len(kv_prefix):]
+        tag = k.split('.key=')[0]
+        kv_tags.add(tag)
+      else:
+        kvs.append((k, v))
+    for tag in kv_tags:
+      kvs.append((tag, self.get_kv_tally(tag)))
+    
+    BODY = '\n'.join("%s: %s" % (k, pprint.pformat(v)) for k, v in sorted(kvs))
+    return "%s\n%s\n" % (HEADER, BODY)
+  
+  def __repr__(self):
+    # For things like pprint that use __repr__ instead of __str__
+    return str(self)
+  
+  @contextmanager
+  def log_progress(self, log_func=None, log_freq_sec=10):
+    log_func = log_func or util.log.info
+    
+    import threading
+    exit_event = threading.Event()
+    def spin_log():
+      REPORT_EVERY_SEC = 10
+      import time
+      start_wait = time.time()
+      while not exit_event.is_set():
+        if time.time() - start_wait >= log_freq_sec:
+          log_func(self)
+          start_wait = time.time()
+        time.sleep(0.5)
+    bkg_th = threading.Thread(target=spin_log, args=())
+    bkg_th.daemon = True
+    bkg_th.start()
+
+    yield self
+
+    exit_event.set()
+    bkg_th.join()
 
 ### OarphPy-specific Extras
 
