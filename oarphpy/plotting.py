@@ -105,6 +105,9 @@ def df_histogram(spark_df, col, num_bins):
   """Compute and return a histogram of `bins` of the values in the column
   named `col` in spark Dataframe `spark_df`.  Return type is designed
   to match `numpy.histogram()`.
+  
+  NB: if your `col` has only NaNs, then pyspark's RDD::histogram()
+  call below might fail and claim the RDD is empty.
   """
   import numpy as np
   assert num_bins >= 1
