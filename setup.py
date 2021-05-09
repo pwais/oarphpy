@@ -73,7 +73,8 @@ except ImportError:
 SPARK_DEPS = [
   'findspark==1.3.0', # NB: v1.4 appears broken for Spark 3.0.1
   'numpy',
-  'pandas>=0.19.2',
+  'pandas>=1.1.2',
+  'cloudpickle>=1.5.0',
 ]
 if not HAVE_SYSTEM_SPARK:
   SPARK_DEPS += ['pyspark>=3.0.1']
