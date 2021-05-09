@@ -1193,10 +1193,19 @@ class RowAdapter(object):
         obj_cls = RowAdapter._get_class_from_path(obj_cls_name)
         obj = obj_cls.__new__(obj_cls)
 
+        attr_to_default = {}
+        if hasattr(obj, '__attrs_attrs__'):
+          # In the case that an attrs-based class has now added an attribute
+          # since being row-ified, the row will be missing a value for that
+          # new attribute.  Use the attrs-specified default if available.
+          attr_to_default = dict((a.name, a.default) for a in obj.__attrs_attrs__)
+        
         if hasattr(obj, '__slots__'):
           for k in obj.__slots__:
             if k in row:
               setattr(obj, k, cls.from_row(row[k]))
+            elif k in attr_to_default:
+              setattr(obj, k, attr_to_default[k])
         elif hasattr(obj, '__dict__'):
           for k, v in row.asDict().items():
             if k == '__pyclass__':
@@ -1206,6 +1215,9 @@ class RowAdapter(object):
           raise ValueError(
               "Object %s no longer has __slots__ nor __dict__" % obj_cls_name)
 
+        if hasattr(obj, '__attrs_init__'):
+          obj.__attrs_post_init__()
+          
         if isinstance(obj, Tensor):
           obj = Tensor.to_numpy(obj)
         elif isinstance(obj, CloudpickeledCallableData):
