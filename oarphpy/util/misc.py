@@ -107,9 +107,16 @@ def stable_hash(x):
   try:
     import cloudpickle as pkl
   except ImportError:
-    import pickle as pkl
+    try:
+      import pyspark.cloudpickle as pkl
+        # Cloudpickle embedded starting in Spark 3.x
+    except ImportError:
+      import pickle as pkl
+
+  PICKLE_PROTOCOL = 3 if sys.version_info[0] == 3 else 2
+    # NB: Python v3.6.8 defaults to 3 but v3.8.2 defaults to 4
   
-  key = pkl.dumps(x)
+  key = pkl.dumps(x, protocol=PICKLE_PROTOCOL)
   
   import hashlib
   return int(hashlib.md5(key).hexdigest(), 16)

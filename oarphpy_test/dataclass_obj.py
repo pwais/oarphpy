@@ -12,5 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '0.1.0'
+# Dataclass using Python 3 type annotations; used in test_spark.py.  We
+# define this in a separate file so that Python 2 can ignore it
 
+try:
+  from dataclasses import dataclass
+  @dataclass
+  class DataclassObj:
+    x: str
+    y: float
+except Exception:
+  pass

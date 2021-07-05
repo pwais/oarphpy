@@ -20,7 +20,7 @@ from oarphpy import util
 from oarphpy_test import testutil
 
 tf = pytest.importorskip("tensorflow")
-
+tf.compat.v1.disable_v2_behavior()
 
 def test_tf_data_session():
   expected = [[0, 1], [2, 3], [4, 5]]
