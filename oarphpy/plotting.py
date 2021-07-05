@@ -147,10 +147,27 @@ class HistogramWithExamplesPlotter(object):
   NUM_BINS = 50
 
   SUB_PIVOT_COL = None
+    # See above about SUB_PIVOT_COL -- if this is a string, then we will
+    # facet the histogram using the categorical value in this column.
 
-  WIDTH = 1000
+  WIDTH = 900
     # Bokeh's plots (especially in single-column two-row layout we use) work
-    # best with a fixed width
+    # best with a fixed width.  For Jupyter notebooks, a width of 900 pixels
+    # fits without horizontal scolling.
+
+  APPROX_MAX_ROWS_PER_BUCKET = -1
+    # If at least one bucket has more rows than can be stored in memory, then 
+    # Spark will OOM trying to run `display_bucket()` on all those rows.  In
+    # this case, the user may (likely) not need to run `display_bucket()` on
+    # _all_ bucket rows, but rather a sample of them.  Set this attribute
+    # to a positive number such that `display_bucket()` sees at least
+    # `APPROX_MAX_ROWS_PER_BUCKET` rows (chosen uniformly at random).  Use a
+    # negative number to disable.  We default this feature to "enabled" so
+    # that this utility works does not OOM on imbalanced datasets
+    # out-of-the-box.
+
+  APPROX_MAX_ROWS_PER_BUCKET_SEED = 1337
+    # Seed for random sampling described above.
 
   ## Plotting params
   TITLE = None  # By default use DataFrame Column name
@@ -220,6 +237,20 @@ class HistogramWithExamplesPlotter(object):
           col_def = col_def.when(*args)
       col_def = col_def.otherwise(-1)
       df_bucketed = sp_src_df.withColumn('au_plot_bucket', col_def)
+
+      # The data might be wildly imbalanced and many (or even all) rows
+      # might fall in a single bucket.  That could lead to an OOM below.  
+      # Mitigate the OOM using random sampling-- the user likely does not
+      # want display-ify and see _all_ these rows anyways.
+      if self.APPROX_MAX_ROWS_PER_BUCKET > 0:
+        bucket_id_to_sample_frac = dict(
+          (bucket_id, 
+           min(1., float(self.APPROX_MAX_ROWS_PER_BUCKET) / max(1, count)))
+          for bucket_id, count in enumerate(hist))
+        df_bucketed = df_bucketed.sampleBy(
+                        'au_plot_bucket',
+                        bucket_id_to_sample_frac,
+                        seed=self.APPROX_MAX_ROWS_PER_BUCKET_SEED)
       
       # Second, we collect chunks of rows partitioned by bucket ID so that we
       # can run our display function in parallel over buckets.
