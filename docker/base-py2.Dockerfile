@@ -29,6 +29,7 @@ RUN \
 # FIXME python 2 support in pip is starting to break down
 # https://github.com/jaraco/zipp/issues/16
 RUN pip install zipp==1.0.0
+RUN pip install importlib-resources six==1.11.0
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
