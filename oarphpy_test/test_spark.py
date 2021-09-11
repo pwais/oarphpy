@@ -956,7 +956,7 @@ class TestRowAdapter(unittest.TestCase):
     EXPECTED_ALL = """
                                                                                   0                                                1
     id                                                                            1                                                2
-    np_number                                                                     1                                                2
+    np_number                                                                   1.0                                              2.0
     a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
     b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
     c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
@@ -966,6 +966,25 @@ class TestRowAdapter(unittest.TestCase):
     g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
     h                                                                        (1, 2)                                           (3, 3)
     """
+    
+    # DEPRECATED: pyspark 2.x is deprecated
+    import pyspark
+    if pyspark.__version__.startswith('2.'):
+      EXPECTED_ALL = """
+                                                                                  0                                                1
+      id                                                                            1                                                2
+      np_number                                                                     1                                                2
+      a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
+      b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
+      c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
+      d                                  (oarphpy_test.test_spark.Slotted, 5, abc, 1)                                             None
+      e                                [(oarphpy_test.test_spark.Slotted, 6, def, 1)]                                               []
+      f                                     (oarphpy_test.test_spark.Unslotted, 4, 1)                                             None
+      g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
+      h                                                                        (1, 2)                                           (3, 3)
+      """
+
+
     self._pandas_compare_str(df.orderBy('id').toPandas().T, EXPECTED_ALL)
 
     # Test Schema Deduction
