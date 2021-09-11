@@ -30,6 +30,7 @@ RUN \
 # https://github.com/jaraco/zipp/issues/16
 RUN pip install zipp==1.0.0
 RUN pip install importlib-resources six==1.11.0
+RUN pip install pluggy==0.13.1
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
