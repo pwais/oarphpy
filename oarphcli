@@ -29,8 +29,8 @@ at /opt/oarphpy, and outer filesystem mounted at /outer_root .
 
 ## Testing
 
-$$ pytest
-$$ python setup.up test
+$$ pytest oarphpy_test
+$$ python3 setup.py test
 In the dockerized shell, run unit tests using your local code changes.
 
 $ ./oarphcli --test-all

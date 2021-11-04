@@ -19,13 +19,6 @@ FROM oarphpy/lambda-stack:20.04
 ENV PYTHONDONTWRITEBYTECODE 1
 
 
-# FIXME(https://github.com/tensorflow/tensorflow/issues/18480)
-# Tensorflow is broken: it includes enum34 improperly.  This in turn
-# breaks the Python `re` module when Spark tries to use it during pyspark
-# worker start-up.
-# RUN pip uninstall -y enum34
-
-
 ### Core
 ### Required for installing and testing things
 RUN \
@@ -156,10 +149,10 @@ RUN \
 COPY docker/bashrc /etc/bash.bashrc
 RUN chmod a+rwx /etc/bash.bashrc
 
-COPY . /opt/oarphpy
-WORKDIR /opt/oarphpy
-
 # FIXME pip3-install-editable isn't giving us the desired version of pandas
 RUN pip3 install --upgrade --force-reinstall pandas>=1.1.2
+
+COPY . /opt/oarphpy
+WORKDIR /opt/oarphpy
 
 RUN pip3 install -e ".[all]"

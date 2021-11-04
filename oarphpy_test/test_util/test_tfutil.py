@@ -19,6 +19,9 @@ import pytest
 from oarphpy import util
 from oarphpy_test import testutil
 
+"""
+Tensorflow support deprecated -- the CUDA interop breaks non-CUDA hosts now
+
 tf = pytest.importorskip("tensorflow")
 tf.compat.v1.disable_v2_behavior()
 
@@ -49,3 +52,6 @@ def test_tf_records_file_as_list_of_str():
   assert sorted(tf_lst) == sorted(ss)
   for i in range(len(ss)):
     assert tf_lst[i] == ss[i]
+
+"""
+

@@ -32,6 +32,7 @@ RUN \
   echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
 RUN pip3 install pyspark==2.4.7
 RUN pip3 install numpy pandas>=1.0.0
+RUN pip3 install pytest
 ENV PYSPARK_PYTHON python3
 ENV PYSPARK_DRIVER_PYTHON python3
 

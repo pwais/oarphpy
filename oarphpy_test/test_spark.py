@@ -108,7 +108,8 @@ def test_pi():
     S.test_pi(spark)
 
 
-@skip_if_no_spark
+#@skip_if_no_spark
+@pytest.mark.skip("Tensorflow support deprecated")
 def test_spark_tensorflow():
   tf = pytest.importorskip("tensorflow")
   from oarphpy import spark as S
@@ -295,7 +296,8 @@ def test_get_balanced_sample():
       df, n_per_category=None, expected={'a': 10, 'b': 10, 'c': 10})
 
 
-@skip_if_no_spark
+#@skip_if_no_spark
+@pytest.mark.skip("Tensorflow support deprecated")
 def test_spark_df_to_tf_dataset():
   pytest.importorskip("tensorflow")
 
