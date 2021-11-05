@@ -81,7 +81,7 @@ def tf_data_session(dataset, sess=None, config=None):
       # see MonitoredTrainingSession.StepContext
       while True:
         try:
-      # with loop_until_data_exausted():
+          # with loop_until_data_exausted():
           yield sess.run(next_element)
         except (tf.errors.OutOfRangeError, StopIteration):
           break

@@ -163,12 +163,6 @@ class DockerEnv(object):
   @classmethod
   def start(cls, container_name=OP_CONTAINER_NAME, mnt_local_root=True):
     image = cls.full_image_name()
-    have_nvidia_docker = False
-    try:
-      run_cmd('nvidia-docker --help > /dev/null')
-      have_nvidia_docker = True
-    except Exception:
-      log.info("Not using nvidia-docker")
     
     # TODO: Features to consider bringing back:
     # * --env-file for GCS / AWS keys
@@ -182,15 +176,13 @@ class DockerEnv(object):
     if mnt_local_root:
       local_mount = '-v `pwd`:/opt/oarphpy:z'
 
-    docker = 'nvidia-docker' if have_nvidia_docker else 'docker'
     CMD = """
-      {docker} run
+      docker run
         --name {container_name}
         -d -it -P --net=host
         {local_mount}
           {docker_image} sleep infinity || docker start {container_name} || true
     """.format(
-          docker=docker,
           container_name=container_name,
           local_mount=local_mount,
           docker_image=image)

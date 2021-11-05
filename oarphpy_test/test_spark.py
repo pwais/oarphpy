@@ -108,8 +108,7 @@ def test_pi():
     S.test_pi(spark)
 
 
-#@skip_if_no_spark
-@pytest.mark.skip("Tensorflow support deprecated")
+@skip_if_no_spark
 def test_spark_tensorflow():
   tf = pytest.importorskip("tensorflow")
   from oarphpy import spark as S
@@ -226,9 +225,49 @@ class TestArchiveRDD(unittest.TestCase):
       self._check_rdd(fw_rdd, ss)
 
 
-@skip_if_no_spark
-def test_get_balanced_sample():
+def _check_sample_in_expectation(df, n_per_category, expected, n_trials=5):
+  import numpy as np
+  import pandas as pd
+
   from oarphpy import spark as S
+  
+  df = df.cache()
+
+  def _get_category_to_count(df):
+    from collections import defaultdict
+    rows = df.collect()
+
+    category_to_count = defaultdict(int)
+    for row in rows:
+      category_to_count[row.val] += 1
+    return category_to_count
+
+  # NB: even with a fixed seed below, this test's behavior is dependent
+  # on the number of system CPUs since Spark draws random numbers
+  # concurrently.  To simulate a low-cpu system, use a Spark master local[1].
+  # We do more trials to accomodate low-cpu systems (e.g. CircleCI).
+  rows = [
+    _get_category_to_count(
+      S.get_balanced_sample(
+        df, 'val',
+        n_per_category=n_per_category,
+        seed=100*s))
+    for s in range(n_trials)
+  ]
+  pdf = pd.DataFrame(rows)
+  pdf = pdf.fillna(0)
+
+  ks = sorted(expected.keys())
+  mu = pdf.mean()
+  actual_arr = np.array([mu[k] for k in ks])
+  expected_arr = np.array([expected[k] for k in ks])
+  
+  import numpy.testing as npt
+  npt.assert_allclose(actual_arr, expected_arr, rtol=0.3)
+    # NB: We can only test to about 30% accuracy with this few samples
+    # If this fails, `try print(pdf)`
+
+def _generate_rows():
   from pyspark.sql import Row
   
   VAL_TO_COUNT = {
@@ -241,65 +280,41 @@ def test_get_balanced_sample():
     for _ in range(count):
       i = len(rows)
       rows.append(Row(id=i, val=val))
-  
-  def _get_category_to_count(df):
-    from collections import defaultdict
-    rows = df.collect()
+  return rows
 
-    category_to_count = defaultdict(int)
-    for row in rows:
-      category_to_count[row.val] += 1
-    return category_to_count
-
-  def check_sample_in_expectation(df, n_per_category, expected):
-    import numpy as np
-    import pandas as pd
-    
-    # NB: even with a fixed seed below, this test's behavior is dependent
-    # on the number of system CPUs since Spark draws random numbers
-    # concurrently.  To simulate a low-cpu system, use a Spark master local[1].
-    # We do more trials to accomodate low-cpu systems (e.g. CircleCI).
-    N_TRIALS = 30
-    rows = [
-      _get_category_to_count(
-        S.get_balanced_sample(
-          df, 'val',
-          n_per_category=n_per_category,
-          seed=100*s))
-      for s in range(N_TRIALS)
-    ]
-    pdf = pd.DataFrame(rows)
-    pdf = pdf.fillna(0)
-
-    ks = sorted(expected.keys())
-    mu = pdf.mean()
-    actual_arr = np.array([mu[k] for k in ks])
-    expected_arr = np.array([expected[k] for k in ks])
-    
-    import numpy.testing as npt
-    npt.assert_allclose(actual_arr, expected_arr, rtol=0.3)
-      # NB: We can only test to about 30% accuracy with this few samples
-
+@skip_if_no_spark
+def test_get_balanced_sample_simple():
+  rows = _generate_rows()
   with testutil.LocalSpark.sess() as spark:
     df = spark.createDataFrame(rows)
+    _check_sample_in_expectation(
+      df, n_per_category=1, expected={'a': 1, 'b': 1, 'c': 1}, n_trials=30)
 
-    check_sample_in_expectation(
-      df, n_per_category=1, expected={'a': 1, 'b': 1, 'c': 1})
 
-    check_sample_in_expectation(
-      df, n_per_category=10, expected={'a': 10, 'b': 10, 'c': 10})
-
-    check_sample_in_expectation(
+@skip_if_no_spark
+def test_get_balanced_sample_sample_more_than_min():
+  rows = _generate_rows()
+  with testutil.LocalSpark.sess() as spark:
+    df = spark.createDataFrame(rows)
+    _check_sample_in_expectation(
       df, n_per_category=20, expected={'a': 10, 'b': 10, 'c': 10})
 
-    check_sample_in_expectation(
+
+@skip_if_no_spark
+def test_get_balanced_sample_sample_unrestricted():
+  rows = _generate_rows()
+  with testutil.LocalSpark.sess() as spark:
+    df = spark.createDataFrame(rows)
+    _check_sample_in_expectation(
       df, n_per_category=None, expected={'a': 10, 'b': 10, 'c': 10})
 
 
-#@skip_if_no_spark
-@pytest.mark.skip("Tensorflow support deprecated")
+
+@skip_if_no_spark
 def test_spark_df_to_tf_dataset():
   pytest.importorskip("tensorflow")
+  import tensorflow as tf
+  tf.compat.v1.disable_v2_behavior()
 
   from oarphpy.spark import spark_df_to_tf_dataset
   with testutil.LocalSpark.sess() as spark:

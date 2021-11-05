@@ -32,6 +32,16 @@ RUN \
     wget
 
 
+# Tensorflow 1.15.x support for nvidia stubs is now broken, thus if we try to use
+# tensorflow-gpu with a cpu-only host, we'll run into a showstopping bug. (Upon importing
+# tensorflow, we see an infinite hang with python waiting on a pipe with fd number 15).
+# The lambda stack base includes tensorflow-gpu.  Uninstal that now and pin to CPU-only
+# tensorflow
+RUN \
+  pip3 uninstall -y tensorflow-gpu && \
+  pip3 install --upgrade --ignore-installed tensorflow-cpu==2.3.0 && \
+  echo "Test tensorflow" && python3 -c 'import tensorflow as tf; print(tf.config.list_physical_devices())'
+
 ### Spark (& Hadoop)
 ### Use a binary distro for:
 ###  * Spark LZ4 support through Hadoop
@@ -136,14 +146,13 @@ RUN pip3 install \
 ## Phantomjs and Selenium
 ## Used for **testing** oarhpy.plotting / bokeh
 RUN \
-  pip3 install selenium && \
+  pip3 install selenium==3.8.0 && \
   cd /tmp && \
   wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
   tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
   cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/ && \
   rm -rf phantomjs-2.1.1-linux-x86_64 && \
   cd -
-
 
 ## Include oarphpy
 COPY docker/bashrc /etc/bash.bashrc
