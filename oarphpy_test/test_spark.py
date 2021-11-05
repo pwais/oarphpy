@@ -225,7 +225,7 @@ class TestArchiveRDD(unittest.TestCase):
       self._check_rdd(fw_rdd, ss)
 
 
-def _check_sample_in_expectation(df, n_per_category, expected, n_trials=5):
+def _check_sample_in_expectation(df, n_per_category, expected, n_trials=10):
   import numpy as np
   import pandas as pd
 
