@@ -1,15 +1,19 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
-  
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Quickstart &mdash; oarphpy 0.0.4 documentation</title>
+  <title>Quickstart &mdash; oarphpy 0.1.0 documentation</title>
   
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
 
   
   
@@ -17,7 +21,9 @@
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -29,10 +35,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" /> 
 </head>
@@ -48,7 +50,7 @@
           
 
           
-            <a href="#" class="icon icon-home"> oarphpy
+            <a href="#" class="icon icon-home" alt="Documentation Home"> oarphpy
           
 
           
@@ -71,6 +73,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -101,6 +104,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -139,7 +143,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="#">Docs</a> &raquo;</li>
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
         
       <li>Quickstart</li>
     
@@ -184,7 +188,7 @@
 <p>OarphPy is a collection of Python utilities for Data Science with
 <a class="reference external" href="https://spark.apache.org/docs/latest/api/python/">PySpark</a> and Tensorflow.
 Related (but orthogonal) to <a class="reference external" href="https://github.com/pwais/oarphkit">OarphKit</a>.</p>
-<div class="section" id="quickstart">
+<section id="quickstart">
 <h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
 <p>Install from PyPI: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">oarphpy</span></code>.  We test OarphPy in a variet of
 environments (see below), so it should play well with your Jupyter/Colab
@@ -197,14 +201,14 @@ $ docker run -it --net=host oarphpy/full bash
 </pre></div>
 </div>
 <p>See also <a class="reference external" href="https://pwais.github.io/oarphpy/">API documentation</a>.</p>
-</div>
-<div class="section" id="demos">
+</section>
+<section id="demos">
 <h1>Demos<a class="headerlink" href="#demos" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
 <li><p><a class="reference external" href="https://pwais.github.io/oarph-oarphs/2020/02/03/atrick.html">Automagically Shipping Custom Libraries in Spark Using OarphPy</a></p></li>
 </ul>
-</div>
-<div class="section" id="dockerized-development-environments">
+</section>
+<section id="dockerized-development-environments">
 <h1>Dockerized Development Environments<a class="headerlink" href="#dockerized-development-environments" title="Permalink to this headline">¶</a></h1>
 <p>OarphPy is built and tested in a variety of environments to ensure the
 library works with and without <a class="reference external" href="setup.py#L18">optional dependencies</a>.  These
@@ -224,15 +228,15 @@ to ensure clean interop with other projects.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">oarphpy/tensorflow</span></code> – Tests <code class="docutils literal notranslate"><span class="pre">oarphpy</span></code> with Tensorflow 1.x to ensure basic
 compatibility (e.g. of <code class="docutils literal notranslate"><span class="pre">oarphpy.util.tfutil</span></code>).</p></li>
 </ul>
-</div>
-<div class="section" id="development">
+</section>
+<section id="development">
 <h1>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h1>
 <p>See <code class="docutils literal notranslate"><span class="pre">./oarphcli</span> <span class="pre">--help</span></code> for the development and release workflow.</p>
-<div class="section" id="oarphpy-api-documentation">
+<section id="oarphpy-api-documentation">
 <h2>OarphPy API Documentation<a class="headerlink" href="#oarphpy-api-documentation" title="Permalink to this headline">¶</a></h2>
-</div>
-</div>
-<div class="section" id="module-oarphpy.spark">
+</section>
+</section>
+<section id="module-oarphpy.spark">
 <span id="oarphpy-spark"></span><h1><cite>oarphpy.spark</cite><a class="headerlink" href="#module-oarphpy.spark" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="oarphpy.spark.for_each_executor">
@@ -297,6 +301,25 @@ to actually execute code included in the egg.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="oarphpy.spark.CounterAccumulator">
+<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">CounterAccumulator</code><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="oarphpy.spark.CounterAccumulator.zero">
+<code class="sig-name descname">zero</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator.zero"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator.zero" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide a “zero value” for the type, compatible in dimensions with the
+provided <cite>value</cite> (e.g., a zero vector)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="oarphpy.spark.CounterAccumulator.addInPlace">
+<code class="sig-name descname">addInPlace</code><span class="sig-paren">(</span><em class="sig-param">value1</em>, <em class="sig-param">value2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator.addInPlace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator.addInPlace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add two values of the accumulator’s data type, returning a new value;
+for efficiency, can also update <cite>value1</cite> in place and return it.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="oarphpy.spark.SessionFactory">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">SessionFactory</code><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory" title="Permalink to this definition">¶</a></dt>
 <dd><p>This class is a factory for pre-configured <cite>SparkSession</cite> instances.  A
@@ -306,7 +329,7 @@ project with the Spark job.  This class also helps centralize project-wide
 Spark configuration.  This class is designed as programmatic replacement
 for the <cite>spark-submit</cite> shell script.</p>
 <p>To create and use a session:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">oarphpy</span> <span class="k">import</span> <span class="n">spark</span> <span class="k">as</span> <span class="n">S</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">oarphpy</span> <span class="kn">import</span> <span class="n">spark</span> <span class="k">as</span> <span class="n">S</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">spark</span> <span class="o">=</span> <span class="n">S</span><span class="o">.</span><span class="n">SessionFactory</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="o">.</span><span class="n">num_executors</span><span class="p">(</span><span class="n">spark</span><span class="p">)</span>
 <span class="go">1</span>
@@ -389,6 +412,20 @@ includes the local python module as a PyFile, etc.</p>
 <dt id="oarphpy.spark.LocalK8SSpark">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">LocalK8SSpark</code><a class="reference internal" href="_modules/oarphpy/spark.html#LocalK8SSpark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.LocalK8SSpark" title="Permalink to this definition">¶</a></dt>
 <dd><p>Example of how to subclass the Spark factory above for use with K8S</p>
+<dl class="method">
+<dt id="oarphpy.spark.LocalK8SSpark.getOrCreate">
+<em class="property">classmethod </em><code class="sig-name descname">getOrCreate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#LocalK8SSpark.getOrCreate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.LocalK8SSpark.getOrCreate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spark sessions are typically instantiated using the
+<cite>Builder.getOrCreate()</cite> or <cite>SparkSession.getOrCreate()</cite> methods.  This
+method is a drop-in replacement that uses class-specified defaults,
+includes the local python module as a PyFile, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A <cite>pyspark.sql.session.SparkSession</cite> instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
@@ -424,6 +461,43 @@ or nd4j / BLAS wrappers in Java.</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="oarphpy.spark.CloudpickeledCallable">
+<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">CloudpickeledCallable</code><span class="sig-paren">(</span><em class="sig-param">func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CloudpickeledCallable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CloudpickeledCallable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps callable objects (e.g. functions, including lambdas) and
+uses <cite>cloudpickle</cite> for serialization.  Spark uses <cite>cloudpickle</cite> for
+serializing _tasks_ (e.g. map functions) but uses <cite>pickle</cite> for
+serializing _data_.  In particular, data in a Spark RDD or DataFrame
+must be pickleable.  <cite>CloudpickeledCallable</cite> provides a wrapper
+so that you can embed Python functions as <em>data</em> in RDDs, DataFrames,
+and other forms of data at rest (e.g. pickle files or Parquet data).</p>
+<p>Note that <cite>cloudpickle</cite> can be selective about how much of the object tree
+that it serializes; some imports and globals may get ignored.  When you
+deserialize and invoke a <cite>CloudpickeledCallable</cite>, your interpreter should
+have the same (or similar) code as that used when serializing the callable,
+otherwise behavior may be difficult to predict.</p>
+<p>Note that <cite>cloudpickle</cite> can’t handle non-serializable data like thread local
+variables, mutices, etc.  <cite>CloudpickeledCallable</cite> won’t work for all code.</p>
+<p><cite>CloudpickeledCallable</cite> is useful for embedding flyweights in your dataset.
+(FMI see &lt;<a class="reference external" href="https://en.wikipedia.org/wiki/Flyweight_pattern">https://en.wikipedia.org/wiki/Flyweight_pattern</a>&gt; )
+For example:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">load_matrix</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>  <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span>  <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_db_row</span> <span class="o">=</span> <span class="p">{</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;path/to/data.txt&#39;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s1">&#39;factory&#39;</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>       <span class="n">CloudpickeledCallable</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">load_matrix</span><span class="p">(</span><span class="s1">&#39;path/to/data.txt&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pickle</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">my_db_row</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;dumped.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Now if you deserialize <cite>my_db_row</cite> from disk and run <cite>my_db_row[‘factory’]()</cite>,
+your <cite>load_matrix()</cite> helper will get invoked with the embedded path.  Thus
+your <cite>my_db_row</cite> is a flyweight for the data in ‘path/to/data.txt’.</p>
+</dd></dl>
+
+<dl class="class">
 <dt id="oarphpy.spark.RowAdapter">
 <em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">RowAdapter</code><a class="reference internal" href="_modules/oarphpy/spark.html#RowAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.RowAdapter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transforms between custom objects and <a href="#id3"><span class="problematic" id="id4">`</span></a>pyspark.sql.Row`s used in Spark SQL
@@ -443,13 +517,14 @@ with a transparent Parquet schema that is accessible to other readers.</p>
 </dl>
 <p>Unfortunately, we can’t use Spark’s UDT API to embed this adapter (and
 obviate user calls) because UDTs require schema definitions.  Furthermore,
-Spark unfortunately can’t handle UDTs nested in maps or lists; i.e.
+Spark &lt;=2.x could not handle UDTs nested in maps or lists; i.e.
 [UDT()] (i.e. a list of UDTs) and {‘foo’: UDT()} (i.e. a map with UDT values)
-will cause Spark to crash.</p>
+would cause Spark to crash.  Moreover, for ndarray data, Spark’s ml.linalg
+package coerces all data to floats.</p>
 <dl class="simple">
 <dt>Benefits of RowAdapter:</dt><dd><ul class="simple">
 <li><dl class="simple">
-<dt>Transparently handles numpy arrays and numpy scalar types</dt><dd><p>(e.g. np.float32).</p>
+<dt>Transparently handles numpy arrays and numpy boxed scalar types</dt><dd><p>(e.g. np.float32).</p>
 </dd>
 </dl>
 </li>
@@ -481,6 +556,7 @@ but not decoding).</p>
 </dd>
 </dl>
 </li>
+<li><p>Uses cloudpickle to serialize <cite>CloudpickeledCallable</cite>-wrapped functions.</p></li>
 </ul>
 </dd>
 </dl>
@@ -530,8 +606,8 @@ to provision one reader thread per CPU core.</p></li>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="module-oarphpy.plotting">
+</section>
+<section id="module-oarphpy.plotting">
 <span id="oarphpy-plotting"></span><h1><cite>oarphpy.plotting</cite><a class="headerlink" href="#module-oarphpy.plotting" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="oarphpy.plotting.hash_to_rbg">
@@ -554,6 +630,8 @@ an HTML image tag.</p>
 <dd><p>Compute and return a histogram of <cite>bins</cite> of the values in the column
 named <cite>col</cite> in spark Dataframe <cite>spark_df</cite>.  Return type is designed
 to match <cite>numpy.histogram()</cite>.</p>
+<p>NB: if your <cite>col</cite> has only NaNs or NULLs, then pyspark’s RDD::histogram()
+call below might fail and claim the RDD is empty.</p>
 </dd></dl>
 
 <dl class="class">
@@ -594,8 +672,8 @@ nans.</p></li>
 
 </dd></dl>
 
-</div>
-<div class="section" id="module-oarphpy.util.thruput_observer">
+</section>
+<section id="module-oarphpy.util.thruput_observer">
 <span id="oarphpy-util-thruput-observer"></span><h1><cite>oarphpy.util.thruput_observer</cite><a class="headerlink" href="#module-oarphpy.util.thruput_observer" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="oarphpy.util.thruput_observer.ThruputObserver">
@@ -620,6 +698,12 @@ FMI <a class="reference external" href="https://stackoverflow.com/questions/3487
 </dd></dl>
 
 <dl class="method">
+<dt id="oarphpy.util.thruput_observer.ThruputObserver.union">
+<em class="property">classmethod </em><code class="sig-name descname">union</code><span class="sig-paren">(</span><em class="sig-param">thruputs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.union"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.union" title="Permalink to this definition">¶</a></dt>
+<dd><p>Support reduction for use in e.g. MapReduce jobs as a counter</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor">
 <em class="property">static </em><code class="sig-name descname">monitoring_tensor</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">tensor</em>, <em class="sig-param">**observer_init_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.monitoring_tensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Monitor the size of the given tensorflow <cite>Tensor</cite> and record a
@@ -634,8 +718,8 @@ text TF Summary with the contents of this ThruputObserver.</p>
 
 </dd></dl>
 
-</div>
-<div class="section" id="module-oarphpy.util.tfutil">
+</section>
+<section id="module-oarphpy.util.tfutil">
 <span id="oarphpy-util-tfutil"></span><h1><cite>oarphpy.util.tfutil</cite><a class="headerlink" href="#module-oarphpy.util.tfutil" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="oarphpy.util.tfutil.give_me_frozen_graph">
@@ -679,8 +763,8 @@ exposes random access over the stream’s records.</p>
 </dl>
 </dd></dl>
 
-</div>
-<div class="section" id="module-oarphpy.util.misc">
+</section>
+<section id="module-oarphpy.util.misc">
 <span id="oarphpy-util-misc"></span><h1><cite>oarphpy.util.misc</cite><a class="headerlink" href="#module-oarphpy.util.misc" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="oarphpy.util.misc.get_size_of_deep">
@@ -805,20 +889,20 @@ file.  Based upon:</p>
 is either a destination file path or destination directory.</p>
 </dd></dl>
 
-</div>
-<div class="section" id="extra">
+</section>
+<section id="extra">
 <h1>Extra<a class="headerlink" href="#extra" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
-<div class="section" id="indices-and-tables">
+<section id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
@@ -831,11 +915,19 @@ is either a destination file path or destination directory.</p>
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, Maintainers of OarphPy
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -846,7 +938,6 @@ is either a destination file path or destination directory.</p>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
