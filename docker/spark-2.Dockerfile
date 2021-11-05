@@ -23,14 +23,20 @@ ENV PYTHONDONTWRITEBYTECODE 1
 RUN \
   apt-get update && \
   apt-get install -y \
-    python \
-    python-pip 
+    python3 \
+    python3-pip
 
-# FIXME python 2 support in pip is starting to break down
-# https://github.com/jaraco/zipp/issues/16
-RUN pip install zipp==1.0.0
-RUN pip install importlib-resources six==1.11.0
-RUN pip install pluggy==0.13.1
+# Choose a spark to install
+RUN \
+  apt-get install -y openjdk-8-jdk && \
+  echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
+RUN pip3 install pyspark==2.4.7
+RUN pip3 install numpy pandas>=1.0.0
+RUN pip3 install pytest
+ENV PYSPARK_PYTHON python3
+ENV PYSPARK_DRIVER_PYTHON python3
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
+
+RUN pip3 install -e ".[spark]"

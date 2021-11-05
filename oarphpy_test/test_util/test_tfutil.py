@@ -19,10 +19,10 @@ import pytest
 from oarphpy import util
 from oarphpy_test import testutil
 
-tf = pytest.importorskip("tensorflow")
-
-
 def test_tf_data_session():
+  tf = pytest.importorskip("tensorflow")
+  tf.compat.v1.disable_v2_behavior()
+
   expected = [[0, 1], [2, 3], [4, 5]]
   ds = tf.data.Dataset.from_tensor_slices(expected)
   with util.tf_data_session(ds) as (sess, iter_dataset):
@@ -30,6 +30,9 @@ def test_tf_data_session():
     assert expected == actual
 
 def test_tf_records_file_as_list_of_str():
+  tf = pytest.importorskip("tensorflow")
+  tf.compat.v1.disable_v2_behavior()
+
   TEST_TEMPDIR = testutil.test_tempdir(
                       'test_tf_records_file_as_list_of_str')
   util.cleandir(TEST_TEMPDIR)
@@ -49,3 +52,6 @@ def test_tf_records_file_as_list_of_str():
   assert sorted(tf_lst) == sorted(ss)
   for i in range(len(ss)):
     assert tf_lst[i] == ss[i]
+
+
+

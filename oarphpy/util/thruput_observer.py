@@ -58,7 +58,7 @@ class ThruputObserver(object):
     """
 
     self.start_block()
-    yield
+    yield self
     self.stop_block(n=n, num_bytes=num_bytes)
   
   def start_block(self):
@@ -92,9 +92,10 @@ class ThruputObserver(object):
           # Exponentially decay logging frequency. Don't decay quite as
           # fast as Vowpal Wabbit did, though.
 
-  @staticmethod
-  def union(thruputs):
-    u = ThruputObserver()
+  @classmethod
+  def union(cls, thruputs):
+    """Support reduction for use in e.g. MapReduce jobs as a counter"""
+    u = cls()
     for t in thruputs:
       u += t
     return u
@@ -123,7 +124,8 @@ class ThruputObserver(object):
       ('Rate', 
         format_size(self.num_bytes / total_time) + ' / sec'
         if total_time else '-'),
-      ('Hz', float(self.n) / total_time if total_time else '-'),
+      ('Hz',
+        "%2.f" % (float(self.n) / total_time) if total_time else '-'),
     ]
     percent_complete = None
     if self.n_total is not None:
@@ -136,7 +138,7 @@ class ThruputObserver(object):
         (total_time / (percent_complete + 1e-10)))
       stats.extend([
         ('Progress', ''),
-        ('Percent Complete', percent_complete),
+        ('Percent Complete', "%2f" % percent_complete),
         ('Est. Time To Completion', format_timespan(eta_sec)),
       ])
     if len(self.ts) >= 2:
@@ -160,16 +162,27 @@ class ThruputObserver(object):
     self.n += other.n
     self.num_bytes += other.num_bytes
     self.ts.extend(other.ts)
+    if not self.name:
+      self.name = other.name
+    if self.n_total is None and other.n_total is not None:
+      self.n_total = other.n_total
+    if self.n_total_chunks is None and other.n_total_chunks is not None:
+      self.n_total_chunks = other.n_total_chunks
     return self
 
   def __str__(self):
     import tabulate
     stats = self.get_stats()
     summary = tabulate.tabulate(stats)
+    prefix = '[Pid:%s Id:%s]' % (os.getpid(), id(self))
     if self.name:
-      prefix = '%s [Pid:%s Id:%s]' % (self.name, os.getpid(), id(self))
-      summary = prefix + '\n' + summary
+      prefix = '%s %s' % (self.name, prefix)
+    summary = '%s\n%s' % (prefix, summary)
     return summary
+  
+  def __repr__(self):
+    # pprint and some other utils use __repr__ instead of __str__
+    return str(self)
   
   def __del__(self):
     if self.log_on_del:
@@ -179,6 +192,27 @@ class ThruputObserver(object):
       log = create_log()
       log.info('\n' + str(self) + '\n')
   
+  def __gt__(self, v):
+    # Support use in containers.Counter
+    if isinstance(v, self.__class__):
+      return self.name > v.name
+    else:
+      return self.n > v
+    
+  def __lt__(self, v):
+    # Support use in containers.Counter
+    if isinstance(v, self.__class__):
+      return self.name < v.name
+    else:
+      return self.n < v
+
+  def __add__(self, other):
+    # Support use in containers.Counter
+    if isinstance(other, self.__class__):
+      return self.union((self, other))
+    else:
+      return self
+
   @staticmethod
   def monitoring_tensor(name, tensor, **observer_init_kwargs):
     """Monitor the size of the given tensorflow `Tensor` and record a
@@ -213,6 +247,7 @@ class ThruputObserver(object):
   def wrap_func(func, **observer_init_kwargs):
     """Decorate `func` and observe a block on each call"""
     class MonitoredFunc(object):
+      __slots__ = ('func', 'observer')
       def __init__(self, func, observer_init_kwargs):
         self.func = func
         self.observer = ThruputObserver(**observer_init_kwargs)
@@ -224,3 +259,28 @@ class ThruputObserver(object):
         self.observer.maybe_log_progress()
         return ret
     return MonitoredFunc(func, observer_init_kwargs)
+
+  @staticmethod
+  def to_monitored_generator(gen, **observer_init_kwargs):
+    from oarphpy.util.misc import get_size_of_deep
+    class MonitoredGen(object):
+      __slots__ = ('gen', 'observer')
+      def __init__(self, gen):
+        self.gen = gen
+        self.observer = ThruputObserver(**observer_init_kwargs)
+      def __iter__(self):
+        return self
+      def __next__(self):
+        return self.next()
+      def next(self):
+        self.observer.start_block()
+        if hasattr(self.gen, '__next__'):
+          x = self.gen.__next__()
+        else:
+          x = self.gen.next()
+        self.observer.stop_block(n=1, num_bytes=get_size_of_deep(x))
+        self.observer.maybe_log_progress()
+        return x
+      def __str__(self):
+        return str(self.observer)
+    return MonitoredGen(gen)

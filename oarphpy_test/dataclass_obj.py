@@ -12,25 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG UBUNTU_VERSION=18.04
+# Dataclass using Python 3 type annotations; used in test_spark.py.  We
+# define this in a separate file so that Python 2 can ignore it
 
-FROM ubuntu:${UBUNTU_VERSION} as base
-
-# We don't care for __pycache__ and .pyc files; sometimes VSCode doesn't clean
-# up properly when deleting things and the cache gets stale.
-ENV PYTHONDONTWRITEBYTECODE 1
-
-RUN \
-  apt-get update && \
-  apt-get install -y \
-    python \
-    python-pip 
-
-# FIXME python 2 support in pip is starting to break down
-# https://github.com/jaraco/zipp/issues/16
-RUN pip install zipp==1.0.0
-RUN pip install importlib-resources six==1.11.0
-RUN pip install pluggy==0.13.1
-
-COPY . /opt/oarphpy
-WORKDIR /opt/oarphpy
+try:
+  from dataclasses import dataclass
+  @dataclass
+  class DataclassObj:
+    x: str
+    y: float
+except Exception:
+  pass

@@ -14,6 +14,7 @@
 
 import os
 import sys
+from collections import Counter
 from contextlib import contextmanager
 
 from oarphpy import util
@@ -65,7 +66,7 @@ except Exception as e:
       Java 8 or higher.  Mebbe try installing using:
         $ pip install pyspark
       That will fix import errors.  To get Java, try:
-        $ apt-get install -y openjdk-8-jdk && echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
+        $ apt-get install -y openjdk-11-jdk && echo JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 >> /etc/environment
       If you have spark installed locally (e.g. from source), set $SPARK_HOME
       *** Original error: %s
   """ % (e,)
@@ -318,6 +319,9 @@ def test_tensorflow(spark):
   def test_and_get_info():
     import random
     import tensorflow as tf
+
+    tf.compat.v1.disable_v2_behavior()
+      # NB: this only impacts the executor Python process
     
     x = int(10 * random.random())
     a = tf.constant(x)
@@ -342,6 +346,110 @@ def test_tensorflow(spark):
   import pprint
   util.log.info('\n\n' + pprint.pformat(res) + '\n\n')
 
+
+
+### Counters
+
+try:
+  from pyspark.accumulators import AccumulatorParam
+  AccumulatorParam_BASE = AccumulatorParam
+except:
+  class AccumulatorParam_BASE(object):
+    # A non-functional dummy when pyspark is not available
+    pass
+
+class CounterAccumulator(AccumulatorParam_BASE):
+  def zero(self, value):
+    return Counter({})
+  def addInPlace(self, value1, value2):
+    return value1 + value2
+
+def create_counter_accumulator(spark):
+  sc = spark.sparkContext
+  acc = sc.accumulator(Counter(), CounterAccumulator())
+  return acc
+
+class CounterCollection(object):
+  def __init__(self, spark, name=''):
+    self._acc = create_counter_accumulator(spark)
+    self._name = name
+  
+  def __getitem__(self, key):
+    return self._acc.value[key]
+  
+  def __setitem__(self, key, value):
+    self.tally(key, value)
+  
+  def tally(self, key, value):
+    c = Counter()
+    c[key] = value
+    self._acc += c
+
+  def kv_tally(self, tag, key='', value=0):
+    self.tally('__psegs_kv.' + tag + '.key=' + key, value)
+  
+  def get_kv_tally(self, tag):
+    key_prefix = '__psegs_kv.' + tag + '.key='
+    return dict(
+      (k[len(key_prefix):], v)
+      for k, v in self._acc.value.items()
+      if k.startswith(key_prefix)
+    )
+
+  def __str__(self):
+    import pprint
+
+    HEADER = (
+      "CounterCollection({name})\n"
+      "Spark Accumulator: {acc}\n"
+      "Counters:\n"
+    ).format(
+      name=self._name,
+      acc=self._acc.aid,
+    )
+    kv_tags = set()
+    kvs = []
+    kv_prefix = '__psegs_kv.'
+    for k, v in self._acc.value.items():
+      if k.startswith(kv_prefix):
+        k = k[len(kv_prefix):]
+        tag = k.split('.key=')[0]
+        kv_tags.add(tag)
+      else:
+        kvs.append((k, v))
+    for tag in kv_tags:
+      kvs.append((tag, self.get_kv_tally(tag)))
+    
+    BODY = '\n'.join("%s: %s" % (k, pprint.pformat(v)) for k, v in sorted(kvs))
+    return "%s\n%s\n" % (HEADER, BODY)
+  
+  def __repr__(self):
+    # For things like pprint that use __repr__ instead of __str__
+    return str(self)
+  
+  @contextmanager
+  def log_progress(self, log_func=None, log_freq_sec=10):
+    log_func = log_func or util.log.info
+    
+    import threading
+    exit_event = threading.Event()
+    def spin_log():
+      REPORT_EVERY_SEC = 10
+      import time
+      start_wait = time.time()
+      while not exit_event.is_set():
+        if time.time() - start_wait >= log_freq_sec:
+          log_func(self)
+          start_wait = time.time()
+        time.sleep(0.5)
+    bkg_th = threading.Thread(target=spin_log, args=())
+    bkg_th.daemon = True
+    bkg_th.start()
+
+    yield self
+
+    exit_event.set()
+    bkg_th.join()
 
 ### OarphPy-specific Extras
 
@@ -588,9 +696,9 @@ class SessionFactory(object):
     
       # Now decide the source root that we'll egg-ify.
       src_root = cls._resolve_src_root()
-      util.log.info("Using source root %s " % src_root)
-
-      cls._cached_egg_path = cls._create_new_egg(src_root, out_dir)
+      if src_root:
+        util.log.info("Using source root %s " % src_root)
+        cls._cached_egg_path = cls._create_new_egg(src_root, out_dir)
     return cls._cached_egg_path
 
 
@@ -633,7 +741,6 @@ class SessionFactory(object):
     #   builder = builder.enableHiveSupport()
     
     try:
-
       spark = builder.getOrCreate()
 
     except Exception as e:
@@ -654,7 +761,13 @@ class SessionFactory(object):
 
     # spark.sparkContext.setLogLevel('INFO')
 
-    spark.sparkContext.addPyFile(cls.create_egg())
+    egg_path = cls.create_egg()
+    if egg_path:
+      spark.sparkContext.addPyFile(egg_path)
+    else:
+      util.log.info(
+          "Could not resolve a source root, skipping auto-egg inclusion.")
+    
     return spark
   
   @classmethod
@@ -679,16 +792,22 @@ class LocalK8SSpark(SessionFactory):
   """Example of how to subclass the Spark factory above for use with K8S"""
   MASTER = 'k8s://http://127.0.0.1:8001'
   CONF_KV = {
-    'spark.kubernetes.container.image': 'my-docker-image',
-
-    # In practice, we need to set `host` explicitly in order to get the
-    # proper driver IP address to the workers.  This choice may break
-    # cluster mode where the driver process will run in the cluster
-    # instead of locally.  This choice may also break in certain networking
-    # setups.  Spark networking is a pain :(
-    'spark.driver.host':
-      os.environ.get('SPARK_LOCAL_IP', util.get_non_loopback_iface()),
+    'spark.kubernetes.container.image': 'my-docker-image', 
   }
+
+  @classmethod
+  def getOrCreate(cls):
+    if 'spark.driver.host' not in cls.CONF_KV:
+      # In practice, we need to set `host` explicitly in order to get the
+      # proper driver IP address to the workers.  This choice may break
+      # cluster mode where the driver process will run in the cluster
+      # instead of locally.  This choice may also break in certain networking
+      # setups.  Spark networking is a pain :(
+      cls.CONF_KV['spark.driver.host'] = (
+        os.environ.get('SPARK_LOCAL_IP', util.get_non_loopback_iface()))
+
+    return super(NBSpark, cls).getOrCreate()
+  
 
 
 # NBSpark is a session builder for local Jupyter notebooks. NBSpark also serves
@@ -698,10 +817,13 @@ class LocalK8SSpark(SessionFactory):
 
 # Try to find sparkmonitor's Spark interop jar
 try:
+  HAVE_SPARK_2 = pyspark.__version__.startswith('2')
   import sparkmonitor
   SPARKMONITOR_HOME = os.path.dirname(sparkmonitor.__file__)
-  SPARKMONITOR_JAR_PATH = os.path.join(SPARKMONITOR_HOME, 'listener.jar')
-    # E.g. /usr/local/lib/python3.6/dist-packages/sparkmonitor/listener.jar
+  SPARKMONITOR_JAR_PATH = os.path.join(
+        SPARKMONITOR_HOME,
+        'listener_2.11.jar' if HAVE_SPARK_2 else 'listener_2.12.jar')
+    # E.g. /usr/local/lib/python3.6/dist-packages/sparkmonitor/listener_x.xx.jar
 except Exception:
   SPARKMONITOR_JAR_PATH = ''
 
@@ -818,7 +940,8 @@ class Tensor(object):
     t.order = 'C' # C-style row-major
 
     if arr.nbytes >= TENSOR_AUTO_PACK_MIN_KBYTES * (2**10):
-      t.values = []
+      t.values = [arr.dtype.type(0)]
+        # Need a non-empty array for type deduction
       t.values_packed = bytearray(arr.tobytes(order='C'))
     else:
       t.values = arr.flatten(order='C').tolist()
@@ -838,6 +961,119 @@ class Tensor(object):
               dtype=np.dtype(t.dtype))
 
 
+class CloudpickeledCallableData(object):
+    __slots__ = ('func_bytes', 'func_pyclass')
+    def __init__(self, **kwargs):
+      for k in self.__slots__:
+        setattr(self, k, kwargs.get(k))
+
+class CloudpickeledCallable(object):
+  """Wraps callable objects (e.g. functions, including lambdas) and 
+  uses `cloudpickle` for serialization.  Spark uses `cloudpickle` for 
+  serializing _tasks_ (e.g. map functions) but uses `pickle` for 
+  serializing _data_.  In particular, data in a Spark RDD or DataFrame
+  must be pickleable.  `CloudpickeledCallable` provides a wrapper
+  so that you can embed Python functions as *data* in RDDs, DataFrames,
+  and other forms of data at rest (e.g. pickle files or Parquet data).
+
+  Note that `cloudpickle` can be selective about how much of the object tree
+  that it serializes; some imports and globals may get ignored.  When you
+  deserialize and invoke a `CloudpickeledCallable`, your interpreter should
+  have the same (or similar) code as that used when serializing the callable,
+  otherwise behavior may be difficult to predict.
+
+  Note that `cloudpickle` can't handle non-serializable data like thread local
+  variables, mutices, etc.  `CloudpickeledCallable` won't work for all code.
+
+  `CloudpickeledCallable` is useful for embedding flyweights in your dataset.
+  (FMI see <https://en.wikipedia.org/wiki/Flyweight_pattern> )
+  For example:
+
+  >>> def load_matrix(path):
+  >>>   import numpy as np
+  >>>   return np.loadtxt(path)
+  >>> my_db_row = {
+  >>>     'path': 'path/to/data.txt',
+  >>>     'factory': 
+  >>>        CloudpickeledCallable(lambda: load_matrix('path/to/data.txt'))
+  >>> }
+  >>> import pickle
+  >>> pickle.dump(my_db_row, open('dumped.pkl', 'wb'))
+
+  Now if you deserialize `my_db_row` from disk and run `my_db_row['factory']()`,
+  your `load_matrix()` helper will get invoked with the embedded path.  Thus
+  your `my_db_row` is a flyweight for the data in 'path/to/data.txt'.
+  """
+
+  __slots__ = ('_func', '_func_pyclass')
+
+  @staticmethod
+  def _get_func_name(func):
+    module = '<unknown_module>'
+    if hasattr(func, '__module__'):
+      module = func.__module__
+    if hasattr(func, '__name__'):
+      return '%s.%s' % (module, func.__name__)
+    else:
+      import inspect
+      src = inspect.getsource(func)
+      lambda_varname = inspect.getsource(func).split('=')[0].strip()
+      return '%s.%s' % (module, lambda_varname)
+
+  def __init__(self, func=None):
+    self._func = func
+    if func is None:
+      self._func_pyclass = '(empty CloudpickeledCallable)'
+    else:
+      self._func_pyclass = CloudpickeledCallable._get_func_name(func)
+  
+  @classmethod
+  def empty(cls):
+    return cls()
+  
+  def __call__(self, *args, **kwargs):
+    assert self._func is not None, \
+      "This CloudpickeledCallable is the null CloudpickeledCallable"
+    return self._func(*args, **kwargs)
+
+  @classmethod
+  def to_cc_data(cls, cc):
+    if cc == cls.empty():
+      func_bytes = bytearray()
+    else:
+      import cloudpickle
+      func_bytes = bytearray(cloudpickle.dumps(cc._func))
+    
+    return CloudpickeledCallableData(
+              func_bytes=func_bytes,
+              func_pyclass=cc._func_pyclass)
+
+  @classmethod
+  def from_cc_data(cls, ccd):
+    if len(ccd.func_bytes) > 0:
+      import cloudpickle
+      func = cloudpickle.loads(ccd.func_bytes)
+    else:
+      func = None
+    cc = cls(func=func)
+    cc._func_pyclass = ccd.func_pyclass
+    return cc
+
+  def __getstate__(self):
+    return (self.to_cc_data(self),)
+
+  def __setstate__(self, d):
+    cc = self.from_cc_data(d[0])
+    self._func = cc._func
+    self._func_pyclass = cc._func_pyclass
+
+  def __eq__(self, other):
+    return self._func == other._func
+
+  def __repr__(self):
+    return "CloudpickeledCallable(_func_pyclass=%s)" % self._func_pyclass
+  
+
 class RowAdapter(object):
   """Transforms between custom objects and `pyspark.sql.Row`s used in Spark SQL
   or Parquet files. Use to encode numpy arrays and standard Python objects
@@ -851,12 +1087,13 @@ class RowAdapter(object):
   
   Unfortunately, we can't use Spark's UDT API to embed this adapter (and 
   obviate user calls) because UDTs require schema definitions.  Furthermore,
-  Spark unfortunately can't handle UDTs nested in maps or lists; i.e.
+  Spark <=2.x could not handle UDTs nested in maps or lists; i.e.
   [UDT()] (i.e. a list of UDTs) and {'foo': UDT()} (i.e. a map with UDT values)
-  will cause Spark to crash.
+  would cause Spark to crash.  Moreover, for ndarray data, Spark's ml.linalg
+  package coerces all data to floats.
 
   Benefits of RowAdapter:
-    * Transparently handles numpy arrays and numpy scalar types
+    * Transparently handles numpy arrays and numpy boxed scalar types
         (e.g. np.float32).
     * Deep type adaptation; supports nested types.
     * At the decode stage, supports evolution of object types independent of
@@ -870,6 +1107,7 @@ class RowAdapter(object):
         but not decoding).
     * Enables saving objects and numpy arrays to Parquet in a format accessible
         to external systems (no additional SERDES library required)
+    * Uses cloudpickle to serialize `CloudpickeledCallable`-wrapped functions.
   """
 
   IGNORE_PROTECTED = False
@@ -907,8 +1145,10 @@ class RowAdapter(object):
       # Row is immutable, so we have to recreate
       row_dict = obj.asDict()
       return Row(**cls.to_row(row_dict))
-    if isinstance(obj, np.ndarray):
+    elif isinstance(obj, np.ndarray):
       return cls.to_row(Tensor.from_numpy(obj))
+    elif isinstance(obj, CloudpickeledCallable):
+      return cls.to_row(CloudpickeledCallable.to_cc_data(obj))
     elif isinstance(obj, np.generic):
       # Those pesky boxed scalars like np.float32
       return obj.item()
@@ -936,6 +1176,9 @@ class RowAdapter(object):
       return Row(**dict([tag] + obj_attrs))
     elif isinstance(obj, list):
       return [cls.to_row(x) for x in obj]
+    elif isinstance(obj, tuple):
+      return tuple(cls.to_row(x) for x in obj)
+        # Spark will typically transform to list
     elif isinstance(obj, dict):
       return dict((k, cls.to_row(v)) for k, v in obj.items())
     else:
@@ -944,15 +1187,25 @@ class RowAdapter(object):
   @classmethod
   def from_row(cls, row):
     if hasattr(row, '__fields__'):
+      # Probably a pyspark Row instance; try to convert it to an object
       if '__pyclass__' in row.__fields__:
         obj_cls_name = row['__pyclass__']
         obj_cls = RowAdapter._get_class_from_path(obj_cls_name)
-        obj = obj_cls()
+        obj = obj_cls.__new__(obj_cls)
 
+        attr_to_default = {}
+        if hasattr(obj, '__attrs_attrs__'):
+          # In the case that an attrs-based class has now added an attribute
+          # since being row-ified, the row will be missing a value for that
+          # new attribute.  Use the attrs-specified default if available.
+          attr_to_default = dict((a.name, a.default) for a in obj.__attrs_attrs__)
+        
         if hasattr(obj, '__slots__'):
           for k in obj.__slots__:
             if k in row:
               setattr(obj, k, cls.from_row(row[k]))
+            elif k in attr_to_default:
+              setattr(obj, k, attr_to_default[k])
         elif hasattr(obj, '__dict__'):
           for k, v in row.asDict().items():
             if k == '__pyclass__':
@@ -962,11 +1215,17 @@ class RowAdapter(object):
           raise ValueError(
               "Object %s no longer has __slots__ nor __dict__" % obj_cls_name)
 
+        if hasattr(obj, '__attrs_init__'):
+          obj.__attrs_post_init__()
+          
         if isinstance(obj, Tensor):
           obj = Tensor.to_numpy(obj)
+        elif isinstance(obj, CloudpickeledCallableData):
+          obj = CloudpickeledCallable.from_cc_data(obj)
         return obj
       
       else:
+        # No known __pyclass__, so fall back to generic
         from pyspark.sql import Row
         attrs = dict((k, cls.from_row(v)) for k, v in row.asDict().items())
         return Row(**attrs)

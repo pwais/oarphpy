@@ -27,8 +27,7 @@ except ImportError:
     pass
 
 class LocalSpark(SessionFactory):
-  import multiprocessing
-  MASTER = 'local[%s]' % multiprocessing.cpu_count()
+  pass
 
 skip_if_no_spark = pytest.mark.skipif(not HAVE_SPARK, reason="Requires Spark")
 

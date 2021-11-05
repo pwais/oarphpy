@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG UBUNTU_VERSION=18.04
+ARG UBUNTU_VERSION=20.04
 
 FROM ubuntu:${UBUNTU_VERSION} as base
 
@@ -28,9 +28,9 @@ RUN \
 
 # Choose a spark to install
 RUN \
-  apt-get install -y openjdk-8-jdk && \
-  echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 >> /etc/environment
-RUN pip3 install pyspark==2.4.6
+  DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-11-jdk && \
+  echo JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 >> /etc/environment
+RUN pip3 install pyspark==3.0.1
 RUN pip3 install numpy pandas>=1.0.0
 ENV PYSPARK_PYTHON python3
 ENV PYSPARK_DRIVER_PYTHON python3

@@ -46,12 +46,21 @@ def test_some_thru():
   assert re.search('N chunks.*10', str(t2))
 
 
+def test_some_thru2():  
+  t = util.ThruputObserver()
+  for _ in range(10):
+    with t.observe() as my_t:
+      my_t.update_tallies(n=1)
+  assert t.n == 10
+
+
 def test_union():
   t1 = util.ThruputObserver()
   t2 = util.ThruputObserver()
   t2.update_tallies(n=10)
   u = util.ThruputObserver.union((t1, t2))
-  assert str(u) == str(t2)
+  tail = lambda t: str(t).split()[2:] # Skip PID / ID header
+  assert tail(u) == tail(t2)
 
 
 def test_some_blocks_thru():
@@ -76,3 +85,46 @@ def test_decorated():
   assert re.search('N thru.*3', str(monitored_func.observer))
   assert re.search('N chunks.*3', str(monitored_func.observer))
   assert re.search('Total time.*0.03 seconds', str(monitored_func.observer))
+
+
+def test_wrap_generator():
+  import itertools
+  
+  def gen():
+    for i in range(10):
+      yield i
+  
+  tgen = util.ThruputObserver.to_monitored_generator(gen())
+
+  assert re.search('N thru.*0', str(tgen))
+  assert [0, 1, 2] == list(itertools.islice(tgen, 3))
+  assert re.search('N thru.*3', str(tgen))
+
+  assert [3, 4, 5, 6, 7, 8, 9] == list(tgen)
+  assert re.search('N thru.*10', str(tgen))
+
+def test_works_in_counter():
+  from collections import Counter
+
+  t1 = util.ThruputObserver(name='t1', n_total=3)
+  t1.start_block()
+  t1.stop_block(n=1, num_bytes=2)
+  counter1 = Counter()
+  counter1['thruput'] = t1
+
+  t2 = util.ThruputObserver(name='t2', n_total=3)
+  t2.start_block()
+  t2.stop_block(n=1, num_bytes=2)
+  t2.start_block()
+  t2.stop_block(n=1, num_bytes=2)
+  counter2 = Counter()
+  counter2['thruput'] = t2
+
+  final_counter = counter1 + counter2
+
+  final = final_counter['thruput']
+  assert final.name == 't1' # The first observer added to the counter wins
+  assert final.n == 3
+  assert final.num_bytes == 6
+  assert final.n_total == 3
+  assert len(final.ts) == 3

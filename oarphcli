@@ -29,8 +29,8 @@ at /opt/oarphpy, and outer filesystem mounted at /outer_root .
 
 ## Testing
 
-$$ pytest
-$$ python setup.up test
+$$ pytest oarphpy_test
+$$ python3 setup.py test
 In the dockerized shell, run unit tests using your local code changes.
 
 $ ./oarphcli --test-all
@@ -84,6 +84,26 @@ def run_cmd(cmd):
   log.info("Running %s ..." % cmd)
   subprocess.check_call(cmd, shell=True)
   log.info("... done with %s " % cmd)
+
+
+def build_and_push_3p_images():
+  """Build and push third-party docker images.  This process does not need
+  to be run often but is provided here for self-documentation and 
+  maintenance releases (e.g. nVidia driver upgrades)
+  """
+
+  log.info(
+    "Building Lambda Stack docker images (these are not on DockerHub). "
+    "FMI see https://github.com/lambdal/lambda-stack-dockerfiles")
+  run_cmd("""
+    cd /tmp &&
+    (rm -rf lambda-stack-dockerfiles || true) &&
+    git clone https://github.com/lambdal/lambda-stack-dockerfiles &&
+    cd lambda-stack-dockerfiles &&
+    git checkout 30bcae027beac901c2ed7890bacd72df54f9e2ed && 
+    docker build -t oarphpy/lambda-stack:20.04 -f Dockerfile.focal . &&
+    docker push oarphpy/lambda-stack:20.04
+    """)
 
 
 class DockerEnv(object):
@@ -143,12 +163,6 @@ class DockerEnv(object):
   @classmethod
   def start(cls, container_name=OP_CONTAINER_NAME, mnt_local_root=True):
     image = cls.full_image_name()
-    have_nvidia_docker = False
-    try:
-      run_cmd('nvidia-docker --help > /dev/null')
-      have_nvidia_docker = True
-    except Exception:
-      log.info("Not using nvidia-docker")
     
     # TODO: Features to consider bringing back:
     # * --env-file for GCS / AWS keys
@@ -162,15 +176,13 @@ class DockerEnv(object):
     if mnt_local_root:
       local_mount = '-v `pwd`:/opt/oarphpy:z'
 
-    docker = 'nvidia-docker' if have_nvidia_docker else 'docker'
     CMD = """
-      {docker} run
+      docker run
         --name {container_name}
         -d -it -P --net=host
         {local_mount}
           {docker_image} sleep infinity || docker start {container_name} || true
     """.format(
-          docker=docker,
           container_name=container_name,
           local_mount=local_mount,
           docker_image=image)
@@ -297,6 +309,9 @@ def create_arg_parser():
     '--build-env', default=False, action='store_true',
     help='Build all oarphpy docker images')
   parser.add_argument(
+    '--build-and-push-3p-images', default=False, action='store_true',
+    help='Build and push third party images')
+  parser.add_argument(
     '--push-as-latest', default=False, action='store_true',
     help='Tag Docker images at latest and push them')
   
@@ -332,6 +347,9 @@ def main(args=None):
         env.run_tests()
       if args.push_as_latest:
         env.push_as_latest()
+
+  elif args.build_and_push_3p_images:
+    build_and_push_3p_images()
 
   elif args.shell or args.shell_rm:
     devenv = None
