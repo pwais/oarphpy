@@ -1,2 +1,1 @@
-docs/* linguist-vendored
-oarphpy_test/* linguist-vendored
+*.html linguist-detectable=false
