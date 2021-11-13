@@ -1,2 +1,2 @@
-* linguist-vendored
-oarphpy linguist-vendored=false
+docs/* linguist-vendored
+oarphpy_test/* linguist-vendored
