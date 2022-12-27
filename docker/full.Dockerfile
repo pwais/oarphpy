@@ -30,23 +30,22 @@ RUN \
     python3-pip \
     python3-dev \
     wget
+RUN pip3 install pip==22.3.1
 
-
-# Tensorflow 1.15.x support for nvidia stubs is now broken, thus if we try to use
-# tensorflow-gpu with a cpu-only host, we'll run into a showstopping bug. (Upon importing
-# tensorflow, we see an infinite hang with python waiting on a pipe with fd number 15).
-# The lambda stack base includes tensorflow-gpu.  Uninstal that now and pin to CPU-only
-# tensorflow
+## Java
 RUN \
-  pip3 uninstall -y tensorflow-gpu && \
-  pip3 install --upgrade --ignore-installed tensorflow-cpu==2.3.0 && \
-  echo "Test tensorflow" && python3 -c 'import tensorflow as tf; print(tf.config.list_physical_devices())'
+  apt-get update && \
+  apt-get install -y openjdk-11-jdk && \
+  ls -lhat /usr/lib/jvm/java-11-openjdk-amd64 && \
+  echo JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 >> /etc/environment
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+
 
 ### Spark (& Hadoop)
 ### Use a binary distro for:
 ###  * Spark LZ4 support through Hadoop
 ###  * Spark env file hacking (e.g. debug / profiling)
-ENV HADOOP_VERSION 3.2.1
+ENV HADOOP_VERSION 3.3.4
 ENV HADOOP_HOME /opt/hadoop
 ENV HADOOP_CONF_DIR $HADOOP_HOME/etc/hadoop
 ENV PATH $PATH:$HADOOP_HOME/bin
@@ -58,7 +57,7 @@ RUN curl -L --retry 3 \
  && mv /opt/hadoop-$HADOOP_VERSION $HADOOP_HOME \
  && rm -rf $HADOOP_HOME/share/doc
 
-ENV SPARK_VERSION 3.0.1
+ENV SPARK_VERSION 3.3.1
 ENV SPARK_PACKAGE spark-${SPARK_VERSION}-bin-without-hadoop
 ENV SPARK_HOME /opt/spark
 ENV PYSPARK_PYTHON=python3
@@ -71,13 +70,6 @@ RUN curl -L --retry 3 \
  && mv /opt/$SPARK_PACKAGE $SPARK_HOME
 RUN cd /opt/spark/python && python3 setup.py install
 
-## Java
-RUN \
-  apt-get update && \
-  apt-get install -y openjdk-11-jdk && \
-  ls -lhat /usr/lib/jvm/java-11-openjdk-amd64 && \
-  echo JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 >> /etc/environment
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 
 # GCloud with Spark / Hadoop support
 RUN \
@@ -113,43 +105,47 @@ RUN \
         && \
   pip3 install --upgrade pip setuptools wheel && \
   pip3 install ipdb pytest && \
-  pip3 install sphinx==2.3.1 recommonmark==0.6.0 m2r2==0.2.5 sphinx-rtd-theme==0.5.0 && \
-  curl -LO https://github.com/BurntSushi/ripgrep/releases/download/0.10.0/ripgrep_0.10.0_amd64.deb && \
-  dpkg -i ripgrep_0.10.0_amd64.deb
+  pip3 install sphinx==2.3.1 recommonmark==0.6.0 m2r2==0.2.5 sphinx-rtd-theme==0.5.0
 
 # Imageio + ffmpeg. Note that newest imageio dropped the ffmpeg download util :(
 RUN \
-  pip3 install imageio==2.4.1 && \
-  python3 -c 'import imageio; imageio.plugins.ffmpeg.download()'
+  pip3 install imageio==2.22.4 && \
+  pip3 install --upgrade imageio-ffmpeg
 
 # Jupyter & friends
+#'jupyter-client>=6.1.7'
+RUN apt-get remove -y python3-zmq && pip3 install scikit-learn
 RUN pip3 install \
-      jupyterlab 'jupyter-client>=6.1.7' matplotlib \
+      jupyterlab==3.5.2 \
+      matplotlib \
       jupyter_http_over_ws ipykernel nbformat \
-      scipy \
-      sklearn && \
+      scipy && \
     jupyter serverextension enable --py jupyter_http_over_ws && \
     ln -s /usr/bin/ipython3 /usr/bin/ipython
 
 # SparkMonitor from https://github.com/swan-cern/jupyter-extensions
-# NB: need nodejs v10, but only v8 available in Ubuntu 18.x
- RUN \
-   curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-   apt-get install -y nodejs && \
-   pip3 install sparkmonitor>=1.1.0 && \
-   jupyter nbextension install sparkmonitor --py && \
-   jupyter nbextension enable  sparkmonitor --py && \
-   jupyter serverextension enable --py --system sparkmonitor  && \
-   jupyter lab build && \
-   ipython profile create && echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >>  $(ipython profile locate default)/ipython_kernel_config.py
+RUN \ 
+  pip3 install sparkmonitor==2.1.1 && \
+  ipython profile create && \
+  echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >> \
+    $(ipython profile locate default)/ipython_kernel_config.py && \
+  jupyter nbextension install sparkmonitor --py && \
+  jupyter nbextension enable  sparkmonitor --py
+
+
+  #  jupyter nbextension install sparkmonitor --py && \
+  #  jupyter nbextension enable  sparkmonitor --py && \
+  #  jupyter serverextension enable --py --system sparkmonitor  && \
+  #  jupyter lab build && \
+  #  ipython profile create && echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >>  $(ipython profile locate default)/ipython_kernel_config.py
 
 ## Phantomjs and Selenium
 ## Used for **testing** oarhpy.plotting / bokeh
 RUN \
   pip3 install selenium==3.8.0 && \
   cd /tmp && \
-  wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
-  tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 && \
+  curl -L --retry 3 https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | \
+    tar xvjf - && \
   cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/ && \
   rm -rf phantomjs-2.1.1-linux-x86_64 && \
   cd -
@@ -158,8 +154,8 @@ RUN \
 COPY docker/bashrc /etc/bash.bashrc
 RUN chmod a+rwx /etc/bash.bashrc
 
-# FIXME pip3-install-editable isn't giving us the desired version of pandas
-RUN pip3 install --upgrade --force-reinstall pandas>=1.1.2
+## FIXME pip3-install-editable isn't giving us the desired version of pandas
+##RUN pip3 install --upgrade --force-reinstall pandas>=1.1.2
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy

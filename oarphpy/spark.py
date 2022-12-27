@@ -759,7 +759,17 @@ class SessionFactory(object):
           raise Exception(msg)
       raise
 
+    
+
+    # To show info logs
     # spark.sparkContext.setLogLevel('INFO')
+    # spark.sparkContext.setLogLevel('WARN')
+    # logger = spark.sparkContext._jvm.org.apache.log4j
+    # breakpoint()
+    # logger.LogManager.getLogger("org").isInfoEnabled()
+
+    # logger.LogManager.getLogger("org"). setLevel( logger.Level.WARN )
+    # logger.LogManager.getLogger("akka").setLevel( logger.Level.WARN )
 
     egg_path = cls.create_egg()
     if egg_path:

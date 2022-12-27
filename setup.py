@@ -108,7 +108,7 @@ UTILS = [
   'cloudpickle>=1.5.0',
 ]
 
-ALL_DEPS = UTILS + SPARK_DEPS + TF_DEPS
+ALL_DEPS = UTILS + SPARK_DEPS
 
 dist = setup(
   name='oarphpy',
