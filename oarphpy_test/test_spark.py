@@ -19,8 +19,8 @@ import sys
 import pytest
 
 from oarphpy_test import testutil
-from oarphpy_test.testutil import LocalSpark
 from oarphpy_test.testutil import skip_if_no_spark
+from oarphpy_test.testutil import skip_if_tf_missing_or_broken
 
 
 @skip_if_no_spark
@@ -86,8 +86,9 @@ def test_spark_with_custom_library_in_notebook():
   # We need to fork off nbconvert to run the test
   TEST_CMD = """
     cd /tmp && 
-    jupyter-nbconvert --ExecutePreprocessor.timeout=3600 \
-      --to notebook --execute --output /tmp/out \
+    PYTHONPATH=$PYTHONPATH:/opt/oarphpy jupyter-nbconvert \
+        --ExecutePreprocessor.timeout=3600 \
+        --to notebook --execute --output /tmp/out \
       {notebook_path}
   """.format(notebook_path=NB_PATH)
   out = util.run_cmd(TEST_CMD, collect=True)
@@ -109,8 +110,8 @@ def test_pi():
 
 
 @skip_if_no_spark
+@skip_if_tf_missing_or_broken
 def test_spark_tensorflow():
-  tf = pytest.importorskip("tensorflow")
   from oarphpy import spark as S
   with testutil.LocalSpark.sess() as spark:
     S.test_tensorflow(spark)
@@ -311,8 +312,8 @@ def test_get_balanced_sample_sample_unrestricted():
 
 
 @skip_if_no_spark
+@skip_if_tf_missing_or_broken
 def test_spark_df_to_tf_dataset():
-  pytest.importorskip("tensorflow")
   import tensorflow as tf
   tf.compat.v1.disable_v2_behavior()
 

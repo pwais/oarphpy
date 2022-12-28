@@ -763,13 +763,7 @@ class SessionFactory(object):
 
     # To show info logs
     # spark.sparkContext.setLogLevel('INFO')
-    # spark.sparkContext.setLogLevel('WARN')
-    # logger = spark.sparkContext._jvm.org.apache.log4j
-    # breakpoint()
-    # logger.LogManager.getLogger("org").isInfoEnabled()
-
-    # logger.LogManager.getLogger("org"). setLevel( logger.Level.WARN )
-    # logger.LogManager.getLogger("akka").setLevel( logger.Level.WARN )
+    spark.sparkContext.setLogLevel('ERROR')
 
     egg_path = cls.create_egg()
     if egg_path:
@@ -916,12 +910,17 @@ class NBSpark(SessionFactory):
       # every cell run.  NB:
       # * `get_ipython()` is a global provided in any IPython-esque session
       # * Using pre_run_code_hook triggers a UserWarning / deprecation
-      #     warning, but the suggested events don't exist ...
-      import warnings
-      warnings.filterwarnings(
-        action='ignore',
-        message=r'Hook pre_run_code_hook is deprecated')
-      get_ipython().set_hook('pre_run_code_hook', maybe_rebuild_egg)
+      #     warning, but the suggested events don't exist in older IPython
+      # * In IPython >= 5, using `pre_run_code_hook` throws an error :(
+      import IPython
+      if IPython.version_info[0] >= 5:
+        get_ipython().events.register('pre_execute', maybe_rebuild_egg)
+      else:
+        import warnings
+        warnings.filterwarnings(
+          action='ignore',
+          message=r'Hook pre_run_code_hook is deprecated')
+        get_ipython().set_hook('pre_run_code_hook', maybe_rebuild_egg)
 
     return spark
 

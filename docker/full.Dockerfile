@@ -30,7 +30,6 @@ RUN \
     python3-pip \
     python3-dev \
     wget
-RUN pip3 install pip==22.3.1
 
 ## Java
 RUN \
@@ -69,6 +68,18 @@ RUN curl -L --retry 3 \
   | tar x -C /opt/ \
  && mv /opt/$SPARK_PACKAGE $SPARK_HOME
 RUN cd /opt/spark/python && python3 setup.py install
+
+# Spark install above appears to default to INFO for logs, perhaps via Hadoop.
+# Let's make the WARN instead (the prior standard):
+# https://github.com/apache/spark/blob/13fd9eee164604485e12bc03c73357a55572a630/conf/log4j.properties.template#L19
+RUN \
+  cp -v /opt/spark/conf/log4j2.properties.template /opt/spark/conf/log4j2.properties && \
+  sed -i -e 's/rootLogger.level = info/rootLogger.level = warn/g' /opt/spark/conf/log4j2.properties && \
+  echo "log4j.rootCategory=WARN,console" >> /opt/spark/conf/log4j.properties && \
+  echo "log4j.appender.console=org.apache.log4j.ConsoleAppender" >> /opt/spark/conf/log4j.properties && \
+  echo "log4j.appender.console.target=System.err" >> /opt/spark/conf/log4j.properties && \
+  echo "log4j.appender.console.layout=org.apache.log4j.PatternLayout" >> /opt/spark/conf/log4j.properties && \
+  echo "log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n" >> /opt/spark/conf/log4j.properties
 
 
 # GCloud with Spark / Hadoop support
@@ -113,7 +124,6 @@ RUN \
   pip3 install --upgrade imageio-ffmpeg
 
 # Jupyter & friends
-#'jupyter-client>=6.1.7'
 RUN apt-get remove -y python3-zmq && pip3 install scikit-learn
 RUN pip3 install \
       jupyterlab==3.5.2 \
@@ -132,23 +142,18 @@ RUN \
   jupyter nbextension install sparkmonitor --py && \
   jupyter nbextension enable  sparkmonitor --py
 
-
-  #  jupyter nbextension install sparkmonitor --py && \
-  #  jupyter nbextension enable  sparkmonitor --py && \
-  #  jupyter serverextension enable --py --system sparkmonitor  && \
-  #  jupyter lab build && \
-  #  ipython profile create && echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >>  $(ipython profile locate default)/ipython_kernel_config.py
-
 ## Phantomjs and Selenium
 ## Used for **testing** oarhpy.plotting / bokeh
 RUN \
-  pip3 install selenium==3.8.0 && \
-  cd /tmp && \
-  curl -L --retry 3 https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | \
-    tar xvjf - && \
-  cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/ && \
-  rm -rf phantomjs-2.1.1-linux-x86_64 && \
-  cd -
+  apt-get install -y firefox-geckodriver && \
+  pip3 install selenium==4.7.2 
+  # && \
+  # cd /tmp && \
+  # curl -L --retry 3 https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | \
+  #   tar xvjf - && \
+  # cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/ && \
+  # rm -rf phantomjs-2.1.1-linux-x86_64 && \
+  # cd -
 
 ## Include oarphpy
 COPY docker/bashrc /etc/bash.bashrc
@@ -156,6 +161,11 @@ RUN chmod a+rwx /etc/bash.bashrc
 
 ## FIXME pip3-install-editable isn't giving us the desired version of pandas
 ##RUN pip3 install --upgrade --force-reinstall pandas>=1.1.2
+
+# Shallow copy for faster iteration
+COPY ./setup.py /tmp/install-op/setup.py
+COPY ./oarphpy/__init__.py /tmp/install-op/oarphpy/__init__.py
+RUN cd /tmp/install-op && pip3 install -e ".[all]" && rm -rf /tmp/install-op
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy

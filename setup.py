@@ -102,7 +102,8 @@ UTILS = [
   'imageio',
 
   # For oarphpy.plotting
-  'bokeh==1.0.4',
+  # 'bokeh==1.0.4',
+  'bokeh==3.0.3',
 
   # For misc utils
   'cloudpickle>=1.5.0',

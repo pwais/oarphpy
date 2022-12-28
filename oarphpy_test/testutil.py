@@ -49,3 +49,14 @@ def test_tempdir(name, clean=True):
     cleandir(path)
   
   return path
+
+HAVE_TENSORFLOW = False
+try:
+  import tensorflow
+  HAVE_TENSORFLOW = True
+except Exception:
+  pass
+
+skip_if_tf_missing_or_broken = pytest.mark.skipif(
+                                  not HAVE_TENSORFLOW,
+                                  reason="Requires Tensorflow")

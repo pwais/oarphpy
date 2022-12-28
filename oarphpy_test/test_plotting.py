@@ -79,7 +79,7 @@ def test_histogram_with_examples():
     actual_png_path = actual_path.replace('html', 'png')
     util.log.info("Saving screenshot of plot to %s" % actual_png_path)
     from bokeh.io import export_png
-    export_png(fig, actual_png_path)
+    export_png(fig, filename=actual_png_path)
 
     expected_path = get_fixture_path(fixture_name)
     expected_png_path = expected_path.replace('html', 'png')
