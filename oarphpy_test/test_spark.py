@@ -530,7 +530,8 @@ class TestRowAdapter(unittest.TestCase):
         # NB: None / null / void can't be written
         with pytest.raises(Exception) as excinfo:
           self._check_serialization([row], schema=schema)
-        assert (f"Parquet data source does not support {VOID_TYPE} data type" 
+        assert ((
+          "Parquet data source does not support %s data type" % VOID_TYPE)
           in str(excinfo.value))
 
 

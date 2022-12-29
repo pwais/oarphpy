@@ -21,4 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
 
+# Force using older dependencies for python 3.6
+RUN pip3 install pytest==5.2.0 attrs==20.3.0
+
 RUN pip3 install -e ".[tensorflow]"
