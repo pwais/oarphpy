@@ -73,9 +73,9 @@ OP_CONTAINER_NAME = os.environ.get('OP_CONTAINER_NAME', 'oarphpy')
 ## Utils 
 
 def get_oarphpy_version(op_root):
-  import imp
+  import importlib.machinery
   path = os.path.join(op_root, 'oarphpy/__init__.py')
-  m = imp.load_source('_', path)
+  m = importlib.machinery.SourceFileLoader('_', path).load_module()
   return m.__version__
 
 
@@ -343,8 +343,15 @@ def main(args=None):
         env.build(and_push=False)
       if args.test_all:
         env.run_tests()
-      elif args.test and env.IMAGE_NAME == args.test:
-        env.run_tests()
+      elif args.test:
+        if env.IMAGE_NAME == args.test:
+          env.run_tests()
+        
+        # Print a helful error message at some point
+        CHOICES = [ee.IMAGE_NAME for ee in DockerEnv.get_all_envs(args.root)]
+        assert args.test in CHOICES, "Invalid choice %s, choices %s" % (
+          args.test, CHOICES)
+
       if args.push_as_latest:
         env.push_as_latest()
 

@@ -513,19 +513,24 @@ class TestRowAdapter(unittest.TestCase):
       (Row(x=bytearray(b"moof")),   [('x', 'binary')]),
       (Row(x=None),                 [('x', 'void')]),
     ]
+
+    if self._is_spark_2x():
+      row_expected_schema[-1] = (
+        (Row(x=None),                 [('x', 'null')]))
     
     self._check_raw_adaption([(r, r) for r, s in row_expected_schema])
     
     for row, expected_schema in row_expected_schema:
       schema = self._check_schema([row], expected_schema)
-      if all(t != 'void' for colname, t in expected_schema):
+      VOID_TYPE = 'void' if not self._is_spark_2x() else 'null'
+      if all(t != VOID_TYPE for colname, t in expected_schema):
         # In most cases, data can be written as expected
         self._check_serialization([row])
       else:
         # NB: None / null / void can't be written
         with pytest.raises(Exception) as excinfo:
           self._check_serialization([row], schema=schema)
-        assert ("Parquet data source does not support void data type" 
+        assert (f"Parquet data source does not support {VOID_TYPE} data type" 
           in str(excinfo.value))
 
 
@@ -565,11 +570,18 @@ class TestRowAdapter(unittest.TestCase):
     # (same with map<null, null>)
     schema = self._check_schema(
                       rows,
-                      [('id', 'bigint'), ('l', 'array<void>')])
+                      [('id', 'bigint'),
+                      ('l', 'array<void>') 
+                        if not self._is_spark_2x() else ('l', 'array<null>')
+                      ])
     with pytest.raises(Exception) as excinfo:
       self._check_serialization(rows, schema=schema)
-    assert ("Parquet data source does not support array<void> data type" 
-      in str(excinfo.value))
+    if self._is_spark_2x():
+      assert ("Parquet data source does not support array<null> data type" 
+        in str(excinfo.value))
+    else:
+      assert ("Parquet data source does not support array<void> data type" 
+        in str(excinfo.value))
 
     # WORKAROUND: If you compute a schema based upon a prototype row, then you
     # can use that schema to write empty containers
@@ -676,11 +688,11 @@ class TestRowAdapter(unittest.TestCase):
     with pytest.raises(TypeError) as excinfo:
       self._check_serialization(rows, do_adaption=False)
     
-    # pypark<3.3.1
-    # assert "not supported type: <class 'numpy.ndarray'>" in str(excinfo.value)
-
-    # pyspark>=3.3.1
-    assert "Unable to infer the type of the field x" in str(excinfo.value)
+    if self._is_spark_2x():
+      assert "not supported type: <class 'numpy.ndarray'>" in str(excinfo.value)
+    else:
+      # pyspark>=3.3.1
+      assert "Unable to infer the type of the field x" in str(excinfo.value)
 
 
   def test_built_in_slotted(self):
@@ -693,12 +705,13 @@ class TestRowAdapter(unittest.TestCase):
     with pytest.raises(TypeError) as excinfo:
       self._check_serialization(rows, do_adaption=False)
     
-    # pypark<3.3.1
-    # assert ("not supported type: <class 'oarphpy_test.test_spark.Slotted'>"
-    #   in str(excinfo.value))
-
-    # pyspark>=3.3.1
-    assert "Unable to infer the type of the field x" in str(excinfo.value)
+    if self._is_spark_2x():
+      assert \
+        ("not supported type: <class 'oarphpy_test.test_spark.Slotted'>"
+        in str(excinfo.value))
+    else:
+      # pyspark>=3.3.1
+      assert "Unable to infer the type of the field x" in str(excinfo.value)
 
 
   def test_built_in_contained_udt(self):
@@ -727,7 +740,11 @@ class TestRowAdapter(unittest.TestCase):
     values_field = [
       f for f in DenseVector.__UDT__.sqlType().fields if f.name == 'values'
     ][0]
-    assert str(values_field.dataType) == 'ArrayType(DoubleType(), False)'
+
+    if self._is_spark_2x():
+      assert str(values_field.dataType) == 'ArrayType(DoubleType,false)'
+    else:
+      assert str(values_field.dataType) == 'ArrayType(DoubleType(), False)'
 
 
   def test_rowadapter_unslotted(self):
