@@ -283,7 +283,7 @@ class HistogramWithExamplesPlotter(object):
     Returns:
       bokeh layout object with a plot.
     """
-    import pyspark.sql   
+    import pyspark.sql
     assert isinstance(df, pyspark.sql.DataFrame)
     assert col in df.columns
     
@@ -322,7 +322,7 @@ class HistogramWithExamplesPlotter(object):
         source=plot_src, bottom=0, top='count', left='left', right='right',
         color='color', fill_alpha=0.5,
         hover_fill_color='color', hover_fill_alpha=1.0,
-      )#legend_field='legend')
+      )
       legend_items.append(LegendItem(label=str(spv), renderers=[r]))
 
       from bokeh.models import HoverTool
@@ -339,7 +339,6 @@ class HistogramWithExamplesPlotter(object):
             ('Value of %s' % col, '@left'),
           ]))
 
-      #fig.legend.click_policy = 'hide'
     legend = Legend(items=legend_items, click_policy='hide')
     fig.add_layout(legend, "right")
 

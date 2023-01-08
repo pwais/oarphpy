@@ -26,8 +26,5 @@ RUN \
     python3 \
     python3-pip
 
-## Newer pytest can have issues with this version of Python / Ubuntu
-#RUN pip3 install pytest==6.2.5
-
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy

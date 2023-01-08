@@ -79,6 +79,7 @@ SPARK_DEPS = [
 if not HAVE_SYSTEM_SPARK:
   SPARK_DEPS += ['pyspark>=3.0.1']
 
+# Tensorflow support is DEPRECATED!
 TF_DEPS = [
   'crcmod', # TFRecords + GCloud needs this
 ] # User must bring their own tensorflow (GPU or CPU)
@@ -102,7 +103,6 @@ UTILS = [
   'imageio',
 
   # For oarphpy.plotting
-  # 'bokeh==1.0.4',
   'bokeh==3.0.3',
 
   # For misc utils

@@ -759,11 +759,8 @@ class SessionFactory(object):
           raise Exception(msg)
       raise
 
-    
-
     # To show info logs
     # spark.sparkContext.setLogLevel('INFO')
-    spark.sparkContext.setLogLevel('ERROR')
 
     egg_path = cls.create_egg()
     if egg_path:

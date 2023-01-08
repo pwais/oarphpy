@@ -146,23 +146,13 @@ RUN \
 ## Used for **testing** oarhpy.plotting / bokeh
 RUN \
   apt-get install -y firefox-geckodriver && \
-  pip3 install selenium==4.7.2 
-  # && \
-  # cd /tmp && \
-  # curl -L --retry 3 https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 | \
-  #   tar xvjf - && \
-  # cp phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/ && \
-  # rm -rf phantomjs-2.1.1-linux-x86_64 && \
-  # cd -
+  pip3 install selenium==4.7.2
 
 ## Include oarphpy
 COPY docker/bashrc /etc/bash.bashrc
 RUN chmod a+rwx /etc/bash.bashrc
 
-## FIXME pip3-install-editable isn't giving us the desired version of pandas
-##RUN pip3 install --upgrade --force-reinstall pandas>=1.1.2
-
-# Shallow copy for faster iteration
+# Shallow copy install stuff for faster iteration
 COPY ./setup.py /tmp/install-op/setup.py
 COPY ./oarphpy/__init__.py /tmp/install-op/oarphpy/__init__.py
 RUN cd /tmp/install-op && pip3 install -e ".[all]" && rm -rf /tmp/install-op
