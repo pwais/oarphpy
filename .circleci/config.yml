@@ -2,6 +2,7 @@ version: 2
 jobs:
   build:
     machine: true
+      image: ubuntu-2004:202010-01
     steps:
       - checkout
       - run:
