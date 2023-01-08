@@ -73,9 +73,17 @@ OP_CONTAINER_NAME = os.environ.get('OP_CONTAINER_NAME', 'oarphpy')
 ## Utils 
 
 def get_oarphpy_version(op_root):
-  import importlib.machinery
   path = os.path.join(op_root, 'oarphpy/__init__.py')
-  m = importlib.machinery.SourceFileLoader('_', path).load_module()
+  
+  try:
+    # System python is 3.x
+    import importlib.machinery
+    m = importlib.machinery.SourceFileLoader('_', path).load_module()
+  except Exception as e:
+    # System python is 2.x; this is deprecated in 3.x
+    import imp
+    m = imp.load_source('_', path)
+
   return m.__version__
 
 
