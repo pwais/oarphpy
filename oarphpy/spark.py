@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import pickle
 import sys
 from collections import Counter
 from contextlib import contextmanager
@@ -1013,6 +1014,12 @@ class CloudpickeledCallable(object):
 
   __slots__ = ('_func', '_func_pyclass')
 
+  # Most Python 3.x distributions don't have newer than pickle 4, so stick
+  # to version 4 for compatibility.  FMI:
+  #   * https://stackoverflow.com/a/23582505
+  #   * https://peps.python.org/pep-3154/
+  PICKLE_PROTOCOL = min(4, pickle.HIGHEST_PROTOCOL)
+
   @staticmethod
   def _get_func_name(func):
     module = '<unknown_module>'
@@ -1048,7 +1055,8 @@ class CloudpickeledCallable(object):
       func_bytes = bytearray()
     else:
       import cloudpickle
-      func_bytes = bytearray(cloudpickle.dumps(cc._func))
+      func_bytes = bytearray(
+        cloudpickle.dumps(cc._func, protocol=cls.PICKLE_PROTOCOL))
     
     return CloudpickeledCallableData(
               func_bytes=func_bytes,
