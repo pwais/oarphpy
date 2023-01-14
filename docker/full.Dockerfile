@@ -40,34 +40,19 @@ RUN \
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 
 
-### Spark (& Hadoop)
-### Use a binary distro for:
-###  * Spark LZ4 support through Hadoop
-###  * Spark env file hacking (e.g. debug / profiling)
-ENV HADOOP_VERSION 3.3.4
-ENV HADOOP_HOME /opt/hadoop
-ENV HADOOP_CONF_DIR $HADOOP_HOME/etc/hadoop
-ENV PATH $PATH:$HADOOP_HOME/bin
-ENV LD_LIBRARY_PATH "$HADOOP_HOME/lib/native/:$LD_LIBRARY_PATH"
-RUN curl -L --retry 3 \
-  "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz" \
-  | gunzip \
-  | tar -x -C /opt/ \
- && mv /opt/hadoop-$HADOOP_VERSION $HADOOP_HOME \
- && rm -rf $HADOOP_HOME/share/doc
-
-ENV SPARK_VERSION 3.3.1
-ENV SPARK_PACKAGE spark-${SPARK_VERSION}-bin-without-hadoop
+## Spark, now with built-in Hadoop
 ENV SPARK_HOME /opt/spark
-ENV PYSPARK_PYTHON=python3
-ENV SPARK_DIST_CLASSPATH "$HADOOP_HOME/etc/hadoop/*:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*:$HADOOP_HOME/share/hadoop/tools/lib/*"
-ENV PATH $PATH:${SPARK_HOME}/bin
+ENV SPARK_VERSION 3.3.1
+ENV SPARK_PACKAGE spark-${SPARK_VERSION}-bin-hadoop3
 RUN curl -L --retry 3 \
-  "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=spark/spark-${SPARK_VERSION}/${SPARK_PACKAGE}.tgz" \
-  | gunzip \
-  | tar x -C /opt/ \
- && mv /opt/$SPARK_PACKAGE $SPARK_HOME
-RUN cd /opt/spark/python && python3 setup.py install
+  "https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" \
+  | tar xz -C /opt/ \
+  && mv /opt/$SPARK_PACKAGE $SPARK_HOME
+
+ENV PYSPARK_PYTHON python3
+ENV PATH $PATH:${SPARK_HOME}/bin
+RUN cd $SPARK_HOME/python && python3 setup.py install
+
 
 # Spark install above appears to default to INFO for logs, perhaps via Hadoop.
 # Let's make the WARN instead (the prior standard):
@@ -82,13 +67,13 @@ RUN \
   echo "log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n" >> /opt/spark/conf/log4j.properties
 
 
-# GCloud with Spark / Hadoop support
+# GCloud with Spark Support
 RUN \
   curl https://sdk.cloud.google.com | bash && \
   pip3 install -U crcmod && \
   pip3 install --upgrade google-api-python-client && \
   pip3 install --upgrade oauth2client && \
-    cd /opt/hadoop/share/hadoop/common/lib && \
+    cd $SPARK_HOME/jars && \
     wget https://storage.googleapis.com/hadoop-lib/gcs/gcs-connector-hadoop3-latest.jar && \
     cd -
 ENV PATH $PATH:/root/google-cloud-sdk/bin/

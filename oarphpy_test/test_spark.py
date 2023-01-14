@@ -51,6 +51,42 @@ def test_spark_selftest():
 
 
 @skip_if_no_spark
+def test_spark_has_lz4():
+  import pyspark
+  if pyspark.__version__.startswith('2.'):
+    pytest.skip("Spark-2 environment doesn't have LZ4")
+
+  TEST_TEMPDIR = testutil.test_tempdir('test_spark_has_lz4')
+  
+  from oarphpy import spark as S
+  with testutil.LocalSpark.sess() as spark:
+    from pyspark.sql import Row
+    df = spark.createDataFrame([Row(a=1, b=2.0)] * 1000)
+    df.write.parquet(path=os.path.join(TEST_TEMPDIR, 'out'), compression='lz4')
+
+    dfr = spark.read.parquet(os.path.join(TEST_TEMPDIR, 'out'))
+    assert dfr.count() == 1000
+
+
+@skip_if_no_spark
+def test_spark_has_zstd():
+  import pyspark
+  if pyspark.__version__.startswith('2.'):
+    pytest.skip("Spark-2 environment doesn't have ZSTD")
+
+  TEST_TEMPDIR = testutil.test_tempdir('test_spark_has_zstd')
+  
+  from oarphpy import spark as S
+  with testutil.LocalSpark.sess() as spark:
+    from pyspark.sql import Row
+    df = spark.createDataFrame([Row(a=1, b=2.0)] * 1000)
+    df.write.parquet(path=os.path.join(TEST_TEMPDIR, 'out'), compression='zstd')
+
+    dfr = spark.read.parquet(os.path.join(TEST_TEMPDIR, 'out'))
+    assert dfr.count() == 1000
+
+
+@skip_if_no_spark
 def test_spark_with_custom_library_script():
   # We must run this test in a subprocess in order for it to have an isolated
   # Spark session
@@ -1000,26 +1036,9 @@ class TestRowAdapter(unittest.TestCase):
 
     df = self._check_serialization(rows)
     EXPECTED_ALL = """
-                                                                                  0                                                1
-    id                                                                            1                                                2
-    np_number                                                                   1.0                                              2.0
-    a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
-    b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
-    c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
-    d                                  (oarphpy_test.test_spark.Slotted, 5, abc, 1)                                             None
-    e                                [(oarphpy_test.test_spark.Slotted, 6, def, 1)]                                               []
-    f                                     (oarphpy_test.test_spark.Unslotted, 4, 1)                                             None
-    g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
-    h                                                                        (1, 2)                                           (3, 3)
-    """
-    
-    # DEPRECATED: pyspark 2.x is deprecated
-    import pyspark
-    if pyspark.__version__.startswith('2.'):
-      EXPECTED_ALL = """
-                                                                                  0                                                1
+                                                                                    0                                                1
       id                                                                            1                                                2
-      np_number                                                                     1                                                2
+      np_number                                                                   1.0                                              2.0
       a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
       b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
       c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
@@ -1029,6 +1048,23 @@ class TestRowAdapter(unittest.TestCase):
       g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
       h                                                                        (1, 2)                                           (3, 3)
       """
+    
+    # DEPRECATED: pyspark 2.x is deprecated
+    import pyspark
+    if pyspark.__version__.startswith('2.'):
+      EXPECTED_ALL = """
+                                                                                      0                                                1
+        id                                                                            1                                                2
+        np_number                                                                     1                                                2
+        a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
+        b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
+        c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
+        d                                  (oarphpy_test.test_spark.Slotted, 5, abc, 1)                                             None
+        e                                [(oarphpy_test.test_spark.Slotted, 6, def, 1)]                                               []
+        f                                     (oarphpy_test.test_spark.Unslotted, 4, 1)                                             None
+        g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
+        h                                                                        (1, 2)                                           (3, 3)
+        """
 
 
     self._pandas_compare_str(df.orderBy('id').toPandas().T, EXPECTED_ALL)
