@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM oarphpy/lambda-stack:20.04
+FROM oarphpy/lambda-stack:22.04
 
 # We don't care for __pycache__ and .pyc files; sometimes VSCode doesn't clean
 # up properly when deleting things and the cache gets stale.
@@ -26,7 +26,7 @@ RUN \
   apt-get install -y \
     curl \
     git \
-    python-dev \
+    python-dev-is-python3 \
     python3-pip \
     python3-dev \
     wget
@@ -42,12 +42,11 @@ ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
 
 ## Spark, now with built-in Hadoop
 ENV SPARK_HOME /opt/spark
-ENV SPARK_VERSION 3.3.1
-ENV SPARK_PACKAGE spark-${SPARK_VERSION}-bin-hadoop3
+ENV SPARK_VERSION 3.3.2
 RUN curl -L --retry 3 \
   "https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz" \
   | tar xz -C /opt/ \
-  && mv /opt/$SPARK_PACKAGE $SPARK_HOME
+  && mv /opt/spark-${SPARK_VERSION}-bin-hadoop3 $SPARK_HOME
 
 ENV PYSPARK_PYTHON python3
 ENV PATH $PATH:${SPARK_HOME}/bin
@@ -127,22 +126,41 @@ RUN \
   jupyter nbextension install sparkmonitor --py && \
   jupyter nbextension enable  sparkmonitor --py
 
-## Phantomjs and Selenium
+## Selenium
 ## Used for **testing** oarhpy.plotting / bokeh
+RUN pip3 install selenium==4.7.2
+
+# TODO try to use firefox-geckodriver for 22.04 in the future https://askubuntu.com/a/1403204
 RUN \
-  apt-get install -y firefox-geckodriver && \
-  pip3 install selenium==4.7.2
+  apt-get install -y software-properties-common && \
+  add-apt-repository ppa:mozillateam/firefox-next && \
+  apt-get update && \
+  apt-get install -y firefox=111.0~b7+build1-0ubuntu0.22.04.1 firefox-geckodriver
+  #  && \
+  # pip3 install webdriver-manager  && \
+  # python3 -c 'from selenium import webdriver; \
+  #     from selenium.webdriver.firefox.options import Options; \
+  #     from selenium.webdriver.firefox.service import Service as FirefoxService; \
+  #     from webdriver_manager.firefox import GeckoDriverManager; \
+  #     driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))'
+
 
 ## Include oarphpy
 COPY docker/bashrc /etc/bash.bashrc
 RUN chmod a+rwx /etc/bash.bashrc
 
+# FIXME Somebody installs "flatbuffers-1.12.1-git20200711.33e2d80-dfsg1-0.6" which breaks setuptools
+RUN pip3 install "flatbuffers==2.0"
+
+# FIXME https://github.com/pypa/setuptools/issues/3772#issuecomment-1384671296
+RUN pip3 install "setuptools==65.7.0"
+
 # Shallow copy install stuff for faster iteration
 COPY ./setup.py /tmp/install-op/setup.py
 COPY ./oarphpy/__init__.py /tmp/install-op/oarphpy/__init__.py
-RUN cd /tmp/install-op && pip3 install -e ".[all]" && rm -rf /tmp/install-op
+RUN cd /tmp/install-op && pip3 install -v -e ".[all]" && rm -rf /tmp/install-op
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
 
-RUN pip3 install -e ".[all]"
+RUN pip3 install -v -e ".[all]"

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG UBUNTU_VERSION=20.04
+ARG UBUNTU_VERSION=22.04
 
 FROM ubuntu:${UBUNTU_VERSION} as base
 
