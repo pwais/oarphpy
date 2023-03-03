@@ -108,7 +108,7 @@ def build_and_push_3p_images():
     (rm -rf lambda-stack-dockerfiles || true) &&
     git clone https://github.com/lambdal/lambda-stack-dockerfiles &&
     cd lambda-stack-dockerfiles &&
-    git checkout d762400d61636c074533416674426a84cc4d8992 && 
+    git checkout d762400d61636c074533416674426a84cc4d8992 &&
     docker build -t oarphpy/lambda-stack:22.04 -f Dockerfile.jammy . &&
     docker push oarphpy/lambda-stack:22.04
     """)
