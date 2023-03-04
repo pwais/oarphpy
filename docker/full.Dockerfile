@@ -108,23 +108,35 @@ RUN \
   pip3 install --upgrade imageio-ffmpeg
 
 # Jupyter & friends
-RUN apt-get remove -y python3-zmq && pip3 install scikit-learn
-RUN pip3 install \
-      jupyterlab==3.5.2 \
-      matplotlib \
-      jupyter_http_over_ws ipykernel nbformat \
-      scipy && \
-    jupyter serverextension enable --py jupyter_http_over_ws && \
-    ln -s /usr/bin/ipython3 /usr/bin/ipython
+# RUN apt-get remove -y python3-zmq && pip3 install scikit-learn
+RUN \
+  apt-get install -y nodejs && \
+  pip3 install \
+    jupyterlab==3.5.2 \
+    ipykernel \
+    ipywidgets \
+    jupyter_http_over_ws \
+    jupyterlab_widgets \
+    matplotlib \
+    nbformat \
+    scipy \
+    widgetsnbextension \
+  && \
+  jupyter serverextension enable --py jupyter_http_over_ws && \
+  ln -s /usr/bin/ipython3 /usr/bin/ipython
 
-# SparkMonitor from https://github.com/swan-cern/jupyter-extensions
-RUN \ 
+# SparkMonitor from https://github.com/swan-cern/sparkmonitor
+RUN \
   pip3 install sparkmonitor==2.1.1 && \
   ipython profile create && \
   echo "c.InteractiveShellApp.extensions.append('sparkmonitor.kernelextension')" >> \
     $(ipython profile locate default)/ipython_kernel_config.py && \
   jupyter nbextension install sparkmonitor --py && \
   jupyter nbextension enable  sparkmonitor --py
+
+# Finally, make sure jupyter lab is built
+RUN jupyter lab build --debug
+
 
 ## Selenium
 ## Used for **testing** oarhpy.plotting / bokeh
@@ -135,14 +147,7 @@ RUN \
   apt-get install -y software-properties-common && \
   add-apt-repository ppa:mozillateam/firefox-next && \
   apt-get update && \
-  apt-get install -y firefox=111.0~b7+build1-0ubuntu0.22.04.1 firefox-geckodriver
-  #  && \
-  # pip3 install webdriver-manager  && \
-  # python3 -c 'from selenium import webdriver; \
-  #     from selenium.webdriver.firefox.options import Options; \
-  #     from selenium.webdriver.firefox.service import Service as FirefoxService; \
-  #     from webdriver_manager.firefox import GeckoDriverManager; \
-  #     driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))'
+  apt-get install -y firefox=111.0~b8+build1-0ubuntu0.22.04.1 firefox-geckodriver 
 
 
 ## Include oarphpy
@@ -162,5 +167,6 @@ RUN cd /tmp/install-op && pip3 install -v -e ".[all]" && rm -rf /tmp/install-op
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
+ENV PYTHONPATH $PYTHONPATH:/opt/oarphpy
 
 RUN pip3 install -v -e ".[all]"
