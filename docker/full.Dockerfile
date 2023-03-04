@@ -108,7 +108,6 @@ RUN \
   pip3 install --upgrade imageio-ffmpeg
 
 # Jupyter & friends
-# RUN apt-get remove -y python3-zmq && pip3 install scikit-learn
 RUN \
   apt-get install -y nodejs && \
   pip3 install \
