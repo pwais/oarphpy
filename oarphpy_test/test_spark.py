@@ -122,7 +122,7 @@ def test_spark_with_custom_library_in_notebook():
   # We need to fork off nbconvert to run the test
   TEST_CMD = """
     cd /tmp && 
-    PYTHONPATH=$PYTHONPATH:/opt/oarphpy jupyter-nbconvert \
+    jupyter-nbconvert \
         --ExecutePreprocessor.timeout=3600 \
         --to notebook --execute --output /tmp/out \
       {notebook_path}
