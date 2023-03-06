@@ -3,20 +3,25 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>oarphpy.util.thruput_observer &mdash; oarphpy 0.1.0 documentation</title>
+  <title>oarphpy.util.thruput_observer &mdash; oarphpy 0.1.1 documentation</title>
   
 
   
   <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
 
   
   
+
   
+  
+
   
 
   
@@ -26,10 +31,9 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -49,7 +53,7 @@
           
 
           
-            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> oarphpy
+            <a href="../../../index.html" class="icon icon-home"> oarphpy
           
 
           
@@ -120,6 +124,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -144,7 +150,7 @@
            <div itemprop="articleBody">
             
   <h1>Source code for oarphpy.util.thruput_observer</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Copyright 2020 Maintainers of OarphPy</span>
+<span></span><span class="c1"># Copyright 2023 Maintainers of OarphPy</span>
 <span class="c1">#</span>
 <span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
@@ -164,7 +170,7 @@
 
 
 <div class="viewcode-block" id="ThruputObserver"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver">[docs]</a><span class="k">class</span> <span class="nc">ThruputObserver</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;A utility for measuring the runtime and throughput of a subroutine.</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;A utility for measuring the runtime and throughput of a subroutine.</span>
 <span class="sd">  Similar in spirit to `tqdm`, except `ThruputObserver`:</span>
 <span class="sd">   * Tracks not just time but a size metric (e.g. memory) in bytes</span>
 <span class="sd">   * Reports percentiles</span>
@@ -197,7 +203,7 @@
   
 <div class="viewcode-block" id="ThruputObserver.observe"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver.observe">[docs]</a>  <span class="nd">@contextmanager</span>
   <span class="k">def</span> <span class="nf">observe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">num_bytes</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    NB: contextmanagers appear to be expensive due to object creation.</span>
 <span class="sd">    Use ThurputObserver#{start,stop}_block() for &lt;10ms ops. </span>
 <span class="sd">    FMI https://stackoverflow.com/questions/34872535/why-contextmanager-is-slow</span>
@@ -240,7 +246,7 @@
 
 <div class="viewcode-block" id="ThruputObserver.union"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver.union">[docs]</a>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">union</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">thruputs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Support reduction for use in e.g. MapReduce jobs as a counter&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Support reduction for use in e.g. MapReduce jobs as a counter&quot;&quot;&quot;</span>
     <span class="n">u</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">thruputs</span><span class="p">:</span>
       <span class="n">u</span> <span class="o">+=</span> <span class="n">t</span>
@@ -361,7 +367,7 @@
 
 <div class="viewcode-block" id="ThruputObserver.monitoring_tensor"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor">[docs]</a>  <span class="nd">@staticmethod</span>
   <span class="k">def</span> <span class="nf">monitoring_tensor</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">tensor</span><span class="p">,</span> <span class="o">**</span><span class="n">observer_init_kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Monitor the size of the given tensorflow `Tensor` and record a</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Monitor the size of the given tensorflow `Tensor` and record a</span>
 <span class="sd">    text TF Summary with the contents of this ThruputObserver.&quot;&quot;&quot;</span>
 
     <span class="k">class</span> <span class="nc">Observer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -391,7 +397,7 @@
   
 <div class="viewcode-block" id="ThruputObserver.wrap_func"><a class="viewcode-back" href="../../../index.html#oarphpy.util.thruput_observer.ThruputObserver.wrap_func">[docs]</a>  <span class="nd">@staticmethod</span>
   <span class="k">def</span> <span class="nf">wrap_func</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">**</span><span class="n">observer_init_kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Decorate `func` and observe a block on each call&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorate `func` and observe a block on each call&quot;&quot;&quot;</span>
     <span class="k">class</span> <span class="nc">MonitoredFunc</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
       <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">,</span> <span class="s1">&#39;observer&#39;</span><span class="p">)</span>
       <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">observer_init_kwargs</span><span class="p">):</span>
@@ -436,28 +442,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Maintainers of OarphPy
+        &#169; Copyright 2020, Maintainers of OarphPy.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

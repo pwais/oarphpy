@@ -3,20 +3,25 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>oarphpy.spark &mdash; oarphpy 0.1.0 documentation</title>
+  <title>oarphpy.spark &mdash; oarphpy 0.1.1 documentation</title>
   
 
   
   <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
 
   
   
+
   
+  
+
   
 
   
@@ -26,10 +31,9 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
     
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
@@ -49,7 +53,7 @@
           
 
           
-            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> oarphpy
+            <a href="../../index.html" class="icon icon-home"> oarphpy
           
 
           
@@ -120,6 +124,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -144,7 +150,7 @@
            <div itemprop="articleBody">
             
   <h1>Source code for oarphpy.spark</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Copyright 2020 Maintainers of OarphPy</span>
+<span></span><span class="c1"># Copyright 2023 Maintainers of OarphPy</span>
 <span class="c1">#</span>
 <span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
@@ -159,6 +165,7 @@
 <span class="c1"># limitations under the License.</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
@@ -214,7 +221,7 @@
 <span class="s2">      That will fix import errors.  To get Java, try:</span>
 <span class="s2">        $ apt-get install -y openjdk-11-jdk &amp;&amp; echo JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 &gt;&gt; /etc/environment</span>
 <span class="s2">      If you have spark installed locally (e.g. from source), set $SPARK_HOME</span>
-<span class="s2">      *** Original error: </span><span class="si">%s</span><span class="s2"></span>
+<span class="s2">      *** Original error: </span><span class="si">%s</span>
 <span class="s2">  &quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,)</span>
   <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
@@ -231,7 +238,7 @@
 
 
 <div class="viewcode-block" id="for_each_executor"><a class="viewcode-back" href="../../index.html#oarphpy.spark.for_each_executor">[docs]</a><span class="k">def</span> <span class="nf">for_each_executor</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">thunk</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;While Spark does not officially provide an API since the number</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;While Spark does not officially provide an API since the number</span>
 <span class="sd">  of executors can change through the course of a job, this approach</span>
 <span class="sd">  leverages the best practices to evaluate `thunk` at most once per</span>
 <span class="sd">  executor.&quot;&quot;&quot;</span>
@@ -259,7 +266,7 @@
 
 
 <div class="viewcode-block" id="cluster_cpu_count"><a class="viewcode-back" href="../../index.html#oarphpy.spark.cluster_cpu_count">[docs]</a><span class="k">def</span> <span class="nf">cluster_cpu_count</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Like `os.cpu_count()` but for an entire Spark cluster.  Useful for</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Like `os.cpu_count()` but for an entire Spark cluster.  Useful for</span>
 <span class="sd">  scalling memory-intensive jobs that use the RDD api.&quot;&quot;&quot;</span>
   <span class="k">def</span> <span class="nf">get_cpu_count</span><span class="p">():</span>
     <span class="kn">import</span> <span class="nn">multiprocessing</span>
@@ -292,7 +299,7 @@
 
 
 <div class="viewcode-block" id="union_dfs"><a class="viewcode-back" href="../../index.html#oarphpy.spark.union_dfs">[docs]</a><span class="k">def</span> <span class="nf">union_dfs</span><span class="p">(</span><span class="o">*</span><span class="n">dfs</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Return the union of a sequence DataFrames and attempt to merge</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Return the union of a sequence DataFrames and attempt to merge</span>
 <span class="sd">  the schemas of each (i.e. union of all columns).</span>
 <span class="sd">  Based upon https://stackoverflow.com/a/40404249</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -338,7 +345,7 @@
 
 
 <div class="viewcode-block" id="get_balanced_sample"><a class="viewcode-back" href="../../index.html#oarphpy.spark.get_balanced_sample">[docs]</a><span class="k">def</span> <span class="nf">get_balanced_sample</span><span class="p">(</span><span class="n">spark_df</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">n_per_category</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1337</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Given a column `col` in `spark_df`, return a *balanced* sample</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Given a column `col` in `spark_df`, return a *balanced* sample</span>
 <span class="sd">  (countering class imbalances in `spark_df[col]`).  Optionally limit the</span>
 <span class="sd">  sample to having up to `n_per_category` examples for every distinct</span>
 <span class="sd">  categorical value of `spark_df[col]`.&quot;&quot;&quot;</span>
@@ -361,27 +368,27 @@
 <span class="c1">### Test Utilities (for unit tests and other debugging)</span>
 
 <div class="viewcode-block" id="cluster_get_info"><a class="viewcode-back" href="../../index.html#oarphpy.spark.cluster_get_info">[docs]</a><span class="k">def</span> <span class="nf">cluster_get_info</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Return a text report showing various details about each worker in the</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Return a text report showing various details about each worker in the</span>
 <span class="sd">  cluster.&quot;&quot;&quot;</span>
 
   <span class="n">infos</span> <span class="o">=</span> <span class="n">for_each_executor</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">util</span><span class="o">.</span><span class="n">get_sys_info</span><span class="p">())</span>
   <span class="k">def</span> <span class="nf">format_info</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
     <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">      Host: </span><span class="si">{hostname}</span><span class="s2"> </span><span class="si">{host}</span><span class="s2"></span>
-<span class="s2">      Egg: </span><span class="si">{filepath}</span><span class="s2"></span>
-<span class="s2">      Internet connectivity: </span><span class="si">{have_internet}</span><span class="s2"></span>
-<span class="s2">      Num CPUs: </span><span class="si">{n_cpus}</span><span class="s2"></span>
+<span class="s2">      Host: </span><span class="si">{hostname}</span><span class="s2"> </span><span class="si">{host}</span>
+<span class="s2">      Egg: </span><span class="si">{filepath}</span>
+<span class="s2">      Internet connectivity: </span><span class="si">{have_internet}</span>
+<span class="s2">      Num CPUs: </span><span class="si">{n_cpus}</span>
 <span class="s2">      Memory:</span>
-<span class="s2">      </span><span class="si">{memory}</span><span class="s2"></span>
+<span class="s2">      </span><span class="si">{memory}</span>
 
 <span class="s2">      PYTHONPATH:</span>
-<span class="s2">      </span><span class="si">{PYTHONPATH}</span><span class="s2"></span>
+<span class="s2">      </span><span class="si">{PYTHONPATH}</span>
 
 <span class="s2">      nvidia-smi:</span>
-<span class="s2">      </span><span class="si">{nvidia_smi}</span><span class="s2"></span>
+<span class="s2">      </span><span class="si">{nvidia_smi}</span>
 
 <span class="s2">      Disk:</span>
-<span class="s2">      </span><span class="si">{disk_free}</span><span class="s2"></span>
+<span class="s2">      </span><span class="si">{disk_free}</span>
 <span class="s2">      &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">info</span><span class="p">)</span>
     <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span>
   <span class="n">info_str</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">format_info</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">)</span>
@@ -389,7 +396,7 @@
 
 
 <div class="viewcode-block" id="test_pi"><a class="viewcode-back" href="../../index.html#oarphpy.spark.test_pi">[docs]</a><span class="k">def</span> <span class="nf">test_pi</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Run the &quot;textbook&quot; Monte Carlo Pi Sampling demo and assert correctness.</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Run the &quot;textbook&quot; Monte Carlo Pi Sampling demo and assert correctness.</span>
 <span class="sd">  When run on a cluster, this test can help suss out networking issues</span>
 <span class="sd">  between the master and worker machines.&quot;&quot;&quot;</span>
   <span class="n">util</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running PI ...&quot;</span><span class="p">)</span>
@@ -412,7 +419,7 @@
 
 
 <div class="viewcode-block" id="test_egg"><a class="viewcode-back" href="../../index.html#oarphpy.spark.test_egg">[docs]</a><span class="k">def</span> <span class="nf">test_egg</span><span class="p">(</span><span class="n">spark</span><span class="p">,</span> <span class="n">modname</span><span class="o">=</span><span class="s1">&#39;oarphpy&#39;</span><span class="p">,</span> <span class="n">test_egg_contents</span><span class="o">=</span><span class="n">_op_test</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Test the egg that `SessFactory` (below) dynamically builds and includes</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Test the egg that `SessFactory` (below) dynamically builds and includes</span>
 <span class="sd">  in spark jobs.  We&#39;ll run the function `test_egg_contents` on each worker</span>
 <span class="sd">  to actually execute code included in the egg.</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -460,7 +467,7 @@
 
 
 <div class="viewcode-block" id="test_tensorflow"><a class="viewcode-back" href="../../index.html#oarphpy.spark.test_tensorflow">[docs]</a><span class="k">def</span> <span class="nf">test_tensorflow</span><span class="p">(</span><span class="n">spark</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Remotely test Tensorflow support in the given `spark` cluster&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Remotely test Tensorflow support in the given `spark` cluster&quot;&quot;&quot;</span>
 
   <span class="k">def</span> <span class="nf">test_and_get_info</span><span class="p">():</span>
     <span class="kn">import</span> <span class="nn">random</span>
@@ -615,7 +622,7 @@
 
 
 <div class="viewcode-block" id="SessionFactory"><a class="viewcode-back" href="../../index.html#oarphpy.spark.SessionFactory">[docs]</a><span class="k">class</span> <span class="nc">SessionFactory</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;This class is a factory for pre-configured `SparkSession` instances.  A</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;This class is a factory for pre-configured `SparkSession` instances.  A</span>
 <span class="sd">  primary feaure of this factory is that it automagically includes the caller&#39;s</span>
 <span class="sd">  python module as a Spark PyFile, thus effectively shipping the user&#39;s python</span>
 <span class="sd">  project with the Spark job.  This class also helps centralize project-wide</span>
@@ -803,7 +810,7 @@
 
 <div class="viewcode-block" id="SessionFactory.create_egg"><a class="viewcode-back" href="../../index.html#oarphpy.spark.SessionFactory.create_egg">[docs]</a>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">create_egg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">force_new</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Build a Python Egg from the current project and return a path</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a Python Egg from the current project and return a path</span>
 <span class="sd">    to the artifact.  The path may be to a cached, pre-computed egg only</span>
 <span class="sd">    if not `force_new`.  The &#39;current project&#39; is either class-defaulted or</span>
 <span class="sd">    auto-deduced.</span>
@@ -852,7 +859,7 @@
 
 <div class="viewcode-block" id="SessionFactory.getOrCreate"><a class="viewcode-back" href="../../index.html#oarphpy.spark.SessionFactory.getOrCreate">[docs]</a>  <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">getOrCreate</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Spark sessions are typically instantiated using the</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spark sessions are typically instantiated using the</span>
 <span class="sd">    `Builder.getOrCreate()` or `SparkSession.getOrCreate()` methods.  This</span>
 <span class="sd">    method is a drop-in replacement that uses class-specified defaults,</span>
 <span class="sd">    includes the local python module as a PyFile, etc.</span>
@@ -900,11 +907,12 @@
 <span class="s2">            Java 8 or higher. Looks like you might be missing Java. To get it,</span>
 <span class="s2">            try:</span>
 <span class="s2">              $ apt-get update &amp;&amp; apt-get install -y openjdk-8-jdk &amp;&amp; echo JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 &gt;&gt; /etc/environment</span>
-<span class="s2">            Original error: </span><span class="si">%s</span><span class="s2"></span>
+<span class="s2">            Original error: </span><span class="si">%s</span>
 <span class="s2">          &quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,)</span>
           <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
       <span class="k">raise</span>
 
+    <span class="c1"># To show info logs</span>
     <span class="c1"># spark.sparkContext.setLogLevel(&#39;INFO&#39;)</span>
 
     <span class="n">egg_path</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">create_egg</span><span class="p">()</span>
@@ -935,7 +943,7 @@
     <span class="k">return</span> <span class="kc">True</span></div>
 
 <div class="viewcode-block" id="LocalK8SSpark"><a class="viewcode-back" href="../../index.html#oarphpy.spark.LocalK8SSpark">[docs]</a><span class="k">class</span> <span class="nc">LocalK8SSpark</span><span class="p">(</span><span class="n">SessionFactory</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Example of how to subclass the Spark factory above for use with K8S&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Example of how to subclass the Spark factory above for use with K8S&quot;&quot;&quot;</span>
   <span class="n">MASTER</span> <span class="o">=</span> <span class="s1">&#39;k8s://http://127.0.0.1:8001&#39;</span>
   <span class="n">CONF_KV</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;spark.kubernetes.container.image&#39;</span><span class="p">:</span> <span class="s1">&#39;my-docker-image&#39;</span><span class="p">,</span> 
@@ -981,7 +989,7 @@
 
 
 <div class="viewcode-block" id="NBSpark"><a class="viewcode-back" href="../../index.html#oarphpy.spark.NBSpark">[docs]</a><span class="k">class</span> <span class="nc">NBSpark</span><span class="p">(</span><span class="n">SessionFactory</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;NBSpark is a session builder for local Jupyter notebooks.  Also includes</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;NBSpark is a session builder for local Jupyter notebooks.  Also includes</span>
 <span class="sd">  support for the `sparkmonitor` jupyter package, see </span>
 <span class="sd">  https://krishnan-r.github.io/sparkmonitor/</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -1052,12 +1060,17 @@
       <span class="c1"># every cell run.  NB:</span>
       <span class="c1"># * `get_ipython()` is a global provided in any IPython-esque session</span>
       <span class="c1"># * Using pre_run_code_hook triggers a UserWarning / deprecation</span>
-      <span class="c1">#     warning, but the suggested events don&#39;t exist ...</span>
-      <span class="kn">import</span> <span class="nn">warnings</span>
-      <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
-        <span class="n">action</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span>
-        <span class="n">message</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Hook pre_run_code_hook is deprecated&#39;</span><span class="p">)</span>
-      <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">set_hook</span><span class="p">(</span><span class="s1">&#39;pre_run_code_hook&#39;</span><span class="p">,</span> <span class="n">maybe_rebuild_egg</span><span class="p">)</span>
+      <span class="c1">#     warning, but the suggested events don&#39;t exist in older IPython</span>
+      <span class="c1"># * In IPython &gt;= 5, using `pre_run_code_hook` throws an error :(</span>
+      <span class="kn">import</span> <span class="nn">IPython</span>
+      <span class="k">if</span> <span class="n">IPython</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span>
+        <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;pre_execute&#39;</span><span class="p">,</span> <span class="n">maybe_rebuild_egg</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+          <span class="n">action</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span>
+          <span class="n">message</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Hook pre_run_code_hook is deprecated&#39;</span><span class="p">)</span>
+        <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">set_hook</span><span class="p">(</span><span class="s1">&#39;pre_run_code_hook&#39;</span><span class="p">,</span> <span class="n">maybe_rebuild_egg</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">spark</span></div></div>
 
@@ -1070,7 +1083,7 @@
 <span class="n">TENSOR_AUTO_PACK_MIN_KBYTES</span> <span class="o">=</span> <span class="mi">2</span>
 
 <div class="viewcode-block" id="Tensor"><a class="viewcode-back" href="../../index.html#oarphpy.spark.Tensor">[docs]</a><span class="k">class</span> <span class="nc">Tensor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;An ndarray-like object designed to store numpy arrays in Parquet / </span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;An ndarray-like object designed to store numpy arrays in Parquet / </span>
 <span class="sd">  Spark SQL format.  Spark&#39;s DenseVector and Matrix unfortunately don&#39;t </span>
 <span class="sd">  support arbitrary tensor shape.  Furthermore, `Tensor` stores data in</span>
 <span class="sd">  an explicit order accessible to external readers such as Eigen in C++</span>
@@ -1114,7 +1127,7 @@
         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
 
 <div class="viewcode-block" id="CloudpickeledCallable"><a class="viewcode-back" href="../../index.html#oarphpy.spark.CloudpickeledCallable">[docs]</a><span class="k">class</span> <span class="nc">CloudpickeledCallable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Wraps callable objects (e.g. functions, including lambdas) and </span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Wraps callable objects (e.g. functions, including lambdas) and </span>
 <span class="sd">  uses `cloudpickle` for serialization.  Spark uses `cloudpickle` for </span>
 <span class="sd">  serializing _tasks_ (e.g. map functions) but uses `pickle` for </span>
 <span class="sd">  serializing _data_.  In particular, data in a Spark RDD or DataFrame</span>
@@ -1153,6 +1166,12 @@
 
   <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_func&#39;</span><span class="p">,</span> <span class="s1">&#39;_func_pyclass&#39;</span><span class="p">)</span>
 
+  <span class="c1"># Most Python 3.x distributions don&#39;t have newer than pickle 4, so stick</span>
+  <span class="c1"># to version 4 for compatibility.  FMI:</span>
+  <span class="c1">#   * https://stackoverflow.com/a/23582505</span>
+  <span class="c1">#   * https://peps.python.org/pep-3154/</span>
+  <span class="n">PICKLE_PROTOCOL</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">)</span>
+
   <span class="nd">@staticmethod</span>
   <span class="k">def</span> <span class="nf">_get_func_name</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
     <span class="n">module</span> <span class="o">=</span> <span class="s1">&#39;&lt;unknown_module&gt;&#39;</span>
@@ -1188,7 +1207,8 @@
       <span class="n">func_bytes</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
       <span class="kn">import</span> <span class="nn">cloudpickle</span>
-      <span class="n">func_bytes</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="n">cloudpickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">_func</span><span class="p">))</span>
+      <span class="n">func_bytes</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span>
+        <span class="n">cloudpickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">_func</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">PICKLE_PROTOCOL</span><span class="p">))</span>
     
     <span class="k">return</span> <span class="n">CloudpickeledCallableData</span><span class="p">(</span>
               <span class="n">func_bytes</span><span class="o">=</span><span class="n">func_bytes</span><span class="p">,</span>
@@ -1221,7 +1241,7 @@
   
 
 <div class="viewcode-block" id="RowAdapter"><a class="viewcode-back" href="../../index.html#oarphpy.spark.RowAdapter">[docs]</a><span class="k">class</span> <span class="nc">RowAdapter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Transforms between custom objects and `pyspark.sql.Row`s used in Spark SQL</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Transforms between custom objects and `pyspark.sql.Row`s used in Spark SQL</span>
 <span class="sd">  or Parquet files. Use to encode numpy arrays and standard Python objects</span>
 <span class="sd">  with a transparent Parquet schema that is accessible to other readers.</span>
 
@@ -1395,7 +1415,7 @@
       <span class="n">non_deterministic_element_order</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
       <span class="n">num_reader_threads</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
       <span class="n">logging_name</span><span class="o">=</span><span class="s1">&#39;spark_tf_dataset&#39;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Create a tf.data.Dataset that reads from the Spark Dataframe</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a tf.data.Dataset that reads from the Spark Dataframe</span>
 <span class="sd">    `spark_df`.  Executes parallel reads using the Tensorflow&#39;s internal</span>
 <span class="sd">    (native code) threadpool.  Each thread reads a single Spark partition</span>
 <span class="sd">    at a time.</span>
@@ -1520,28 +1540,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Maintainers of OarphPy
+        &#169; Copyright 2020, Maintainers of OarphPy.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

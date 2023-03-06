@@ -3,21 +3,26 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Quickstart &mdash; oarphpy 0.1.0 documentation</title>
+  <title>Quickstart &mdash; oarphpy 0.1.1 documentation</title>
   
 
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
 
   
   
+
   
+  
+
   
 
   
@@ -27,10 +32,9 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
@@ -50,7 +54,7 @@
           
 
           
-            <a href="#" class="icon icon-home" alt="Documentation Home"> oarphpy
+            <a href="#" class="icon icon-home"> oarphpy
           
 
           
@@ -90,11 +94,80 @@
 <li><a class="reference internal" href="#oarphpy-api-documentation">OarphPy API Documentation</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#module-oarphpy.spark"><cite>oarphpy.spark</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.plotting"><cite>oarphpy.plotting</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.util.thruput_observer"><cite>oarphpy.util.thruput_observer</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.util.tfutil"><cite>oarphpy.util.tfutil</cite></a></li>
-<li><a class="reference internal" href="#module-oarphpy.util.misc"><cite>oarphpy.util.misc</cite></a></li>
+<li><a class="reference internal" href="#module-oarphpy.spark"><cite>oarphpy.spark</cite></a><ul>
+<li><a class="reference internal" href="#oarphpy.spark.for_each_executor"><code class="docutils literal notranslate"><span class="pre">for_each_executor()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.cluster_cpu_count"><code class="docutils literal notranslate"><span class="pre">cluster_cpu_count()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.union_dfs"><code class="docutils literal notranslate"><span class="pre">union_dfs()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.get_balanced_sample"><code class="docutils literal notranslate"><span class="pre">get_balanced_sample()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.cluster_get_info"><code class="docutils literal notranslate"><span class="pre">cluster_get_info()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.test_pi"><code class="docutils literal notranslate"><span class="pre">test_pi()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.test_egg"><code class="docutils literal notranslate"><span class="pre">test_egg()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.test_tensorflow"><code class="docutils literal notranslate"><span class="pre">test_tensorflow()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.CounterAccumulator"><code class="docutils literal notranslate"><span class="pre">CounterAccumulator</span></code></a><ul>
+<li><a class="reference internal" href="#oarphpy.spark.CounterAccumulator.zero"><code class="docutils literal notranslate"><span class="pre">CounterAccumulator.zero()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.CounterAccumulator.addInPlace"><code class="docutils literal notranslate"><span class="pre">CounterAccumulator.addInPlace()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#oarphpy.spark.SessionFactory"><code class="docutils literal notranslate"><span class="pre">SessionFactory</span></code></a><ul>
+<li><a class="reference internal" href="#oarphpy.spark.SessionFactory.create_egg"><code class="docutils literal notranslate"><span class="pre">SessionFactory.create_egg()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.SessionFactory.getOrCreate"><code class="docutils literal notranslate"><span class="pre">SessionFactory.getOrCreate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#oarphpy.spark.LocalK8SSpark"><code class="docutils literal notranslate"><span class="pre">LocalK8SSpark</span></code></a><ul>
+<li><a class="reference internal" href="#oarphpy.spark.LocalK8SSpark.getOrCreate"><code class="docutils literal notranslate"><span class="pre">LocalK8SSpark.getOrCreate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#oarphpy.spark.NBSpark"><code class="docutils literal notranslate"><span class="pre">NBSpark</span></code></a><ul>
+<li><a class="reference internal" href="#oarphpy.spark.NBSpark.getOrCreate"><code class="docutils literal notranslate"><span class="pre">NBSpark.getOrCreate()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#oarphpy.spark.Tensor"><code class="docutils literal notranslate"><span class="pre">Tensor</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.CloudpickeledCallable"><code class="docutils literal notranslate"><span class="pre">CloudpickeledCallable</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.RowAdapter"><code class="docutils literal notranslate"><span class="pre">RowAdapter</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.spark.spark_df_to_tf_dataset"><code class="docutils literal notranslate"><span class="pre">spark_df_to_tf_dataset()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-oarphpy.plotting"><cite>oarphpy.plotting</cite></a><ul>
+<li><a class="reference internal" href="#oarphpy.plotting.hash_to_rbg"><code class="docutils literal notranslate"><span class="pre">hash_to_rbg()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.plotting.img_to_data_uri"><code class="docutils literal notranslate"><span class="pre">img_to_data_uri()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.plotting.df_histogram"><code class="docutils literal notranslate"><span class="pre">df_histogram()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.plotting.HistogramWithExamplesPlotter"><code class="docutils literal notranslate"><span class="pre">HistogramWithExamplesPlotter</span></code></a><ul>
+<li><a class="reference internal" href="#oarphpy.plotting.HistogramWithExamplesPlotter.run"><code class="docutils literal notranslate"><span class="pre">HistogramWithExamplesPlotter.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-oarphpy.util.thruput_observer"><cite>oarphpy.util.thruput_observer</cite></a><ul>
+<li><a class="reference internal" href="#oarphpy.util.thruput_observer.ThruputObserver"><code class="docutils literal notranslate"><span class="pre">ThruputObserver</span></code></a><ul>
+<li><a class="reference internal" href="#oarphpy.util.thruput_observer.ThruputObserver.observe"><code class="docutils literal notranslate"><span class="pre">ThruputObserver.observe()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.thruput_observer.ThruputObserver.union"><code class="docutils literal notranslate"><span class="pre">ThruputObserver.union()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor"><code class="docutils literal notranslate"><span class="pre">ThruputObserver.monitoring_tensor()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.thruput_observer.ThruputObserver.wrap_func"><code class="docutils literal notranslate"><span class="pre">ThruputObserver.wrap_func()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-oarphpy.util.tfutil"><cite>oarphpy.util.tfutil</cite></a><ul>
+<li><a class="reference internal" href="#oarphpy.util.tfutil.give_me_frozen_graph"><code class="docutils literal notranslate"><span class="pre">give_me_frozen_graph()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.tfutil.tf_variable_summaries"><code class="docutils literal notranslate"><span class="pre">tf_variable_summaries()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.tfutil.TFRecordsFileAsListOfStrings"><code class="docutils literal notranslate"><span class="pre">TFRecordsFileAsListOfStrings</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-oarphpy.util.misc"><cite>oarphpy.util.misc</cite></a><ul>
+<li><a class="reference internal" href="#oarphpy.util.misc.get_size_of_deep"><code class="docutils literal notranslate"><span class="pre">get_size_of_deep()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.stable_hash"><code class="docutils literal notranslate"><span class="pre">stable_hash()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.ichunked"><code class="docutils literal notranslate"><span class="pre">ichunked()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.roundrobin"><code class="docutils literal notranslate"><span class="pre">roundrobin()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.as_row_of_constants"><code class="docutils literal notranslate"><span class="pre">as_row_of_constants()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.Proxy"><code class="docutils literal notranslate"><span class="pre">Proxy</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.quiet"><code class="docutils literal notranslate"><span class="pre">quiet()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.with_cwd"><code class="docutils literal notranslate"><span class="pre">with_cwd()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.to_png_bytes"><code class="docutils literal notranslate"><span class="pre">to_png_bytes()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.to_jpeg_bytes"><code class="docutils literal notranslate"><span class="pre">to_jpeg_bytes()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.get_jpeg_size"><code class="docutils literal notranslate"><span class="pre">get_jpeg_size()</span></code></a></li>
+<li><a class="reference internal" href="#oarphpy.util.misc.download"><code class="docutils literal notranslate"><span class="pre">download()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#extra">Extra</a><ul>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
@@ -139,6 +212,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -150,7 +225,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -165,7 +240,7 @@
            <div itemprop="articleBody">
             
   <p>View OarphPy <a class="reference external" href="https://github.com/pwais/oarphpy">on Github</a></p>
-<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span>                   _________________________
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                   _________________________
                   &lt; OarphPy!! Oarph! Oarph! &gt;
                   &lt;   OarphKit for Python!! &gt;
                    -------------------------
@@ -189,13 +264,13 @@
 <a class="reference external" href="https://spark.apache.org/docs/latest/api/python/">PySpark</a> and Tensorflow.
 Related (but orthogonal) to <a class="reference external" href="https://github.com/pwais/oarphkit">OarphKit</a>.</p>
 <section id="quickstart">
-<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h1>
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this heading">¶</a></h1>
 <p>Install from PyPI: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">oarphpy</span></code>.  We test OarphPy in a variet of
 environments (see below), so it should play well with your Jupyter/Colab
 notebook or project environment.  To include all extras, use
 <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">oarphpy[all]</span></code>.</p>
 <p>Or use the dockerized environment hosted on <a class="reference external" href="https://hub.docker.com/u/oarphpy">DockerHub</a>:</p>
-<div class="highlight-guess notranslate"><div class="highlight"><pre><span></span>$ ./oarphcli --shell
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./oarphcli --shell
 -- or --
 $ docker run -it --net=host oarphpy/full bash
 </pre></div>
@@ -203,13 +278,13 @@ $ docker run -it --net=host oarphpy/full bash
 <p>See also <a class="reference external" href="https://pwais.github.io/oarphpy/">API documentation</a>.</p>
 </section>
 <section id="demos">
-<h1>Demos<a class="headerlink" href="#demos" title="Permalink to this headline">¶</a></h1>
+<h1>Demos<a class="headerlink" href="#demos" title="Permalink to this heading">¶</a></h1>
 <ul class="simple">
 <li><p><a class="reference external" href="https://pwais.github.io/oarph-oarphs/2020/02/03/atrick.html">Automagically Shipping Custom Libraries in Spark Using OarphPy</a></p></li>
 </ul>
 </section>
 <section id="dockerized-development-environments">
-<h1>Dockerized Development Environments<a class="headerlink" href="#dockerized-development-environments" title="Permalink to this headline">¶</a></h1>
+<h1>Dockerized Development Environments<a class="headerlink" href="#dockerized-development-environments" title="Permalink to this heading">¶</a></h1>
 <p>OarphPy is built and tested in a variety of environments to ensure the
 library works with and without <a class="reference external" href="setup.py#L18">optional dependencies</a>.  These
 environments are shared on <a class="reference external" href="https://hub.docker.com/u/oarphpy">DockerHub</a> and
@@ -230,98 +305,98 @@ compatibility (e.g. of <code class="docutils literal notranslate"><span class="p
 </ul>
 </section>
 <section id="development">
-<h1>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h1>
+<h1>Development<a class="headerlink" href="#development" title="Permalink to this heading">¶</a></h1>
 <p>See <code class="docutils literal notranslate"><span class="pre">./oarphcli</span> <span class="pre">--help</span></code> for the development and release workflow.</p>
 <section id="oarphpy-api-documentation">
-<h2>OarphPy API Documentation<a class="headerlink" href="#oarphpy-api-documentation" title="Permalink to this headline">¶</a></h2>
+<h2>OarphPy API Documentation<a class="headerlink" href="#oarphpy-api-documentation" title="Permalink to this heading">¶</a></h2>
 </section>
 </section>
 <section id="module-oarphpy.spark">
-<span id="oarphpy-spark"></span><h1><cite>oarphpy.spark</cite><a class="headerlink" href="#module-oarphpy.spark" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="oarphpy.spark.for_each_executor">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">for_each_executor</code><span class="sig-paren">(</span><em class="sig-param">spark</em>, <em class="sig-param">thunk</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#for_each_executor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.for_each_executor" title="Permalink to this definition">¶</a></dt>
+<span id="oarphpy-spark"></span><h1><cite>oarphpy.spark</cite><a class="headerlink" href="#module-oarphpy.spark" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.for_each_executor">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">for_each_executor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thunk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#for_each_executor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.for_each_executor" title="Permalink to this definition">¶</a></dt>
 <dd><p>While Spark does not officially provide an API since the number
 of executors can change through the course of a job, this approach
 leverages the best practices to evaluate <cite>thunk</cite> at most once per
 executor.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.cluster_cpu_count">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">cluster_cpu_count</code><span class="sig-paren">(</span><em class="sig-param">spark</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#cluster_cpu_count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.cluster_cpu_count" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.cluster_cpu_count">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">cluster_cpu_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#cluster_cpu_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.cluster_cpu_count" title="Permalink to this definition">¶</a></dt>
 <dd><p>Like <cite>os.cpu_count()</cite> but for an entire Spark cluster.  Useful for
 scalling memory-intensive jobs that use the RDD api.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.union_dfs">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">union_dfs</code><span class="sig-paren">(</span><em class="sig-param">*dfs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#union_dfs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.union_dfs" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.union_dfs">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">union_dfs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">dfs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#union_dfs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.union_dfs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the union of a sequence DataFrames and attempt to merge
 the schemas of each (i.e. union of all columns).
 Based upon <a class="reference external" href="https://stackoverflow.com/a/40404249">https://stackoverflow.com/a/40404249</a></p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.get_balanced_sample">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">get_balanced_sample</code><span class="sig-paren">(</span><em class="sig-param">spark_df</em>, <em class="sig-param">col</em>, <em class="sig-param">n_per_category=None</em>, <em class="sig-param">seed=1337</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#get_balanced_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.get_balanced_sample" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.get_balanced_sample">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">get_balanced_sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_per_category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1337</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#get_balanced_sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.get_balanced_sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a column <cite>col</cite> in <cite>spark_df</cite>, return a <em>balanced</em> sample
 (countering class imbalances in <cite>spark_df[col]</cite>).  Optionally limit the
 sample to having up to <cite>n_per_category</cite> examples for every distinct
 categorical value of <cite>spark_df[col]</cite>.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.cluster_get_info">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">cluster_get_info</code><span class="sig-paren">(</span><em class="sig-param">spark</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#cluster_get_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.cluster_get_info" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.cluster_get_info">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">cluster_get_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#cluster_get_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.cluster_get_info" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a text report showing various details about each worker in the
 cluster.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.test_pi">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">test_pi</code><span class="sig-paren">(</span><em class="sig-param">spark</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#test_pi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.test_pi" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.test_pi">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">test_pi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#test_pi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.test_pi" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the “textbook” Monte Carlo Pi Sampling demo and assert correctness.
 When run on a cluster, this test can help suss out networking issues
 between the master and worker machines.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.test_egg">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">test_egg</code><span class="sig-paren">(</span><em class="sig-param">spark</em>, <em class="sig-param">modname='oarphpy'</em>, <em class="sig-param">test_egg_contents=&lt;function _op_test&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#test_egg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.test_egg" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.test_egg">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">test_egg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">modname='oarphpy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_egg_contents=&lt;function</span> <span class="pre">_op_test&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#test_egg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.test_egg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test the egg that <cite>SessFactory</cite> (below) dynamically builds and includes
 in spark jobs.  We’ll run the function <cite>test_egg_contents</cite> on each worker
 to actually execute code included in the egg.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.test_tensorflow">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">test_tensorflow</code><span class="sig-paren">(</span><em class="sig-param">spark</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#test_tensorflow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.test_tensorflow" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.test_tensorflow">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">test_tensorflow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#test_tensorflow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.test_tensorflow" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remotely test Tensorflow support in the given <cite>spark</cite> cluster</p>
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.spark.CounterAccumulator">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">CounterAccumulator</code><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="oarphpy.spark.CounterAccumulator.zero">
-<code class="sig-name descname">zero</code><span class="sig-paren">(</span><em class="sig-param">value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator.zero"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator.zero" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.spark.CounterAccumulator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">CounterAccumulator</span></span><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.spark.CounterAccumulator.zero">
+<span class="sig-name descname"><span class="pre">zero</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator.zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator.zero" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provide a “zero value” for the type, compatible in dimensions with the
 provided <cite>value</cite> (e.g., a zero vector)</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="oarphpy.spark.CounterAccumulator.addInPlace">
-<code class="sig-name descname">addInPlace</code><span class="sig-paren">(</span><em class="sig-param">value1</em>, <em class="sig-param">value2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator.addInPlace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator.addInPlace" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.spark.CounterAccumulator.addInPlace">
+<span class="sig-name descname"><span class="pre">addInPlace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CounterAccumulator.addInPlace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.CounterAccumulator.addInPlace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add two values of the accumulator’s data type, returning a new value;
 for efficiency, can also update <cite>value1</cite> in place and return it.</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.spark.SessionFactory">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">SessionFactory</code><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.spark.SessionFactory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">SessionFactory</span></span><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory" title="Permalink to this definition">¶</a></dt>
 <dd><p>This class is a factory for pre-configured <cite>SparkSession</cite> instances.  A
 primary feaure of this factory is that it automagically includes the caller’s
 python module as a Spark PyFile, thus effectively shipping the user’s python
@@ -344,9 +419,9 @@ for the <cite>spark-submit</cite> shell script.</p>
 <p>See <cite>LocalK8SSpark</cite> below for an example of how to subclass this factory for
 your own project.  See also <cite>NBSpark</cite> below for an example subclass
 that enables interop with the <cite>sparkmonitor</cite> package for jupyter.</p>
-<dl class="method">
-<dt id="oarphpy.spark.SessionFactory.create_egg">
-<em class="property">classmethod </em><code class="sig-name descname">create_egg</code><span class="sig-paren">(</span><em class="sig-param">force_new=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory.create_egg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory.create_egg" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.spark.SessionFactory.create_egg">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_egg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">force_new</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory.create_egg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory.create_egg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a Python Egg from the current project and return a path
 to the artifact.  The path may be to a cached, pre-computed egg only
 if not <cite>force_new</cite>.  The ‘current project’ is either class-defaulted or
@@ -392,15 +467,15 @@ binaries (e.g. tensorflow)</p>
 code, often pre-committed code, to workers).</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="oarphpy.spark.SessionFactory.getOrCreate">
-<em class="property">classmethod </em><code class="sig-name descname">getOrCreate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory.getOrCreate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory.getOrCreate" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.spark.SessionFactory.getOrCreate">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getOrCreate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#SessionFactory.getOrCreate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.SessionFactory.getOrCreate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spark sessions are typically instantiated using the
 <cite>Builder.getOrCreate()</cite> or <cite>SparkSession.getOrCreate()</cite> methods.  This
 method is a drop-in replacement that uses class-specified defaults,
 includes the local python module as a PyFile, etc.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>A <cite>pyspark.sql.session.SparkSession</cite> instance.</p>
 </dd>
 </dl>
@@ -408,19 +483,19 @@ includes the local python module as a PyFile, etc.</p>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.spark.LocalK8SSpark">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">LocalK8SSpark</code><a class="reference internal" href="_modules/oarphpy/spark.html#LocalK8SSpark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.LocalK8SSpark" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.spark.LocalK8SSpark">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">LocalK8SSpark</span></span><a class="reference internal" href="_modules/oarphpy/spark.html#LocalK8SSpark"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.LocalK8SSpark" title="Permalink to this definition">¶</a></dt>
 <dd><p>Example of how to subclass the Spark factory above for use with K8S</p>
-<dl class="method">
-<dt id="oarphpy.spark.LocalK8SSpark.getOrCreate">
-<em class="property">classmethod </em><code class="sig-name descname">getOrCreate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#LocalK8SSpark.getOrCreate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.LocalK8SSpark.getOrCreate" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.spark.LocalK8SSpark.getOrCreate">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getOrCreate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#LocalK8SSpark.getOrCreate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.LocalK8SSpark.getOrCreate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spark sessions are typically instantiated using the
 <cite>Builder.getOrCreate()</cite> or <cite>SparkSession.getOrCreate()</cite> methods.  This
 method is a drop-in replacement that uses class-specified defaults,
 includes the local python module as a PyFile, etc.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>A <cite>pyspark.sql.session.SparkSession</cite> instance.</p>
 </dd>
 </dl>
@@ -428,21 +503,21 @@ includes the local python module as a PyFile, etc.</p>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.spark.NBSpark">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">NBSpark</code><a class="reference internal" href="_modules/oarphpy/spark.html#NBSpark"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.NBSpark" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.spark.NBSpark">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">NBSpark</span></span><a class="reference internal" href="_modules/oarphpy/spark.html#NBSpark"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.NBSpark" title="Permalink to this definition">¶</a></dt>
 <dd><p>NBSpark is a session builder for local Jupyter notebooks.  Also includes
 support for the <cite>sparkmonitor</cite> jupyter package, see
 <a class="reference external" href="https://krishnan-r.github.io/sparkmonitor/">https://krishnan-r.github.io/sparkmonitor/</a></p>
-<dl class="method">
-<dt id="oarphpy.spark.NBSpark.getOrCreate">
-<em class="property">classmethod </em><code class="sig-name descname">getOrCreate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#NBSpark.getOrCreate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.NBSpark.getOrCreate" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.spark.NBSpark.getOrCreate">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">getOrCreate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#NBSpark.getOrCreate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.NBSpark.getOrCreate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Spark sessions are typically instantiated using the
 <cite>Builder.getOrCreate()</cite> or <cite>SparkSession.getOrCreate()</cite> methods.  This
 method is a drop-in replacement that uses class-specified defaults,
 includes the local python module as a PyFile, etc.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>A <cite>pyspark.sql.session.SparkSession</cite> instance.</p>
 </dd>
 </dl>
@@ -450,9 +525,9 @@ includes the local python module as a PyFile, etc.</p>
 
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.spark.Tensor">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">Tensor</code><a class="reference internal" href="_modules/oarphpy/spark.html#Tensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.Tensor" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.spark.Tensor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">Tensor</span></span><a class="reference internal" href="_modules/oarphpy/spark.html#Tensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.Tensor" title="Permalink to this definition">¶</a></dt>
 <dd><p>An ndarray-like object designed to store numpy arrays in Parquet /
 Spark SQL format.  Spark’s DenseVector and Matrix unfortunately don’t
 support arbitrary tensor shape.  Furthermore, <cite>Tensor</cite> stores data in
@@ -460,9 +535,9 @@ an explicit order accessible to external readers such as Eigen in C++
 or nd4j / BLAS wrappers in Java.</p>
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.spark.CloudpickeledCallable">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">CloudpickeledCallable</code><span class="sig-paren">(</span><em class="sig-param">func=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CloudpickeledCallable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.CloudpickeledCallable" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.spark.CloudpickeledCallable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">CloudpickeledCallable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#CloudpickeledCallable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.CloudpickeledCallable" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wraps callable objects (e.g. functions, including lambdas) and
 uses <cite>cloudpickle</cite> for serialization.  Spark uses <cite>cloudpickle</cite> for
 serializing _tasks_ (e.g. map functions) but uses <cite>pickle</cite> for
@@ -497,9 +572,9 @@ your <cite>load_matrix()</cite> helper will get invoked with the embedded path. 
 your <cite>my_db_row</cite> is a flyweight for the data in ‘path/to/data.txt’.</p>
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.spark.RowAdapter">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">RowAdapter</code><a class="reference internal" href="_modules/oarphpy/spark.html#RowAdapter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.RowAdapter" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.spark.RowAdapter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">RowAdapter</span></span><a class="reference internal" href="_modules/oarphpy/spark.html#RowAdapter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.RowAdapter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transforms between custom objects and <a href="#id3"><span class="problematic" id="id4">`</span></a>pyspark.sql.Row`s used in Spark SQL
 or Parquet files. Use to encode numpy arrays and standard Python objects
 with a transparent Parquet schema that is accessible to other readers.</p>
@@ -562,9 +637,9 @@ but not decoding).</p>
 </dl>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.spark.spark_df_to_tf_dataset">
-<code class="sig-prename descclassname">oarphpy.spark.</code><code class="sig-name descname">spark_df_to_tf_dataset</code><span class="sig-paren">(</span><em class="sig-param">spark_df</em>, <em class="sig-param">shard_col</em>, <em class="sig-param">spark_row_to_tf_element</em>, <em class="sig-param">tf_element_types</em>, <em class="sig-param">tf_output_shapes=None</em>, <em class="sig-param">non_deterministic_element_order=True</em>, <em class="sig-param">num_reader_threads=-1</em>, <em class="sig-param">logging_name='spark_tf_dataset'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#spark_df_to_tf_dataset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.spark.spark_df_to_tf_dataset" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.spark.spark_df_to_tf_dataset">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.spark.</span></span><span class="sig-name descname"><span class="pre">spark_df_to_tf_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shard_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_row_to_tf_element</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tf_element_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tf_output_shapes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">non_deterministic_element_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_reader_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logging_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spark_tf_dataset'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/spark.html#spark_df_to_tf_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.spark.spark_df_to_tf_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a tf.data.Dataset that reads from the Spark Dataframe
 <cite>spark_df</cite>.  Executes parallel reads using the Tensorflow’s internal
 (native code) threadpool.  Each thread reads a single Spark partition
@@ -573,7 +648,7 @@ at a time.</p>
 and leverages Tensorflow’s build-in threadpool (so we let Tensorflow
 do the read scheduling).  Status: alpha-quality; some perf quirks.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>spark_df</strong> (<em>pyspark.sql.DataFrame</em>) – Read from this Dataframe.</p></li>
 <li><p><strong>shard_col</strong> (<em>str</em>) – Implicly shard the dataset using this column; read
@@ -593,14 +668,14 @@ to provision one reader thread per CPU core.</p></li>
 <li><p><strong>logging_name</strong> (<em>str</em>) – Log progress under this name.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><dl class="simple">
 <dt>The induced TF Datset with one element per</dt><dd><p>row in <cite>spark_df</cite>.</p>
 </dd>
 </dl>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>tf.data.Dataset</p>
 </dd>
 </dl>
@@ -608,25 +683,25 @@ to provision one reader thread per CPU core.</p></li>
 
 </section>
 <section id="module-oarphpy.plotting">
-<span id="oarphpy-plotting"></span><h1><cite>oarphpy.plotting</cite><a class="headerlink" href="#module-oarphpy.plotting" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="oarphpy.plotting.hash_to_rbg">
-<code class="sig-prename descclassname">oarphpy.plotting.</code><code class="sig-name descname">hash_to_rbg</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">s=0.8</em>, <em class="sig-param">v=0.8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#hash_to_rbg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.plotting.hash_to_rbg" title="Permalink to this definition">¶</a></dt>
+<span id="oarphpy-plotting"></span><h1><cite>oarphpy.plotting</cite><a class="headerlink" href="#module-oarphpy.plotting" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.plotting.hash_to_rbg">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.plotting.</span></span><span class="sig-name descname"><span class="pre">hash_to_rbg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#hash_to_rbg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.plotting.hash_to_rbg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given some value <cite>x</cite> (integral types work best), hash <cite>x</cite>
 to an <cite>(r, g, b)</cite> color tuple using a hue based on the hash
 and the given <cite>s</cite> (saturation) and <cite>v</cite> (lightness).</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.plotting.img_to_data_uri">
-<code class="sig-prename descclassname">oarphpy.plotting.</code><code class="sig-name descname">img_to_data_uri</code><span class="sig-paren">(</span><em class="sig-param">img</em>, <em class="sig-param">format='jpg'</em>, <em class="sig-param">jpeg_quality=75</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#img_to_data_uri"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.plotting.img_to_data_uri" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.plotting.img_to_data_uri">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.plotting.</span></span><span class="sig-name descname"><span class="pre">img_to_data_uri</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'jpg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jpeg_quality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">75</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#img_to_data_uri"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.plotting.img_to_data_uri" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a numpy array <cite>img</cite>, return a <cite>data:</cite> URI suitable for use in
 an HTML image tag.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.plotting.df_histogram">
-<code class="sig-prename descclassname">oarphpy.plotting.</code><code class="sig-name descname">df_histogram</code><span class="sig-paren">(</span><em class="sig-param">spark_df</em>, <em class="sig-param">col</em>, <em class="sig-param">num_bins</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#df_histogram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.plotting.df_histogram" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.plotting.df_histogram">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.plotting.</span></span><span class="sig-name descname"><span class="pre">df_histogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spark_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#df_histogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.plotting.df_histogram" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute and return a histogram of <cite>bins</cite> of the values in the column
 named <cite>col</cite> in spark Dataframe <cite>spark_df</cite>.  Return type is designed
 to match <cite>numpy.histogram()</cite>.</p>
@@ -634,9 +709,9 @@ to match <cite>numpy.histogram()</cite>.</p>
 call below might fail and claim the RDD is empty.</p>
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.plotting.HistogramWithExamplesPlotter">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.plotting.</code><code class="sig-name descname">HistogramWithExamplesPlotter</code><a class="reference internal" href="_modules/oarphpy/plotting.html#HistogramWithExamplesPlotter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.plotting.HistogramWithExamplesPlotter" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.plotting.HistogramWithExamplesPlotter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.plotting.</span></span><span class="sig-name descname"><span class="pre">HistogramWithExamplesPlotter</span></span><a class="reference internal" href="_modules/oarphpy/plotting.html#HistogramWithExamplesPlotter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.plotting.HistogramWithExamplesPlotter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create and return a Bokeh plot depicting a histogram of a single column in
 a Spark DataFrame.  Clicking on a bar in the histogram will interactively
 show examples from that bucket.</p>
@@ -649,12 +724,12 @@ over ALL genders as well as height histograms for each distinct value in the
 <p>The user can override how examples are displayed; subclasses can override
 <cite>HistogramWithExamplesPlotter::display_bucket()</cite></p>
 <p>See <cite>HistogramWithExamplesPlotter::run()</cite>.</p>
-<dl class="method">
-<dt id="oarphpy.plotting.HistogramWithExamplesPlotter.run">
-<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">col</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#HistogramWithExamplesPlotter.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.plotting.HistogramWithExamplesPlotter.run" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.plotting.HistogramWithExamplesPlotter.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/plotting.html#HistogramWithExamplesPlotter.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.plotting.HistogramWithExamplesPlotter.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute histograms and return the final plot.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>df</strong> (<em>pyspark.sql.DataFrame</em>) – Read from this DataFrame.  The caller may
 want to <cite>cache()</cite> the DataFrame as this routine will do a variety of
@@ -664,7 +739,7 @@ in <cite>df</cite> as the chosen metric.  Spark automatically ignores nulls and
 nans.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>bokeh layout object with a plot.</p>
 </dd>
 </dl>
@@ -674,10 +749,10 @@ nans.</p></li>
 
 </section>
 <section id="module-oarphpy.util.thruput_observer">
-<span id="oarphpy-util-thruput-observer"></span><h1><cite>oarphpy.util.thruput_observer</cite><a class="headerlink" href="#module-oarphpy.util.thruput_observer" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
-<dt id="oarphpy.util.thruput_observer.ThruputObserver">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.util.thruput_observer.</code><code class="sig-name descname">ThruputObserver</code><span class="sig-paren">(</span><em class="sig-param">name=''</em>, <em class="sig-param">log_on_del=False</em>, <em class="sig-param">only_stats=None</em>, <em class="sig-param">log_freq=100</em>, <em class="sig-param">n_total=None</em>, <em class="sig-param">n_total_chunks=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver" title="Permalink to this definition">¶</a></dt>
+<span id="oarphpy-util-thruput-observer"></span><h1><cite>oarphpy.util.thruput_observer</cite><a class="headerlink" href="#module-oarphpy.util.thruput_observer" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.util.thruput_observer.ThruputObserver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.util.thruput_observer.</span></span><span class="sig-name descname"><span class="pre">ThruputObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_on_del</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">only_stats</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_total_chunks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver" title="Permalink to this definition">¶</a></dt>
 <dd><p>A utility for measuring the runtime and throughput of a subroutine.
 Similar in spirit to <cite>tqdm</cite>, except <cite>ThruputObserver</cite>:</p>
 <blockquote>
@@ -689,30 +764,30 @@ Similar in spirit to <cite>tqdm</cite>, except <cite>ThruputObserver</cite>:</p>
 </div></blockquote>
 <p>While <cite>tqdm</cite> is useful for notebooks, <cite>ThruputObserver</cite> seeks to be more
 useful for longer-running batch jobs.</p>
-<dl class="method">
-<dt id="oarphpy.util.thruput_observer.ThruputObserver.observe">
-<code class="sig-name descname">observe</code><span class="sig-paren">(</span><em class="sig-param">n=0</em>, <em class="sig-param">num_bytes=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.observe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.observe" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.util.thruput_observer.ThruputObserver.observe">
+<span class="sig-name descname"><span class="pre">observe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.observe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.observe" title="Permalink to this definition">¶</a></dt>
 <dd><p>NB: contextmanagers appear to be expensive due to object creation.
 Use ThurputObserver#{start,stop}_block() for &lt;10ms ops.
 FMI <a class="reference external" href="https://stackoverflow.com/questions/34872535/why-contextmanager-is-slow">https://stackoverflow.com/questions/34872535/why-contextmanager-is-slow</a></p>
 </dd></dl>
 
-<dl class="method">
-<dt id="oarphpy.util.thruput_observer.ThruputObserver.union">
-<em class="property">classmethod </em><code class="sig-name descname">union</code><span class="sig-paren">(</span><em class="sig-param">thruputs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.union"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.union" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.util.thruput_observer.ThruputObserver.union">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">union</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thruputs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.union"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.union" title="Permalink to this definition">¶</a></dt>
 <dd><p>Support reduction for use in e.g. MapReduce jobs as a counter</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor">
-<em class="property">static </em><code class="sig-name descname">monitoring_tensor</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">tensor</em>, <em class="sig-param">**observer_init_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.monitoring_tensor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitoring_tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">observer_init_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.monitoring_tensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.monitoring_tensor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Monitor the size of the given tensorflow <cite>Tensor</cite> and record a
 text TF Summary with the contents of this ThruputObserver.</p>
 </dd></dl>
 
-<dl class="method">
-<dt id="oarphpy.util.thruput_observer.ThruputObserver.wrap_func">
-<em class="property">static </em><code class="sig-name descname">wrap_func</code><span class="sig-paren">(</span><em class="sig-param">func</em>, <em class="sig-param">**observer_init_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.wrap_func"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.wrap_func" title="Permalink to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="oarphpy.util.thruput_observer.ThruputObserver.wrap_func">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">wrap_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">observer_init_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/thruput_observer.html#ThruputObserver.wrap_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.thruput_observer.ThruputObserver.wrap_func" title="Permalink to this definition">¶</a></dt>
 <dd><p>Decorate <cite>func</cite> and observe a block on each call</p>
 </dd></dl>
 
@@ -720,10 +795,10 @@ text TF Summary with the contents of this ThruputObserver.</p>
 
 </section>
 <section id="module-oarphpy.util.tfutil">
-<span id="oarphpy-util-tfutil"></span><h1><cite>oarphpy.util.tfutil</cite><a class="headerlink" href="#module-oarphpy.util.tfutil" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="oarphpy.util.tfutil.give_me_frozen_graph">
-<code class="sig-prename descclassname">oarphpy.util.tfutil.</code><code class="sig-name descname">give_me_frozen_graph</code><span class="sig-paren">(</span><em class="sig-param">checkpoint</em>, <em class="sig-param">nodes=None</em>, <em class="sig-param">blacklist=None</em>, <em class="sig-param">base_graph=None</em>, <em class="sig-param">sess=None</em>, <em class="sig-param">saver=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/tfutil.html#give_me_frozen_graph"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.tfutil.give_me_frozen_graph" title="Permalink to this definition">¶</a></dt>
+<span id="oarphpy-util-tfutil"></span><h1><cite>oarphpy.util.tfutil</cite><a class="headerlink" href="#module-oarphpy.util.tfutil" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.tfutil.give_me_frozen_graph">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.tfutil.</span></span><span class="sig-name descname"><span class="pre">give_me_frozen_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blacklist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sess</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/tfutil.html#give_me_frozen_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.tfutil.give_me_frozen_graph" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tensorflow has several ways to load checkpoints / graph artifacts.
 It’s impossible to know if some API is stable or if tomorrow somebody
 will invent something new and break everything becaus PyTorch is shiny
@@ -738,16 +813,16 @@ here’s a utility for getting a frozen, serializable, pyspark-friendly
 graph from a checkpoint artifact metagraph thingy I have no idea.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.tfutil.tf_variable_summaries">
-<code class="sig-prename descclassname">oarphpy.util.tfutil.</code><code class="sig-name descname">tf_variable_summaries</code><span class="sig-paren">(</span><em class="sig-param">var</em>, <em class="sig-param">prefix=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/tfutil.html#tf_variable_summaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.tfutil.tf_variable_summaries" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.tfutil.tf_variable_summaries">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.tfutil.</span></span><span class="sig-name descname"><span class="pre">tf_variable_summaries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/tfutil.html#tf_variable_summaries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.tfutil.tf_variable_summaries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create Tensorboard summaries showing basic stats of the
 variable <cite>var</cite>.</p>
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.util.tfutil.TFRecordsFileAsListOfStrings">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.util.tfutil.</code><code class="sig-name descname">TFRecordsFileAsListOfStrings</code><span class="sig-paren">(</span><em class="sig-param">fileobj</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/tfutil.html#TFRecordsFileAsListOfStrings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.tfutil.TFRecordsFileAsListOfStrings" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.util.tfutil.TFRecordsFileAsListOfStrings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.util.tfutil.</span></span><span class="sig-name descname"><span class="pre">TFRecordsFileAsListOfStrings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fileobj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/tfutil.html#TFRecordsFileAsListOfStrings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.tfutil.TFRecordsFileAsListOfStrings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Friends Don’t Let Friends Use TFRecords.</p>
 <p>This utility provides a Tensorflow-free, minimal-dependency solution
 for reading TFRecords from a <em>file stream</em> (e.g. a buffered reader) and
@@ -765,18 +840,18 @@ exposes random access over the stream’s records.</p>
 
 </section>
 <section id="module-oarphpy.util.misc">
-<span id="oarphpy-util-misc"></span><h1><cite>oarphpy.util.misc</cite><a class="headerlink" href="#module-oarphpy.util.misc" title="Permalink to this headline">¶</a></h1>
-<dl class="function">
-<dt id="oarphpy.util.misc.get_size_of_deep">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">get_size_of_deep</code><span class="sig-paren">(</span><em class="sig-param">v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#get_size_of_deep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.get_size_of_deep" title="Permalink to this definition">¶</a></dt>
+<span id="oarphpy-util-misc"></span><h1><cite>oarphpy.util.misc</cite><a class="headerlink" href="#module-oarphpy.util.misc" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.get_size_of_deep">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">get_size_of_deep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#get_size_of_deep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.get_size_of_deep" title="Permalink to this definition">¶</a></dt>
 <dd><p>(Hacky) Get size of the value <cite>v</cite> in bytes.  Does not rely on a more
 precise library like guppy or pympler.  Intended for values <cite>v</cite> that
 contain large binary blobs.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.stable_hash">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">stable_hash</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#stable_hash"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.stable_hash" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.stable_hash">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">stable_hash</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#stable_hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.stable_hash" title="Permalink to this definition">¶</a></dt>
 <dd><p>A hash of <cite>x</cite> that is stable across program runs.</p>
 <p>Background:
 As of Python 3, <cite>hash()</cite> is given a fresh seed every time the interpret
@@ -799,16 +874,16 @@ Note that while it is possible to get the hash seed at runtime:</p>
 serialization to provide a key for <cite>x</cite>.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.ichunked">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">ichunked</code><span class="sig-paren">(</span><em class="sig-param">seq</em>, <em class="sig-param">n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#ichunked"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.ichunked" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.ichunked">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">ichunked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#ichunked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.ichunked" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate chunks of <cite>seq</cite> of size (at most) <cite>n</cite>.  More efficient
 and less junk than itertools recipes version using izip_longest…</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.roundrobin">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">roundrobin</code><span class="sig-paren">(</span><em class="sig-param">*seqs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#roundrobin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.roundrobin" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.roundrobin">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">roundrobin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">seqs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#roundrobin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.roundrobin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a sequence pulling round-robin from each of <cite>seqs</cite>; similar to
 <cite>itertools.roundrobin()</cite> recipe but</p>
 <blockquote>
@@ -819,9 +894,9 @@ and less junk than itertools recipes version using izip_longest…</p>
 </div></blockquote>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.as_row_of_constants">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">as_row_of_constants</code><span class="sig-paren">(</span><em class="sig-param">inst</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#as_row_of_constants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.as_row_of_constants" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.as_row_of_constants">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">as_row_of_constants</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inst</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#as_row_of_constants"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.as_row_of_constants" title="Permalink to this definition">¶</a></dt>
 <dd><p>Row-ify an object instance <cite>inst</cite> keeping only the “class-constant”
 attributes of <cite>inst</cite>, i.e. the members with UPPERCASE names.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Foo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -836,43 +911,43 @@ attributes of <cite>inst</cite>, i.e. the members with UPPERCASE names.</p>
 </div>
 </dd></dl>
 
-<dl class="class">
-<dt id="oarphpy.util.misc.Proxy">
-<em class="property">class </em><code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">Proxy</code><span class="sig-paren">(</span><em class="sig-param">instance</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#Proxy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.Proxy" title="Permalink to this definition">¶</a></dt>
+<dl class="py class">
+<dt class="sig sig-object py" id="oarphpy.util.misc.Proxy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">Proxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#Proxy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.Proxy" title="Permalink to this definition">¶</a></dt>
 <dd><p>A thin wrapper around an <cite>instance</cite> that supports custom semantics.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.quiet">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">quiet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#quiet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.quiet" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.quiet">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">quiet</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#quiet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.quiet" title="Permalink to this definition">¶</a></dt>
 <dd><p>Silence stdout and stderr for any commands in this context</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.with_cwd">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">with_cwd</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#with_cwd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.with_cwd" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.with_cwd">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">with_cwd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#with_cwd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.with_cwd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use a current working directory of <cite>path</cite> for this context</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.to_png_bytes">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">to_png_bytes</code><span class="sig-paren">(</span><em class="sig-param">arr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#to_png_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.to_png_bytes" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.to_png_bytes">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">to_png_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#to_png_bytes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.to_png_bytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Typically used for testing; when comparing images, we need to compare
 actual and expected via image bytes b/c imageio does some sort of subtle
 color normalization and we want our fixtures to simply be user-readable
 PNGs.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.to_jpeg_bytes">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">to_jpeg_bytes</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">quality=100</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#to_jpeg_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.to_jpeg_bytes" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.to_jpeg_bytes">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">to_jpeg_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quality</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#to_jpeg_bytes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.to_jpeg_bytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Given a numpy array image <cite>arr</cite>, return the image encoded as a
 jpeg buffer.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.get_jpeg_size">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">get_jpeg_size</code><span class="sig-paren">(</span><em class="sig-param">jpeg_bytes</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#get_jpeg_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.get_jpeg_size" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.get_jpeg_size">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">get_jpeg_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">jpeg_bytes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#get_jpeg_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.get_jpeg_size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the size of a JPEG image without reading and decompressing the entire
 file.  Based upon:</p>
 <blockquote>
@@ -882,20 +957,20 @@ file.  Based upon:</p>
 </div></blockquote>
 </dd></dl>
 
-<dl class="function">
-<dt id="oarphpy.util.misc.download">
-<code class="sig-prename descclassname">oarphpy.util.misc.</code><code class="sig-name descname">download</code><span class="sig-paren">(</span><em class="sig-param">uri</em>, <em class="sig-param">dest</em>, <em class="sig-param">try_expand=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#download"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#oarphpy.util.misc.download" title="Permalink to this definition">¶</a></dt>
+<dl class="py function">
+<dt class="sig sig-object py" id="oarphpy.util.misc.download">
+<span class="sig-prename descclassname"><span class="pre">oarphpy.util.misc.</span></span><span class="sig-name descname"><span class="pre">download</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uri</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dest</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">try_expand</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/oarphpy/util/misc.html#download"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#oarphpy.util.misc.download" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fetch <cite>uri</cite>, which is a file or archive, and put in <cite>dest</cite>, which
 is either a destination file path or destination directory.</p>
 </dd></dl>
 
 </section>
 <section id="extra">
-<h1>Extra<a class="headerlink" href="#extra" title="Permalink to this headline">¶</a></h1>
+<h1>Extra<a class="headerlink" href="#extra" title="Permalink to this heading">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 <section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
@@ -909,28 +984,25 @@ is either a destination file path or destination directory.</p>
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Maintainers of OarphPy
+        &#169; Copyright 2020, Maintainers of OarphPy.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

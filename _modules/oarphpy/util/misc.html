@@ -3,20 +3,25 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>oarphpy.util.misc &mdash; oarphpy 0.1.0 documentation</title>
+  <title>oarphpy.util.misc &mdash; oarphpy 0.1.1 documentation</title>
   
 
   
   <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
 
   
   
+
   
+  
+
   
 
   
@@ -26,10 +31,9 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -49,7 +53,7 @@
           
 
           
-            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> oarphpy
+            <a href="../../../index.html" class="icon icon-home"> oarphpy
           
 
           
@@ -120,6 +124,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -144,7 +150,7 @@
            <div itemprop="articleBody">
             
   <h1>Source code for oarphpy.util.misc</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Copyright 2020 Maintainers of OarphPy</span>
+<span></span><span class="c1"># Copyright 2023 Maintainers of OarphPy</span>
 <span class="c1">#</span>
 <span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
@@ -191,7 +197,7 @@
   <span class="n">INTEGRAL_TYPES</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
 
 <div class="viewcode-block" id="get_size_of_deep"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.get_size_of_deep">[docs]</a><span class="k">def</span> <span class="nf">get_size_of_deep</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;(Hacky) Get size of the value `v` in bytes.  Does not rely on a more</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;(Hacky) Get size of the value `v` in bytes.  Does not rely on a more</span>
 <span class="sd">  precise library like guppy or pympler.  Intended for values `v` that </span>
 <span class="sd">  contain large binary blobs.&quot;&quot;&quot;</span>
 
@@ -233,7 +239,7 @@
 
 
 <div class="viewcode-block" id="stable_hash"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.stable_hash">[docs]</a><span class="k">def</span> <span class="nf">stable_hash</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;A hash of `x` that is stable across program runs.</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;A hash of `x` that is stable across program runs.</span>
 <span class="sd">  </span>
 <span class="sd">  Background:</span>
 <span class="sd">  As of Python 3, `hash()` is given a fresh seed every time the interpret</span>
@@ -269,7 +275,7 @@
 
 
 <div class="viewcode-block" id="ichunked"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.ichunked">[docs]</a><span class="k">def</span> <span class="nf">ichunked</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Generate chunks of `seq` of size (at most) `n`.  More efficient</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Generate chunks of `seq` of size (at most) `n`.  More efficient</span>
 <span class="sd">  and less junk than itertools recipes version using izip_longest...</span>
 <span class="sd">  &quot;&quot;&quot;</span>
   <span class="n">n</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
@@ -283,7 +289,7 @@
 
 
 <div class="viewcode-block" id="roundrobin"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.roundrobin">[docs]</a><span class="k">def</span> <span class="nf">roundrobin</span><span class="p">(</span><span class="o">*</span><span class="n">seqs</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Generate a sequence pulling round-robin from each of `seqs`; similar to</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Generate a sequence pulling round-robin from each of `seqs`; similar to</span>
 <span class="sd">  `itertools.roundrobin()` recipe but </span>
 <span class="sd">    (1) won&#39;t hide nested `StopIteration`s</span>
 <span class="sd">    (2) uses a queue to reduce dynamic allocations</span>
@@ -302,7 +308,7 @@
 
 
 <div class="viewcode-block" id="as_row_of_constants"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.as_row_of_constants">[docs]</a><span class="k">def</span> <span class="nf">as_row_of_constants</span><span class="p">(</span><span class="n">inst</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Row-ify an object instance `inst` keeping only the &quot;class-constant&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Row-ify an object instance `inst` keeping only the &quot;class-constant&quot;</span>
 <span class="sd">  attributes of `inst`, i.e. the members with UPPERCASE names.</span>
 
 <span class="sd">  &gt;&gt;&gt; class Foo(object):</span>
@@ -354,7 +360,7 @@
 
 
 <div class="viewcode-block" id="Proxy"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.Proxy">[docs]</a><span class="k">class</span> <span class="nc">Proxy</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;A thin wrapper around an `instance` that supports custom semantics.&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;A thin wrapper around an `instance` that supports custom semantics.&quot;&quot;&quot;</span>
   
   <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;instance&#39;</span><span class="p">,)</span>
   
@@ -374,7 +380,7 @@
 
 <div class="viewcode-block" id="quiet"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.quiet">[docs]</a><span class="nd">@contextmanager</span>
 <span class="k">def</span> <span class="nf">quiet</span><span class="p">():</span>
-  <span class="sd">&quot;&quot;&quot;Silence stdout and stderr for any commands in this context&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Silence stdout and stderr for any commands in this context&quot;&quot;&quot;</span>
   <span class="n">old_stdout</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span>
   <span class="n">old_stderr</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span>
   <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
@@ -401,7 +407,7 @@
 
 <div class="viewcode-block" id="with_cwd"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.with_cwd">[docs]</a><span class="nd">@contextmanager</span>
 <span class="k">def</span> <span class="nf">with_cwd</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Use a current working directory of `path` for this context&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Use a current working directory of `path` for this context&quot;&quot;&quot;</span>
   <span class="n">old_cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
   <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
   <span class="k">try</span><span class="p">:</span>
@@ -425,7 +431,7 @@
 
 
 <div class="viewcode-block" id="to_png_bytes"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.to_png_bytes">[docs]</a><span class="k">def</span> <span class="nf">to_png_bytes</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Typically used for testing; when comparing images, we need to compare</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Typically used for testing; when comparing images, we need to compare</span>
 <span class="sd">  actual and expected via image bytes b/c imageio does some sort of subtle</span>
 <span class="sd">  color normalization and we want our fixtures to simply be user-readable</span>
 <span class="sd">  PNGs.&quot;&quot;&quot;</span>
@@ -438,7 +444,7 @@
 
 
 <div class="viewcode-block" id="to_jpeg_bytes"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.to_jpeg_bytes">[docs]</a><span class="k">def</span> <span class="nf">to_jpeg_bytes</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">quality</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Given a numpy array image `arr`, return the image encoded as a</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Given a numpy array image `arr`, return the image encoded as a</span>
 <span class="sd">  jpeg buffer.&quot;&quot;&quot;</span>
 
   <span class="kn">import</span> <span class="nn">io</span>
@@ -449,7 +455,7 @@
 
 
 <div class="viewcode-block" id="get_jpeg_size"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.get_jpeg_size">[docs]</a><span class="k">def</span> <span class="nf">get_jpeg_size</span><span class="p">(</span><span class="n">jpeg_bytes</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Get the size of a JPEG image without reading and decompressing the entire</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Get the size of a JPEG image without reading and decompressing the entire</span>
 <span class="sd">  file.  Based upon:  </span>
 <span class="sd">   * https://github.com/shibukawa/imagesize_py/blob/master/imagesize.py#L87</span>
 <span class="sd">  &quot;&quot;&quot;</span>
@@ -619,7 +625,7 @@
 
 
 <div class="viewcode-block" id="download"><a class="viewcode-back" href="../../../index.html#oarphpy.util.misc.download">[docs]</a><span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="n">uri</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">try_expand</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Fetch `uri`, which is a file or archive, and put in `dest`, which</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Fetch `uri`, which is a file or archive, and put in `dest`, which</span>
 <span class="sd">  is either a destination file path or destination directory.&quot;&quot;&quot;</span>
   
   <span class="kn">import</span> <span class="nn">math</span>
@@ -771,28 +777,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Maintainers of OarphPy
+        &#169; Copyright 2020, Maintainers of OarphPy.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

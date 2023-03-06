@@ -3,20 +3,25 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>oarphpy.util.tfutil &mdash; oarphpy 0.1.0 documentation</title>
+  <title>oarphpy.util.tfutil &mdash; oarphpy 0.1.1 documentation</title>
   
 
   
   <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
 
   
   
+
   
+  
+
   
 
   
@@ -26,10 +31,9 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -49,7 +53,7 @@
           
 
           
-            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> oarphpy
+            <a href="../../../index.html" class="icon icon-home"> oarphpy
           
 
           
@@ -120,6 +124,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -144,7 +150,7 @@
            <div itemprop="articleBody">
             
   <h1>Source code for oarphpy.util.tfutil</h1><div class="highlight"><pre>
-<span></span><span class="c1"># Copyright 2020 Maintainers of OarphPy</span>
+<span></span><span class="c1"># Copyright 2023 Maintainers of OarphPy</span>
 <span class="c1">#</span>
 <span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
@@ -253,7 +259,7 @@
           <span class="n">base_graph</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
           <span class="n">sess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
           <span class="n">saver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Tensorflow has several ways to load checkpoints / graph artifacts.</span>
 <span class="sd">  It&#39;s impossible to know if some API is stable or if tomorrow somebody</span>
 <span class="sd">  will invent something new and break everything becaus PyTorch is shiny</span>
@@ -305,7 +311,7 @@
 
 
 <div class="viewcode-block" id="tf_variable_summaries"><a class="viewcode-back" href="../../../index.html#oarphpy.util.tfutil.tf_variable_summaries">[docs]</a><span class="k">def</span> <span class="nf">tf_variable_summaries</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;Create Tensorboard summaries showing basic stats of the</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;Create Tensorboard summaries showing basic stats of the</span>
 <span class="sd">  variable `var`.&quot;&quot;&quot;</span>
   <span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
 
@@ -313,7 +319,7 @@
     <span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span>
   <span class="k">else</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">var_name</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
-      <span class="sd">&quot;&quot;&quot;Magic: get the name of the variable that the caller passed to </span>
+<span class="w">      </span><span class="sd">&quot;&quot;&quot;Magic: get the name of the variable that the caller passed to </span>
 <span class="sd">      `tf_variable_summaries()`&quot;&quot;&quot;</span>
       <span class="kn">import</span> <span class="nn">inspect</span>
       <span class="n">lcls</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">stack</span><span class="p">()[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">f_locals</span>
@@ -449,7 +455,7 @@
 
 
 <div class="viewcode-block" id="TFRecordsFileAsListOfStrings"><a class="viewcode-back" href="../../../index.html#oarphpy.util.tfutil.TFRecordsFileAsListOfStrings">[docs]</a><span class="k">class</span> <span class="nc">TFRecordsFileAsListOfStrings</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-  <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">  </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">  Friends Don&#39;t Let Friends Use TFRecords.</span>
 
 <span class="sd">  This utility provides a Tensorflow-free, minimal-dependency solution</span>
@@ -489,7 +495,7 @@
 
   <span class="nd">@classmethod</span>
   <span class="k">def</span> <span class="nf">_masked_crc32c</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute a masked crc32c checksum for a value.  FMI see</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute a masked crc32c checksum for a value.  FMI see</span>
 <span class="sd">    https://www.tensorflow.org/versions/r1.11/api_guides/python/python_io#TFRecords_Format_Details</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -548,28 +554,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Maintainers of OarphPy
+        &#169; Copyright 2020, Maintainers of OarphPy.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
