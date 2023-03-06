@@ -1,4 +1,4 @@
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import sys
 import pytest
 
 from oarphpy_test import testutil
-from oarphpy_test.testutil import LocalSpark
 from oarphpy_test.testutil import skip_if_no_spark
+from oarphpy_test.testutil import skip_if_tf_missing_or_broken
 
 
 @skip_if_no_spark
@@ -48,6 +48,42 @@ def test_union_dfs():
 @skip_if_no_spark
 def test_spark_selftest():
   assert testutil.LocalSpark.selftest(modname='oarphpy_test')
+
+
+@skip_if_no_spark
+def test_spark_has_lz4():
+  import pyspark
+  if pyspark.__version__.startswith('2.'):
+    pytest.skip("Spark-2 environment doesn't have LZ4")
+
+  TEST_TEMPDIR = testutil.test_tempdir('test_spark_has_lz4')
+  
+  from oarphpy import spark as S
+  with testutil.LocalSpark.sess() as spark:
+    from pyspark.sql import Row
+    df = spark.createDataFrame([Row(a=1, b=2.0)] * 1000)
+    df.write.parquet(path=os.path.join(TEST_TEMPDIR, 'out'), compression='lz4')
+
+    dfr = spark.read.parquet(os.path.join(TEST_TEMPDIR, 'out'))
+    assert dfr.count() == 1000
+
+
+@skip_if_no_spark
+def test_spark_has_zstd():
+  import pyspark
+  if pyspark.__version__.startswith('2.'):
+    pytest.skip("Spark-2 environment doesn't have ZSTD")
+
+  TEST_TEMPDIR = testutil.test_tempdir('test_spark_has_zstd')
+  
+  from oarphpy import spark as S
+  with testutil.LocalSpark.sess() as spark:
+    from pyspark.sql import Row
+    df = spark.createDataFrame([Row(a=1, b=2.0)] * 1000)
+    df.write.parquet(path=os.path.join(TEST_TEMPDIR, 'out'), compression='zstd')
+
+    dfr = spark.read.parquet(os.path.join(TEST_TEMPDIR, 'out'))
+    assert dfr.count() == 1000
 
 
 @skip_if_no_spark
@@ -86,8 +122,9 @@ def test_spark_with_custom_library_in_notebook():
   # We need to fork off nbconvert to run the test
   TEST_CMD = """
     cd /tmp && 
-    jupyter-nbconvert --ExecutePreprocessor.timeout=3600 \
-      --to notebook --execute --output /tmp/out \
+    jupyter-nbconvert \
+        --ExecutePreprocessor.timeout=3600 \
+        --to notebook --execute --output /tmp/out \
       {notebook_path}
   """.format(notebook_path=NB_PATH)
   out = util.run_cmd(TEST_CMD, collect=True)
@@ -109,8 +146,8 @@ def test_pi():
 
 
 @skip_if_no_spark
+@skip_if_tf_missing_or_broken
 def test_spark_tensorflow():
-  tf = pytest.importorskip("tensorflow")
   from oarphpy import spark as S
   with testutil.LocalSpark.sess() as spark:
     S.test_tensorflow(spark)
@@ -311,8 +348,8 @@ def test_get_balanced_sample_sample_unrestricted():
 
 
 @skip_if_no_spark
+@skip_if_tf_missing_or_broken
 def test_spark_df_to_tf_dataset():
-  pytest.importorskip("tensorflow")
   import tensorflow as tf
   tf.compat.v1.disable_v2_behavior()
 
@@ -510,21 +547,27 @@ class TestRowAdapter(unittest.TestCase):
       (Row(x=1.0),                  [('x', 'double')]),
       (Row(x="moof"),               [('x', 'string')]),
       (Row(x=bytearray(b"moof")),   [('x', 'binary')]),
-      (Row(x=None),                 [('x', 'null')]),
+      (Row(x=None),                 [('x', 'void')]),
     ]
+
+    if self._is_spark_2x():
+      row_expected_schema[-1] = (
+        (Row(x=None),                 [('x', 'null')]))
     
     self._check_raw_adaption([(r, r) for r, s in row_expected_schema])
     
     for row, expected_schema in row_expected_schema:
       schema = self._check_schema([row], expected_schema)
-      if all(t != 'null' for colname, t in expected_schema):
+      VOID_TYPE = 'void' if not self._is_spark_2x() else 'null'
+      if all(t != VOID_TYPE for colname, t in expected_schema):
         # In most cases, data can be written as expected
         self._check_serialization([row])
       else:
-        # NB: None / null can't be written
+        # NB: None / null / void can't be written
         with pytest.raises(Exception) as excinfo:
           self._check_serialization([row], schema=schema)
-        assert ("Parquet data source does not support null data type" 
+        assert ((
+          "Parquet data source does not support %s data type" % VOID_TYPE)
           in str(excinfo.value))
 
 
@@ -564,11 +607,18 @@ class TestRowAdapter(unittest.TestCase):
     # (same with map<null, null>)
     schema = self._check_schema(
                       rows,
-                      [('id', 'bigint'), ('l', 'array<null>')])
+                      [('id', 'bigint'),
+                      ('l', 'array<void>') 
+                        if not self._is_spark_2x() else ('l', 'array<null>')
+                      ])
     with pytest.raises(Exception) as excinfo:
       self._check_serialization(rows, schema=schema)
-    assert ("Parquet data source does not support array<null> data type" 
-      in str(excinfo.value))
+    if self._is_spark_2x():
+      assert ("Parquet data source does not support array<null> data type" 
+        in str(excinfo.value))
+    else:
+      assert ("Parquet data source does not support array<void> data type" 
+        in str(excinfo.value))
 
     # WORKAROUND: If you compute a schema based upon a prototype row, then you
     # can use that schema to write empty containers
@@ -674,7 +724,12 @@ class TestRowAdapter(unittest.TestCase):
     ]
     with pytest.raises(TypeError) as excinfo:
       self._check_serialization(rows, do_adaption=False)
-    assert "not supported type: <class 'numpy.ndarray'>" in str(excinfo.value)
+    
+    if self._is_spark_2x():
+      assert "not supported type: <class 'numpy.ndarray'>" in str(excinfo.value)
+    else:
+      # pyspark>=3.3.1
+      assert "Unable to infer the type of the field x" in str(excinfo.value)
 
 
   def test_built_in_slotted(self):
@@ -686,8 +741,14 @@ class TestRowAdapter(unittest.TestCase):
     ]
     with pytest.raises(TypeError) as excinfo:
       self._check_serialization(rows, do_adaption=False)
-    assert ("not supported type: <class 'oarphpy_test.test_spark.Slotted'>"
-      in str(excinfo.value))
+    
+    if self._is_spark_2x():
+      assert \
+        ("not supported type: <class 'oarphpy_test.test_spark.Slotted'>"
+        in str(excinfo.value))
+    else:
+      # pyspark>=3.3.1
+      assert "Unable to infer the type of the field x" in str(excinfo.value)
 
 
   def test_built_in_contained_udt(self):
@@ -716,7 +777,11 @@ class TestRowAdapter(unittest.TestCase):
     values_field = [
       f for f in DenseVector.__UDT__.sqlType().fields if f.name == 'values'
     ][0]
-    assert str(values_field.dataType) == 'ArrayType(DoubleType,false)'
+
+    if self._is_spark_2x():
+      assert str(values_field.dataType) == 'ArrayType(DoubleType,false)'
+    else:
+      assert str(values_field.dataType) == 'ArrayType(DoubleType(), False)'
 
 
   def test_rowadapter_unslotted(self):
@@ -971,26 +1036,9 @@ class TestRowAdapter(unittest.TestCase):
 
     df = self._check_serialization(rows)
     EXPECTED_ALL = """
-                                                                                  0                                                1
-    id                                                                            1                                                2
-    np_number                                                                   1.0                                              2.0
-    a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
-    b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
-    c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
-    d                                  (oarphpy_test.test_spark.Slotted, 5, abc, 1)                                             None
-    e                                [(oarphpy_test.test_spark.Slotted, 6, def, 1)]                                               []
-    f                                     (oarphpy_test.test_spark.Unslotted, 4, 1)                                             None
-    g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
-    h                                                                        (1, 2)                                           (3, 3)
-    """
-    
-    # DEPRECATED: pyspark 2.x is deprecated
-    import pyspark
-    if pyspark.__version__.startswith('2.'):
-      EXPECTED_ALL = """
-                                                                                  0                                                1
+                                                                                    0                                                1
       id                                                                            1                                                2
-      np_number                                                                     1                                                2
+      np_number                                                                   1.0                                              2.0
       a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
       b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
       c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
@@ -1000,6 +1048,23 @@ class TestRowAdapter(unittest.TestCase):
       g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
       h                                                                        (1, 2)                                           (3, 3)
       """
+    
+    # DEPRECATED: pyspark 2.x is deprecated
+    import pyspark
+    if pyspark.__version__.startswith('2.'):
+      EXPECTED_ALL = """
+                                                                                      0                                                1
+        id                                                                            1                                                2
+        np_number                                                                     1                                                2
+        a                                (oarphpy.spark.Tensor, [1], int64, C, [1], [])  (oarphpy.spark.Tensor, [0], float64, C, [], [])
+        b              {'foo': ('oarphpy.spark.Tensor', [1, 1], 'uint8', 'C', [1], [])}                                               {}
+        c          [(oarphpy.spark.Tensor, [3, 1, 1], float64, C, [1.0, 2.0, 3.0], [])]                                               []
+        d                                  (oarphpy_test.test_spark.Slotted, 5, abc, 1)                                             None
+        e                                [(oarphpy_test.test_spark.Slotted, 6, def, 1)]                                               []
+        f                                     (oarphpy_test.test_spark.Unslotted, 4, 1)                                             None
+        g                                          (oarphpy_test.test_spark.Unslotted,)                                             None
+        h                                                                        (1, 2)                                           (3, 3)
+        """
 
 
     self._pandas_compare_str(df.orderBy('id').toPandas().T, EXPECTED_ALL)

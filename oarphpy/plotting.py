@@ -1,4 +1,4 @@
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -236,7 +236,7 @@ class HistogramWithExamplesPlotter(object):
         else:
           col_def = col_def.when(*args)
       col_def = col_def.otherwise(-1)
-      df_bucketed = sp_src_df.withColumn('au_plot_bucket', col_def)
+      df_bucketed = sp_src_df.withColumn('psegs_plot_bucket', col_def)
 
       # The data might be wildly imbalanced and many (or even all) rows
       # might fall in a single bucket.  That could lead to an OOM below.  
@@ -248,15 +248,15 @@ class HistogramWithExamplesPlotter(object):
            min(1., float(self.APPROX_MAX_ROWS_PER_BUCKET) / max(1, count)))
           for bucket_id, count in enumerate(hist))
         df_bucketed = df_bucketed.sampleBy(
-                        'au_plot_bucket',
+                        'psegs_plot_bucket',
                         bucket_id_to_sample_frac,
                         seed=self.APPROX_MAX_ROWS_PER_BUCKET_SEED)
       
       # Second, we collect chunks of rows partitioned by bucket ID so that we
       # can run our display function in parallel over buckets.
-      bucketed_chunks = df_bucketed.rdd.groupBy(lambda r: r.au_plot_bucket)
+      bucketed_chunks = df_bucketed.rdd.groupBy(lambda r: r.psegs_plot_bucket)
       bucket_disp = bucketed_chunks.map(
-                      lambda b_irows: 
+                      lambda b_irows:
                         self.display_bucket(spv, b_irows[0], b_irows[1]))
       bucket_to_disp = dict(bucket_disp.collect())
       
@@ -310,15 +310,21 @@ class HistogramWithExamplesPlotter(object):
             width=self.WIDTH,
             x_axis_label=col,
             y_axis_label='Count')
+    
+    from bokeh.models import ColumnDataSource
+    from bokeh.models import Legend
+    from bokeh.models import LegendItem
+    legend_items = []
     for spv in sub_pivot_values:
       plot_src = spv_to_panel_df[spv]
-      from bokeh.models import ColumnDataSource
       plot_src = ColumnDataSource(plot_src)
       r = fig.quad(
         source=plot_src, bottom=0, top='count', left='left', right='right',
         color='color', fill_alpha=0.5,
         hover_fill_color='color', hover_fill_alpha=1.0,
-        legend='legend')
+      )
+      legend_items.append(LegendItem(label=str(spv), renderers=[r]))
+
       from bokeh.models import HoverTool
       fig.add_tools(
         HoverTool(
@@ -333,7 +339,8 @@ class HistogramWithExamplesPlotter(object):
             ('Value of %s' % col, '@left'),
           ]))
 
-      fig.legend.click_policy = 'hide'
+    legend = Legend(items=legend_items, click_policy='hide')
+    fig.add_layout(legend, "right")
 
     ## Add the 'show examples' tool and div
     from bokeh.models.widgets import Div
@@ -349,7 +356,7 @@ class HistogramWithExamplesPlotter(object):
     taptool.callback = CustomJS(
       args=dict(ctxbox=ctxbox),
       code="""
-        var idx = cb_data.source.selected['1d'].indices[0];
+        var idx = cb_data.source.selected.indices[0];
         ctxbox.text='' + cb_data.source.data.display[idx];
       """)
 

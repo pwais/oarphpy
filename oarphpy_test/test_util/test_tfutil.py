@@ -1,4 +1,4 @@
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,25 +14,29 @@
 
 import os
 
-import pytest
-
 from oarphpy import util
 from oarphpy_test import testutil
+from oarphpy_test.testutil import skip_if_tf_missing_or_broken
 
-def test_tf_data_session():
-  tf = pytest.importorskip("tensorflow")
+
+try:
+  import tensorflow as tf
   tf.compat.v1.disable_v2_behavior()
+except Exception:
+  pass
 
+
+@skip_if_tf_missing_or_broken
+def test_tf_data_session():
   expected = [[0, 1], [2, 3], [4, 5]]
   ds = tf.data.Dataset.from_tensor_slices(expected)
   with util.tf_data_session(ds) as (sess, iter_dataset):
     actual = list(v.tolist() for v in iter_dataset())
     assert expected == actual
 
-def test_tf_records_file_as_list_of_str():
-  tf = pytest.importorskip("tensorflow")
-  tf.compat.v1.disable_v2_behavior()
 
+@skip_if_tf_missing_or_broken
+def test_tf_records_file_as_list_of_str():
   TEST_TEMPDIR = testutil.test_tempdir(
                       'test_tf_records_file_as_list_of_str')
   util.cleandir(TEST_TEMPDIR)
@@ -52,6 +56,3 @@ def test_tf_records_file_as_list_of_str():
   assert sorted(tf_lst) == sorted(ss)
   for i in range(len(ss)):
     assert tf_lst[i] == ss[i]
-
-
-

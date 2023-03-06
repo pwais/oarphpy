@@ -1,4 +1,4 @@
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,5 +20,8 @@ ENV PYTHONDONTWRITEBYTECODE 1
 
 COPY . /opt/oarphpy
 WORKDIR /opt/oarphpy
+
+# Force using older dependencies for python 3.6
+RUN pip3 install pytest==5.2.0 attrs==20.3.0
 
 RUN pip3 install -e ".[tensorflow]"

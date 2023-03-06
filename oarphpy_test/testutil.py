@@ -1,4 +1,4 @@
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,3 +49,15 @@ def test_tempdir(name, clean=True):
     cleandir(path)
   
   return path
+
+HAVE_TENSORFLOW = False
+try:
+  import tensorflow
+  HAVE_TENSORFLOW = True
+except Exception:
+  pass
+
+skip_if_tf_missing_or_broken = pytest.mark.skipif(
+                                  not HAVE_TENSORFLOW,
+                                  reason="Requires Tensorflow")
+

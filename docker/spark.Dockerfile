@@ -1,4 +1,4 @@
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ RUN \
 RUN \
   DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-11-jdk && \
   echo JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 >> /etc/environment
-RUN pip3 install pyspark==3.0.1
+RUN pip3 install pyspark==3.3.1
 RUN pip3 install numpy pandas>=1.0.0
 ENV PYSPARK_PYTHON python3
 ENV PYSPARK_DRIVER_PYTHON python3

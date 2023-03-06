@@ -1,4 +1,4 @@
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import pickle
 import sys
 from collections import Counter
 from contextlib import contextmanager
@@ -759,6 +760,7 @@ class SessionFactory(object):
           raise Exception(msg)
       raise
 
+    # To show info logs
     # spark.sparkContext.setLogLevel('INFO')
 
     egg_path = cls.create_egg()
@@ -906,12 +908,17 @@ class NBSpark(SessionFactory):
       # every cell run.  NB:
       # * `get_ipython()` is a global provided in any IPython-esque session
       # * Using pre_run_code_hook triggers a UserWarning / deprecation
-      #     warning, but the suggested events don't exist ...
-      import warnings
-      warnings.filterwarnings(
-        action='ignore',
-        message=r'Hook pre_run_code_hook is deprecated')
-      get_ipython().set_hook('pre_run_code_hook', maybe_rebuild_egg)
+      #     warning, but the suggested events don't exist in older IPython
+      # * In IPython >= 5, using `pre_run_code_hook` throws an error :(
+      import IPython
+      if IPython.version_info[0] >= 5:
+        get_ipython().events.register('pre_execute', maybe_rebuild_egg)
+      else:
+        import warnings
+        warnings.filterwarnings(
+          action='ignore',
+          message=r'Hook pre_run_code_hook is deprecated')
+        get_ipython().set_hook('pre_run_code_hook', maybe_rebuild_egg)
 
     return spark
 
@@ -1007,6 +1014,12 @@ class CloudpickeledCallable(object):
 
   __slots__ = ('_func', '_func_pyclass')
 
+  # Most Python 3.x distributions don't have newer than pickle 4, so stick
+  # to version 4 for compatibility.  FMI:
+  #   * https://stackoverflow.com/a/23582505
+  #   * https://peps.python.org/pep-3154/
+  PICKLE_PROTOCOL = min(4, pickle.HIGHEST_PROTOCOL)
+
   @staticmethod
   def _get_func_name(func):
     module = '<unknown_module>'
@@ -1042,7 +1055,8 @@ class CloudpickeledCallable(object):
       func_bytes = bytearray()
     else:
       import cloudpickle
-      func_bytes = bytearray(cloudpickle.dumps(cc._func))
+      func_bytes = bytearray(
+        cloudpickle.dumps(cc._func, protocol=cls.PICKLE_PROTOCOL))
     
     return CloudpickeledCallableData(
               func_bytes=func_bytes,

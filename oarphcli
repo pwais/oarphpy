@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim: tabstop=2 shiftwidth=2 expandtab
 
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,9 +73,17 @@ OP_CONTAINER_NAME = os.environ.get('OP_CONTAINER_NAME', 'oarphpy')
 ## Utils 
 
 def get_oarphpy_version(op_root):
-  import imp
   path = os.path.join(op_root, 'oarphpy/__init__.py')
-  m = imp.load_source('_', path)
+  
+  try:
+    # System python is 3.x
+    import importlib.machinery
+    m = importlib.machinery.SourceFileLoader('_', path).load_module()
+  except Exception as e:
+    # System python is 2.x; this is deprecated in 3.x
+    import imp
+    m = imp.load_source('_', path)
+
   return m.__version__
 
 
@@ -100,9 +108,9 @@ def build_and_push_3p_images():
     (rm -rf lambda-stack-dockerfiles || true) &&
     git clone https://github.com/lambdal/lambda-stack-dockerfiles &&
     cd lambda-stack-dockerfiles &&
-    git checkout 30bcae027beac901c2ed7890bacd72df54f9e2ed && 
-    docker build -t oarphpy/lambda-stack:20.04 -f Dockerfile.focal . &&
-    docker push oarphpy/lambda-stack:20.04
+    git checkout d762400d61636c074533416674426a84cc4d8992 &&
+    docker build -t oarphpy/lambda-stack:22.04 -f Dockerfile.jammy . &&
+    docker push oarphpy/lambda-stack:22.04
     """)
 
 
@@ -343,8 +351,15 @@ def main(args=None):
         env.build(and_push=False)
       if args.test_all:
         env.run_tests()
-      elif args.test and env.IMAGE_NAME == args.test:
-        env.run_tests()
+      elif args.test:
+        if env.IMAGE_NAME == args.test:
+          env.run_tests()
+        
+        # Print a helful error message at some point
+        CHOICES = [ee.IMAGE_NAME for ee in DockerEnv.get_all_envs(args.root)]
+        assert args.test in CHOICES, "Invalid choice %s, choices %s" % (
+          args.test, CHOICES)
+
       if args.push_as_latest:
         env.push_as_latest()
 

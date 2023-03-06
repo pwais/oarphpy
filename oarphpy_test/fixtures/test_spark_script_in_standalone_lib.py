@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vim: tabstop=2 shiftwidth=2 expandtab
 
-# Copyright 2020 Maintainers of OarphPy
+# Copyright 2023 Maintainers of OarphPy
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
