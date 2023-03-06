@@ -1,12 +1,5 @@
 version: 2.1
 jobs:
-  docker-purge:
-    docker:  
-      - image: cimg/base:2020.01  
-    parallelism: 30
-    steps:
-      - setup_remote_docker
-      - run: docker volume prune -f
   build:
     machine:
       image: ubuntu-2004:202010-01
