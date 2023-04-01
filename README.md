@@ -43,6 +43,7 @@ See also [API documentation](https://pwais.github.io/oarphpy/).
 ## Demos
 
  * [Automagically Shipping Custom Libraries in Spark Using OarphPy](https://pwais.github.io/oarph-oarphs/2020/02/03/atrick.html)
+ * [Histograms with Examples](https://pwais.github.io/oarph-oarphs/2023/01/21/hist-with-examples.html)
 
 ## Dockerized Development Environments
 
