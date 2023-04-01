@@ -146,7 +146,7 @@ RUN \
   apt-get install -y software-properties-common && \
   add-apt-repository ppa:mozillateam/firefox-next && \
   apt-get update && \
-  apt-get install -y firefox=111.0~b8+build1-0ubuntu0.22.04.1 firefox-geckodriver 
+  apt-get install -y firefox=112.0~b9+build1-0ubuntu0.22.04.1 firefox-geckodriver 
 
 
 ## Include oarphpy
