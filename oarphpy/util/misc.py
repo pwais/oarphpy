@@ -309,23 +309,34 @@ def get_jpeg_size(jpeg_bytes):
   """
   import struct
   from io import BytesIO
+  
   buf = BytesIO(jpeg_bytes)
   head = buf.read(24)
   if not head.startswith(b'\377\330'):
     raise ValueError("Invalid JPEG header")
   buf.seek(0)
+  
   size = 2
   ftype = 0
-  while not 0xc0 <= ftype <= 0xcf or ftype in [0xc4, 0xc8, 0xcc]:
-    buf.seek(size, 1)
-    byte = buf.read(1)
-    while ord(byte) == 0xff:
+  
+  try:
+    while not 0xc0 <= ftype <= 0xcf or ftype in [0xc4, 0xc8, 0xcc]:
+      buf.seek(size, 1)
       byte = buf.read(1)
-    ftype = ord(byte)
-    size = struct.unpack('>H', buf.read(2))[0] - 2
-  # Now we're at a SOFn block
-  buf.seek(1, 1)  # Skip `precision' byte.
-  height, width = struct.unpack('>HH', buf.read(4))
+      while ord(byte) == 0xff:
+        byte = buf.read(1)
+      ftype = ord(byte)
+      size = struct.unpack('>H', buf.read(2))[0] - 2
+  
+    # Now we're at a SOFn block
+    buf.seek(1, 1)  # Skip `precision' byte.
+    height, width = struct.unpack('>HH', buf.read(4))
+  
+  except struct.error:
+    raise ValueError("Failed parsing size or h/w")
+  except TypeError:
+    raise ValueError("Read empty byte too early; can't parse buffer")
+  
   return width, height
 
 
