@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# syntax=docker/dockerfile:1
 ARG UBUNTU_VERSION=22.04
 
 FROM ubuntu:${UBUNTU_VERSION} as base
@@ -21,6 +22,7 @@ FROM ubuntu:${UBUNTU_VERSION} as base
 ENV PYTHONDONTWRITEBYTECODE 1
 
 RUN \
+  --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
   apt-get install -y \
     python3 \

@@ -152,7 +152,7 @@ class DockerEnv(object):
   def build(cls, and_push=True):
     image = cls.full_image_name()
     CMD = """
-      docker build -t {image} -f {dockerfile} {rootdir}
+      DOCKER_BUILDKIT=1 docker build -t {image} -f {dockerfile} {rootdir}
     """.format(
       image=image,
       dockerfile=cls.DOCKERFILE_PATH,

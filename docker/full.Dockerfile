@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# syntax=docker/dockerfile:1
 FROM oarphpy/lambda-stack:22.04
 
 # We don't care for __pycache__ and .pyc files; sometimes VSCode doesn't clean
@@ -22,6 +23,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ### Core
 ### Required for installing and testing things
 RUN \
+  --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
   apt-get install -y \
     curl \
@@ -33,6 +35,7 @@ RUN \
 
 ## Java
 RUN \
+  --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
   apt-get install -y openjdk-11-jdk && \
   ls -lhat /usr/lib/jvm/java-11-openjdk-amd64 && \
@@ -82,6 +85,7 @@ ENV PATH $PATH:/root/google-cloud-sdk/bin/
 COPY docker/.vimrc /root/.vimrc
 COPY docker/.screenrc /root/.screenrc
 RUN \
+  --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
   apt-get install -y \
     curl \
@@ -109,6 +113,7 @@ RUN \
 
 # Jupyter & friends
 RUN \
+  --mount=type=cache,target=/var/cache/apt \
   apt-get install -y nodejs && \
   pip3 install \
     jupyterlab==3.5.2 \
@@ -143,6 +148,7 @@ RUN pip3 install selenium==4.7.2
 
 # TODO try to use firefox-geckodriver for 22.04 in the future https://askubuntu.com/a/1403204
 RUN \
+  --mount=type=cache,target=/var/cache/apt \
   apt-get install -y software-properties-common && \
   add-apt-repository ppa:mozillateam/firefox-next && \
   apt-get update && \
