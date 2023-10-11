@@ -566,9 +566,14 @@ class TestRowAdapter(unittest.TestCase):
         # NB: None / null / void can't be written
         with pytest.raises(Exception) as excinfo:
           self._check_serialization([row], schema=schema)
-        assert ((
-          "Parquet data source does not support %s data type" % VOID_TYPE)
-          in str(excinfo.value))
+        if self._is_spark_2x():
+          assert ((
+            "Parquet data source does not support %s data type" % VOID_TYPE)
+            in str(excinfo.value))
+        else:
+          # pyspark>=3.5.0
+          assert ("[UNSUPPORTED_DATA_TYPE_FOR_DATASOURCE]" 
+            in str(excinfo.value))
 
 
   def test_python_basic_containers_adaption(self):
@@ -617,7 +622,8 @@ class TestRowAdapter(unittest.TestCase):
       assert ("Parquet data source does not support array<null> data type" 
         in str(excinfo.value))
     else:
-      assert ("Parquet data source does not support array<void> data type" 
+      # pyspark>=3.5.0
+      assert ("[UNSUPPORTED_DATA_TYPE_FOR_DATASOURCE]" 
         in str(excinfo.value))
 
     # WORKAROUND: If you compute a schema based upon a prototype row, then you
@@ -728,8 +734,8 @@ class TestRowAdapter(unittest.TestCase):
     if self._is_spark_2x():
       assert "not supported type: <class 'numpy.ndarray'>" in str(excinfo.value)
     else:
-      # pyspark>=3.3.1
-      assert "Unable to infer the type of the field x" in str(excinfo.value)
+      # pyspark>=3.5.0
+      assert "[CANNOT_INFER_TYPE_FOR_FIELD] Unable to infer the type of the field `x`." in str(excinfo.value)
 
 
   def test_built_in_slotted(self):
@@ -747,8 +753,8 @@ class TestRowAdapter(unittest.TestCase):
         ("not supported type: <class 'oarphpy_test.test_spark.Slotted'>"
         in str(excinfo.value))
     else:
-      # pyspark>=3.3.1
-      assert "Unable to infer the type of the field x" in str(excinfo.value)
+      # pyspark>=3.5.0
+      assert "[CANNOT_INFER_TYPE_FOR_FIELD] Unable to infer the type of the field `x`." in str(excinfo.value)
 
 
   def test_built_in_contained_udt(self):
