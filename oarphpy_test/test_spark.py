@@ -552,7 +552,7 @@ class TestRowAdapter(unittest.TestCase):
 
     if self._is_spark_2x():
       row_expected_schema[-1] = (
-        (Row(x=None),                 [('x', 'null')]))
+        (Row(x=None),               [('x', 'null')]))
     
     self._check_raw_adaption([(r, r) for r, s in row_expected_schema])
     
@@ -736,6 +736,22 @@ class TestRowAdapter(unittest.TestCase):
     else:
       # pyspark>=3.5.0
       assert "[CANNOT_INFER_TYPE_FOR_FIELD] Unable to infer the type of the field `x`." in str(excinfo.value)
+
+
+  def test_python_pathlib(self):
+    pytest.importorskip('pathlib')
+    from pathlib import Path
+
+    # RowAdapter translates Path to plain strings
+    rows = [
+      Row(id=0, x=Path('/tmp')),
+    ]
+    self._check_serialization(rows)
+    self._check_schema(
+            rows,
+            [('id', 'bigint'),
+             ('x',  'string'),
+            ])
 
 
   def test_built_in_slotted(self):

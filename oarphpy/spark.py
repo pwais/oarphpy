@@ -1127,6 +1127,13 @@ class RowAdapter(object):
   IGNORE_PROTECTED = False
   IGNORE_PRIVATE = True
 
+  PATHLIB_PATH_TYPENAMES = (
+    'pathlib.Path',
+    'pathlib.PosixPath',
+    'pathlib.PurePath',
+    'pathlib.PurePosixPath',
+  )
+
   @staticmethod
   def _get_classname_from_obj(o):
     # Based upon https://stackoverflow.com/a/2020083
@@ -1166,6 +1173,8 @@ class RowAdapter(object):
     elif isinstance(obj, np.generic):
       # Those pesky boxed scalars like np.float32
       return obj.item()
+    elif RowAdapter._get_classname_from_obj(obj) in cls.PATHLIB_PATH_TYPENAMES:
+      return str(obj)
     elif hasattr(obj, '__slots__') or hasattr(obj, '__dict__'):
       def is_hidden(fname):
         # Check private first to disambiguate `_` vs `__` prefixes

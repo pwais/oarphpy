@@ -17,10 +17,12 @@ import pytest
 import os
 import datetime
 
-from oarphpy import coopdiskcache as coopdc
+from oarphpy import coopdiskcache as coopc
 
 def test_coopdc_basic():
-  kf = coopdc.KeyFactory()
+  config = coopc.Config()
+
+  kf = coopc.Client(config=config)
 
   now = datetime.datetime(2000, 1, 1)
 
@@ -50,6 +52,6 @@ def test_coopdc_basic():
     assert success
 
 
-  evictor = coopdc.Evictor(now=now)
+  evictor = coopc.Evictor(config=config, now=now)
   evictor.run()
   

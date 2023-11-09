@@ -33,6 +33,10 @@ YYYY / MM / DD / HH / MM / SS / key3
 
 leading partition is just key *creation* time
 
+to achieve multiple caches where there's priority about deleting one 
+cache / channel before the other, just create a separate root(s) and
+give them *more* quota.  b/c the caches with least quota will get
+evicted first.
 """
 
 import datetime
@@ -49,14 +53,14 @@ class RootConfig(object):
     'bucket_size_timedelta_seconds',
     'quota_max_used_bytes',
     'quota_min_free_bytes',
-    'other_config_paths',
+    'root_dirs',
   )
 
   def __init__(self):
     pass
 
 
-class KeyFactory(object):
+class Client(object):
 
   def __init__(self, config=None):
     self._config = config or Config()
@@ -152,6 +156,10 @@ def create_arg_parser():
           'is under quota'))
 
   # Actions
+  parser.add_argument(
+    '--init-root',
+    help=('Initialize a cache root in the given directory path by writing a '
+          'default config'))
   parser.add_argument(
     '--only-update-metadata', default=False, action='store_true',
     help='Do not evict, just update all metadata on disk')
