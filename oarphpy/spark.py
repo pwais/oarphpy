@@ -763,6 +763,10 @@ class SessionFactory(object):
     # To show info logs
     # spark.sparkContext.setLogLevel('INFO')
 
+    # To silence pestering py4j.clientserver logs
+    import logging
+    logging.getLogger('py4j.clientserver').setLevel(logging.ERROR)
+
     egg_path = cls.create_egg()
     if egg_path:
       spark.sparkContext.addPyFile(egg_path)
