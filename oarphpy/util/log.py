@@ -43,6 +43,7 @@ _LOGS = {}
 def create_log(name='oarph'):
   global _LOGS
   if name not in _LOGS:
+    # TODO add loguru support ... with better exceptions?
     import logging
     LOG_FORMAT = "%(asctime)s\t%(name)-4s %(process)d : %(message)s"
     log = logging.getLogger(name)

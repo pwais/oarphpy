@@ -260,6 +260,7 @@ class TFSummaryReader(object):
   )
 
   def __init__(self, paths=None, glob_events_from_dir=None):
+    import pathlib
     self._paths = paths or []
     if glob_events_from_dir and os.path.exists(glob_events_from_dir):
       self._paths.extend(
